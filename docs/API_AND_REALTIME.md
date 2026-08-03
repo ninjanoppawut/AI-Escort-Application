@@ -1,14 +1,13 @@
 # API and Realtime Contracts
 
-## 1. API principles
+## 1. Principles
 
-- Use typed server actions or route handlers for trusted mutations.
-- Use Supabase RLS-protected reads where appropriate.
-- Validate all input and normalized Gemini output with Zod.
-- Mutations that change workflow status must be idempotent and auditable.
-- Secrets and privileged credentials never reach the browser.
-- Database transactions and constraints provide correctness; Realtime only keeps clients responsive.
-- The client refetches authoritative data after relevant Realtime events rather than trusting event payloads as final state.
+- Trusted mutations use typed server actions, route handlers, or PostgreSQL RPCs.
+- Validate inputs and Gemini output with Zod.
+- Database transactions and constraints provide correctness.
+- Realtime events are change signals; clients refetch authoritative data.
+- Every sensitive mutation is authorized, auditable, and idempotent where retries are possible.
+- Secrets never reach the browser.
 
 ## 2. Core operations
 
@@ -25,7 +24,7 @@ POST /api/classes/:id/group-formation/close
 GET  /api/classes/:id/group-board
 ```
 
-### Student-led groups
+### Groups
 
 ```text
 POST /api/groups
@@ -36,11 +35,7 @@ POST /api/group-invitations/:id/decline
 POST /api/group-invitations/:id/cancel
 POST /api/groups/:id/transfer-leadership
 POST /api/groups/:id/ready
-```
 
-### Teacher group management
-
-```text
 POST /api/classes/:id/groups
 POST /api/classes/:id/groups/move-student
 POST /api/groups/:id/change-leader
@@ -52,7 +47,7 @@ POST /api/groups/:id/archive
 POST /api/classes/:id/group-creation-claims/:studentId/reset
 ```
 
-### In-app notifications
+### Notifications
 
 ```text
 GET  /api/notifications
@@ -60,7 +55,7 @@ POST /api/notifications/:id/read
 POST /api/notifications/read-all
 ```
 
-### Activities, sessions, and observations
+### Sessions and observations
 
 ```text
 POST /api/activities
@@ -78,16 +73,14 @@ PUT  /api/observations/:id/student-review
 GET  /api/observations/:id/related
 POST /api/observations/:id/submit
 POST /api/observations/:id/resubmit
-
 POST /api/observations/:id/review
-GET  /api/sessions/:id/observations
 GET  /api/sessions/:id/map
 GET  /api/observations/:id/details
 ```
 
-Implementation may use server actions instead of literal REST routes, but the domain contracts must remain equivalent.
+Literal REST routes are optional; equivalent server actions/RPC contracts are valid.
 
-## 3. Standard response
+## 3. Standard response and errors
 
 ```json
 {
@@ -97,7 +90,7 @@ Implementation may use server actions instead of literal REST routes, but the do
 }
 ```
 
-Stable error codes include:
+Stable group/class errors:
 
 ```text
 FORBIDDEN
@@ -119,7 +112,11 @@ GROUP_IN_ACTIVE_SESSION
 INVITATION_NOT_PENDING
 INVITATION_EXPIRED
 DESTINATION_GROUP_INVALID
+```
 
+Stable field-work errors:
+
+```text
 SESSION_NOT_OPEN
 GROUP_NOT_ACTIVE
 ACTIVE_GROUP_CONFLICT
@@ -138,9 +135,7 @@ INVALID_STATUS_TRANSITION
 RATE_LIMITED
 ```
 
-## 4. Create class contract
-
-Request:
+## 4. Create class
 
 ```json
 {
@@ -148,7 +143,6 @@ Request:
   "subject": "Biology",
   "academicYear": "2569",
   "semester": "2",
-  "description": null,
   "groupSettings": {
     "minimumSize": 3,
     "maximumSize": 5,
@@ -159,9 +153,9 @@ Request:
 }
 ```
 
-The authenticated teacher becomes an active class teacher membership in the same transaction.
+The authenticated teacher becomes an active teacher member in the same transaction.
 
-## 5. Join class contract
+## 5. Join class
 
 ```json
 {
@@ -169,22 +163,20 @@ The authenticated teacher becomes an active class teacher membership in the same
 }
 ```
 
-The trusted operation validates expiration, disabled state, usage count, and existing membership. The role is always created as `student`; the caller cannot select a role.
+The server validates expiry, disabled state, usage count, and existing membership. The resulting role is always `student`.
 
-## 6. Class group-board read model
+## 6. Group board
 
 ```json
 {
   "classId": "uuid",
   "formationStatus": "open",
-  "allowStudentGroups": true,
   "maximumGroups": 5,
   "currentGroupCount": 4,
   "remainingGroupSlots": 1,
   "minimumGroupSize": 3,
   "maximumGroupSize": 5,
   "viewer": {
-    "isStudent": true,
     "currentGroupId": null,
     "hasCreatedStudentGroup": false,
     "canCreateGroup": true,
@@ -204,11 +196,9 @@ The trusted operation validates expiration, disabled state, usage count, and exi
 }
 ```
 
-When `currentGroupCount == maximumGroups`, `canCreateGroup=false` and `cannotCreateReason="GROUP_LIMIT_REACHED"`. The Create Group button should be disabled with explanatory text rather than silently removed.
+When all slots are occupied, return `canCreateGroup=false` and `cannotCreateReason="GROUP_LIMIT_REACHED"`. The UI disables the button and explains why.
 
-## 7. Student group creation contract
-
-Request:
+## 7. Atomic student group creation
 
 ```json
 {
@@ -218,20 +208,20 @@ Request:
 }
 ```
 
-The server invokes the atomic `create_student_group` operation. It locks the class group configuration, validates eligibility, reserves one group slot, creates the group, creates the student group-creation claim, and assigns the creator as the sole leader.
+The server invokes `create_student_group`. It locks class configuration, validates eligibility, reserves a slot, creates the group, stores the creation claim, and assigns the creator as the sole leader.
 
-Two requests racing for the final slot return:
+If two students race for the final slot:
 
 ```text
-one success
-one GROUP_LIMIT_REACHED
+one request succeeds
+one request returns GROUP_LIMIT_REACHED
 ```
 
-The losing client must refetch the group board and display that another student created the final available group.
+The losing client refetches the group board.
 
-## 8. Group invitation contract
+## 8. Group invitation
 
-### Send invitation
+Send:
 
 ```json
 {
@@ -239,16 +229,15 @@ The losing client must refetch the group board and display that another student 
 }
 ```
 
-The server validates that the caller is the current group leader or an authorized teacher, the invitee is in the same class, the invitee is unassigned, the group is not full/locked, and no duplicate pending invitation exists.
+Validate same class, active membership, unassigned invitee, unlocked group, capacity, current leader/teacher permission, and no duplicate pending invitation.
 
-### Invitation notification payload
+Notification payload:
 
 ```json
 {
   "notificationType": "group_invitation_received",
   "groupId": "uuid",
   "groupName": "Green Explorers",
-  "leaderId": "uuid",
   "leaderDisplayName": "Student A",
   "memberCount": 2,
   "maximumSize": 5,
@@ -256,11 +245,11 @@ The server validates that the caller is the current group leader or an authorize
 }
 ```
 
-### Accept invitation
+Acceptance revalidates current membership and capacity. Stale invitations never bypass constraints.
 
-The acceptance endpoint rechecks eligibility and capacity. A stale invitation cannot bypass the one-group-per-class rule.
+## 9. Leadership and teacher movement
 
-## 9. Transfer leadership contract
+Transfer leadership:
 
 ```json
 {
@@ -269,33 +258,22 @@ The acceptance endpoint rechecks eligibility and capacity. A stale invitation ca
 }
 ```
 
-The operation atomically changes the old leader to `member` and the selected active member to `leader`. It must never expose a committed state with zero or multiple active leaders.
+The transaction changes the old leader to member and the selected member to leader without exposing a zero-leader or two-leader committed state.
 
-## 10. Teacher move-student contract
+Teacher move:
 
 ```json
 {
   "studentId": "uuid",
   "sourceGroupId": "uuid",
   "destinationGroupId": "uuid",
-  "successorLeaderId": "uuid-or-null",
-  "expectedSourceVersion": 3,
-  "expectedDestinationVersion": 5
+  "successorLeaderId": "uuid-or-null"
 }
 ```
 
-Validation includes:
+Validate teacher role, same class, destination capacity, active-session restrictions, and successor requirement. Historical session snapshots remain unchanged. Success creates notification, audit history, and group-change signal.
 
-- teacher role in the class;
-- same class for source/destination;
-- destination capacity;
-- no affected active exploration session;
-- successor required when moving a leader from a non-empty group;
-- historical session snapshots remain unchanged.
-
-Success creates a durable in-app notification for the student and emits a class group-change event.
-
-## 11. Delete/archive group contract
+## 10. Delete or archive group
 
 ```json
 {
@@ -304,21 +282,12 @@ Success creates a durable in-app notification for the student and emits a class 
 }
 ```
 
-Allowed member-handling strategies:
+- Unused group: soft-delete, cancel invitations, update members, restore a group slot.
+- Group with session history: archive.
+- Affected active session: return `GROUP_IN_ACTIVE_SESSION`.
+- Notify affected users.
 
-```text
-return_unassigned
-move_members
-```
-
-Behavior:
-
-- unused group: soft-delete, cancel pending invitations, update memberships, restore a group slot;
-- group with session history: archive, never hard-delete;
-- active session dependency: reject with `GROUP_IN_ACTIVE_SESSION`;
-- affected users receive in-app notifications.
-
-## 12. Notification read model
+## 11. Notifications
 
 ```json
 {
@@ -339,18 +308,18 @@ Behavior:
 }
 ```
 
-Notifications are durable database records. Email is not required for the MVP.
+Notifications are durable rows. Email is out of scope for the MVP.
 
-## 13. Group Realtime channels
+## 12. Group and notification Realtime
 
-Use private channels:
+Private channels:
 
 ```text
 class:{classId}:groups
 user:{userId}:notifications
 ```
 
-Recommended group events:
+Group events:
 
 ```text
 group.created
@@ -368,7 +337,7 @@ group.capacity_changed
 group.formation_changed
 ```
 
-Example event:
+Example:
 
 ```json
 {
@@ -380,9 +349,7 @@ Example event:
 }
 ```
 
-The event is a signal to invalidate/refetch the group board. Clients should not compute authorization or capacity solely from the event payload.
-
-### Notification event
+Notification signal:
 
 ```json
 {
@@ -394,31 +361,18 @@ The event is a signal to invalidate/refetch the group board. Clients should not 
 }
 ```
 
-The recipient refetches unread count/items.
-
-## 14. Client synchronization strategy
-
-For group and notification screens:
+Clients use:
 
 ```text
 initial fetch
-→ subscribe to private Realtime channel
-→ relevant event arrives
+→ private subscription
+→ signal received
 → invalidate/refetch authoritative query
 ```
 
-Also refetch when:
+Also refetch on foreground, network reconnect, Realtime reconnect, and mutation completion. Five-second polling is not the primary mechanism. Optional slow fallback polling is acceptable.
 
-- browser/app returns to foreground;
-- network reconnects;
-- Realtime reconnects;
-- a create/join/move/delete operation succeeds or fails.
-
-Do not use a five-second polling loop as the primary design. An optional 30–60 second fallback poll while the screen is open is acceptable, but not required when focus/reconnect refetch is implemented.
-
-## 15. Start observation
-
-Request:
+## 13. Start observation
 
 ```json
 {
@@ -433,15 +387,9 @@ Request:
 }
 ```
 
-The server validates participant/group state. The returned observation belongs to the authenticated student.
+Validate participant and active-group state. Never fabricate coordinates.
 
-If GPS remains unavailable after retry, a flagged draft may be created with an explicit location state; no fabricated coordinate is accepted.
-
-## 16. Media upload contract
-
-One observation supports 1–10 media items.
-
-Processed upload requirements:
+## 14. Media upload
 
 ```text
 mime: image/jpeg | image/png | image/webp
@@ -451,9 +399,9 @@ position: 1–10
 category: whole_plant | leaf | leaf_underside | stem_trunk | flower | fruit | habitat | other
 ```
 
-The client preprocesses oversized images before upload. Server/bucket validation remains authoritative.
+At least one `whole_plant` image is required before submission.
 
-## 17. Queue Gemini analysis
+## 15. Queue Gemini analysis
 
 ```json
 {
@@ -463,11 +411,9 @@ The client preprocesses oversized images before upload. Server/bucket validation
 }
 ```
 
-The endpoint writes `ai_analysis_runs` and publishes a durable queue message. Repeated requests with the same idempotency key return the existing run.
+Create `ai_analysis_run`, enqueue a durable message, and return the existing run on idempotent retry.
 
-## 18. Gemini normalized result contract
-
-The exact JSON structure will be finalized during integration. The initial required semantic fields are:
+## 16. Gemini normalized result
 
 ```json
 {
@@ -486,46 +432,29 @@ The exact JSON structure will be finalized during integration. The initial requi
     "plantType": {"value": "tree", "visibility": "visible"},
     "leafType": {"value": "simple", "visibility": "visible"},
     "leafArrangement": {"value": "alternate", "visibility": "uncertain"},
-    "flower": {"value": null, ""visibility": "not_visible"}
+    "flower": {"value": null, "visibility": "not_visible"}
   },
   "missingEvidence": ["leaf_underside"],
   "disclaimer": "provisional result"
 }
 ```
 
-Rules:
+Every response has a schema version. Missing evidence is `null` or explicit, never invented.
 
-- every response has a schema version;
-- unavailable evidence is `null`/explicit, never invented;
-- provider, model, prompt version, and timing are stored separately;
-- client uses only server-validated normalized output.
+## 17. Student review and submission
 
-## 19. Student review contract
+Student review supports:
 
-```json
-{
-  "analysisRunId": "uuid",
-  "selectedCandidate": {
-    "commonNameTh": "มะม่วง",
-    "scientificName": "Mangifera indica"
-  },
-  "traitChecks": [
-    {
-      "traitKey": "leafType",
-      "aiValue": "simple",
-      "status": "match",
-      "correctedValue": null,
-      "note": null
-    }
-  ],
-  "additionalTraits": {},
-  "studentEvidenceNote": "short evidence statement"
-}
+```text
+match
+not_match
+unsure
+not_visible
 ```
 
-Manual entry is valid even when Gemini fails. Submission still requires Thai/common and scientific names.
+Manual entry remains valid after Gemini failure. Submission requires Thai/common name, scientific name, evidence note, whole-plant image, valid review/manual path, and same-species acknowledgement when applicable.
 
-## 20. Related-observation contract
+Same-species response example:
 
 ```json
 {
@@ -535,37 +464,16 @@ Manual entry is valid even when Gemini fails. Submission still requires Thai/com
     {
       "observationId": "uuid",
       "relationshipType": "same_species",
-      "commonName": "มะม่วง",
       "scientificName": "Mangifera indica",
-      "possibleSameSpecimen": false,
-      "scores": {
-        "taxon": 1.0,
-        "morphology": 0.7,
-        "visual": 0.5,
-        "distanceM": 32.4
-      }
+      "possibleSameSpecimen": false
     }
   ]
 }
 ```
 
-The student may submit after acknowledging the warning. The server writes `same_species_in_session=true`, exposes the tag to the teacher, and creates an in-app teacher notification.
+A match warns the student, tags the observation, permits submission, and creates a teacher notification.
 
-## 21. Submit/resubmit contract
-
-```json
-{
-  "expectedObservationVersion": 4,
-  "commonName": "มะม่วง",
-  "scientificName": "Mangifera indica",
-  "evidenceNote": "leaf and trunk characteristics checked",
-  "sameSpeciesAcknowledged": true
-}
-```
-
-Resubmission creates a new immutable submission row and updates the current observation status.
-
-## 22. Teacher review contract
+## 18. Teacher review
 
 ```json
 {
@@ -587,9 +495,11 @@ unable_to_verify
 rejected
 ```
 
-Teacher corrections never overwrite AI results or student submission history. Review decisions create student in-app notifications.
+Teacher corrections never overwrite AI or student history. Review results create student notifications.
 
-## 23. Session Realtime channels
+## 19. Session Realtime and map
+
+Channels:
 
 ```text
 session:{sessionId}:group:{groupId}
@@ -598,21 +508,7 @@ session:{sessionId}:observations
 user:{userId}:observation-jobs
 ```
 
-### Live location event
-
-```json
-{
-  "type": "location.updated",
-  "version": 1,
-  "userId": "uuid",
-  "lat": 13.7563,
-  "lng": 100.5018,
-  "accuracyM": 8.5,
-  "capturedAt": "2026-08-03T10:00:00Z"
-}
-```
-
-### Observation marker event
+Observation marker signal:
 
 ```json
 {
@@ -626,38 +522,15 @@ user:{userId}:observation-jobs
 }
 ```
 
-Drafts are never emitted as teacher-map markers.
+Drafts never appear on the teacher map. Session map and plant details use authorized read models and capture location.
 
-## 24. Map/detail read models
-
-### Session map
-
-Returns GeoJSON or equivalent marker DTOs based on capture location, status, accessible display name, main thumbnail, and same-species tag.
-
-### Plant detail
-
-Returns authorized display data:
-
-- gallery;
-- capture metadata;
-- student submission versions;
-- AI candidates/traits;
-- student checks/corrections;
-- related same-species records;
-- teacher review history;
-- final verified identity.
-
-The completed-session endpoint uses the same read model with historical live-location data omitted or restricted.
-
-## 25. Idempotency and concurrency
+## 20. Idempotency and concurrency
 
 - Class invite use is atomic.
-- Student group creation locks class configuration and reserves group slots atomically.
-- Group invitation acceptance rechecks membership and capacity.
+- Student group creation atomically reserves group slots.
+- Invitation acceptance rechecks membership and capacity.
 - Leadership transfer and teacher moves are atomic.
-- Client-created observation ID is unique per student.
-- Media upload uses deterministic media IDs/paths.
-- Queue requests use idempotency keys.
-- Submit uses optimistic version checking.
-- Exploration group activation is atomic and database-enforced.
-- Retry returns existing resources rather than duplicating them.
+- Session group activation is atomic and database-enforced.
+- Client-generated observation IDs prevent duplicate drafts.
+- Media and AI jobs use deterministic IDs/idempotency keys.
+- Submission uses optimistic version checks.
