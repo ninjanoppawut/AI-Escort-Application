@@ -1,36 +1,41 @@
 # สรุประบบ AI Escort Application ฉบับภาษาไทย
 
-เอกสารฉบับนี้เป็นสรุป Requirement และแนวทางพัฒนา MVP ล่าสุดในไฟล์เดียว เพื่อใช้สำหรับตรวจสอบแนวคิด ส่งต่อให้นักพัฒนา หรือให้ AI Coding Agent เริ่มสร้างระบบ
+เอกสารนี้เป็น Requirement ฉบับรวมล่าสุดสำหรับ MVP เพื่อใช้ตรวจสอบแนวคิด ส่งให้นักพัฒนา หรือให้ AI Coding Agent เริ่มพัฒนาระบบ โดยรวมทั้งระบบชั้นเรียน การสร้างกลุ่ม การแจ้งเตือน การสำรวจภาคสนาม การวิเคราะห์พืชด้วย Gemini และการตรวจงานของครู
 
 ---
 
 ## 1. เป้าหมายของระบบ
 
-AI Escort Application เป็นแอปพลิเคชันแบบ Mobile-first สำหรับจัดกิจกรรมสำรวจพืชในพื้นที่ที่ครูกำหนด นักเรียนเดินสำรวจจริง ถ่ายภาพพืช ส่งภาพให้ Gemini วิเคราะห์ชื่อพืชและลักษณะที่มองเห็น จากนั้นนักเรียนต้องตรวจสอบผลกับต้นพืชจริง แก้ไขข้อมูลที่ไม่ตรง และส่งให้ครูตรวจสอบด้วยตนเอง
+AI Escort Application เป็นเว็บแอปแบบ Mobile-first สำหรับจัดกิจกรรมสำรวจพืชในพื้นที่ที่ครูกำหนด นักเรียนทำงานเป็นกลุ่มเพื่อเดินสำรวจ แต่ Observation แต่ละรายการเป็นผลงานรายบุคคล
 
-AI ทำหน้าที่เป็นผู้ช่วยเสนอข้อมูล ไม่ใช่ผู้ยืนยันคำตอบสุดท้าย ครูเป็นผู้ตรวจและยืนยันผลขั้นสุดท้าย
+นักเรียนถ่ายภาพพืช ระบบบันทึกตำแหน่งและเวลา ส่งภาพให้ Gemini วิเคราะห์ชื่อและลักษณะที่มองเห็น จากนั้นนักเรียนต้องตรวจสอบผลกับต้นพืชจริง แก้ข้อมูลที่ไม่ตรง และ Submit ให้ครูตรวจด้วยตนเอง
 
-Flow หลัก:
+AI เป็นเพียงผู้ช่วยเสนอข้อมูล ไม่ใช่ผู้ยืนยันคำตอบสุดท้าย
+
+Flow หลักของระบบ:
 
 ```text
-ครูสร้างชั้นเรียน กิจกรรม เส้นทาง ขอบเขต และ Session
-→ นักเรียนเข้าชั้นเรียนและสร้าง/เข้าร่วมกลุ่ม
-→ ครูเปิดกลุ่มให้สำรวจทีละกลุ่ม
-→ นักเรียนเดินในพื้นที่ที่กำหนด
-→ นักเรียนถ่ายภาพพืช
-→ ระบบบันทึกตำแหน่ง GPS ความแม่นยำ และเวลาที่ถ่าย
-→ ส่งงานวิเคราะห์ภาพเข้า Queue
+ครูสร้าง Class และตั้งค่าการแบ่งกลุ่ม
+→ ครูเชิญนักเรียนด้วย Code / Link / QR
+→ นักเรียนเข้าร่วม Class
+→ นักเรียนบางคนสร้างกลุ่มและกลายเป็นหัวหน้ากลุ่ม
+→ หัวหน้ากลุ่มเชิญเพื่อนใน Class ผ่านการแจ้งเตือนในแอป
+→ เพื่อนกดยอมรับหรือปฏิเสธ
+→ ครูตรวจ จัดกลุ่ม ย้ายสมาชิก เปลี่ยนหัวหน้า และล็อกกลุ่ม
+→ ครูสร้าง Activity, Route, Boundary และ Session
+→ ระบบ Snapshot สมาชิกของแต่ละกลุ่มสำหรับ Session นั้น
+→ ครูเปิดให้สำรวจทีละหนึ่งกลุ่ม
+→ นักเรียนเดินในพื้นที่และสร้าง Observation ส่วนบุคคล
+→ ถ่ายภาพ 1–10 ภาพ พร้อมตำแหน่งและเวลา
+→ ส่งงานวิเคราะห์เข้า Queue
 → Gemini วิเคราะห์ชื่อและลักษณะพืช
-→ นักเรียนตรวจสอบข้อมูลกับต้นพืชจริง
-→ นักเรียนยืนยันหรือแก้ไขข้อมูล
-→ ระบบตรวจว่ามีพืชชนิดเดียวกันใน Session แล้วหรือไม่
-→ เตือนแต่ยังอนุญาตให้ส่ง
-→ นักเรียน Submit
-→ Marker แสดงบนแผนที่ฝั่งครู
-→ ครูตรวจ ยืนยัน แก้ไข ส่งกลับแก้ หรือปฏิเสธ
-→ หากส่งกลับ นักเรียนแก้ Observation เดิมและ Submit ใหม่
-→ ครูกดจบกิจกรรมด้วยตนเอง
-→ หลังจบ ครูและนักเรียนดูแผนที่ผลการสำรวจและกด Marker เพื่อดูรายละเอียดพืชได้
+→ นักเรียนตรวจสอบกับต้นจริงและแก้ไข
+→ ระบบเตือนหากมีพืชชนิดเดียวกันใน Session
+→ นักเรียนยัง Submit ได้
+→ Marker แสดงบนแผนที่ครูตามสถานะ
+→ ครูตรวจ ยืนยัน แก้ไข ส่งกลับ หรือปฏิเสธ
+→ ครูกดจบ Session ด้วยตนเอง
+→ ครูและนักเรียนดูแผนที่ผลลัพธ์และกด Marker ดูรายละเอียดพืช
 ```
 
 ---
@@ -41,88 +46,374 @@ Flow หลัก:
 
 นักเรียนสามารถ:
 
-- เข้าร่วม Class ด้วยรหัสหรือ Link
-- สร้างหรือเข้าร่วมกลุ่ม
-- ดูข้อมูลกิจกรรม เส้นทาง และขอบเขต
-- ดูเส้นทางล่วงหน้าในระหว่างรอกลุ่ม
-- ส่งตำแหน่งสดและสร้าง Observation เมื่อกลุ่มของตนเป็น `active`
-- สร้าง Observation ส่วนบุคคล
-- ถ่ายภาพ 1–10 ภาพต่อ Observation
-- รับผลวิเคราะห์จาก Gemini
-- ตรวจสอบลักษณะพืชกับต้นจริง
-- แก้ชื่อพืชและลักษณะที่ AI ระบุไม่ตรง
-- กรอกชื่อพืชภาษาไทย/ชื่อสามัญและชื่อวิทยาศาสตร์
-- ใช้แหล่งภายนอก เช่น Google Lens แล้วกรอกข้อมูลด้วยตนเองได้
-- รับคำเตือนเมื่อมีพืชชนิดเดียวกันใน Session
-- ส่ง Observation ซ้ำชนิดกันได้ เพราะเป็นผลงานรายบุคคล
-- แก้ไข Observation เดิมเมื่อครูส่งกลับ
+- เข้าร่วม Class ด้วย Code, Link หรือ QR
+- สร้างกลุ่มได้เมื่อครูเปิดการสร้างกลุ่มและยังมีช่องกลุ่มเหลือ
+- เป็นหัวหน้ากลุ่มโดยอัตโนมัติเมื่อสร้างกลุ่มสำเร็จ
+- เชิญเพื่อนใน Class ผ่านการแจ้งเตือนในแอป
+- ยอมรับหรือปฏิเสธคำเชิญเข้ากลุ่ม
+- อยู่ได้เพียงหนึ่งกลุ่มที่กำลังใช้งานใน Class เดียวกัน
+- ดู Route และข้อมูลกิจกรรมล่วงหน้า
+- ส่งตำแหน่งสดและสร้าง Observation เมื่อกลุ่มเป็น `active`
+- ถ่ายภาพพืช 1–10 ภาพ
+- รับผล Gemini และตรวจสอบกับต้นจริง
+- กรอกชื่อไทย/ชื่อสามัญ ชื่อวิทยาศาสตร์ และเหตุผลประกอบ
+- แก้ Observation เดิมเมื่อครูส่งกลับ
 - ดูแผนที่ผลการสำรวจหลังจบกิจกรรม
-- กด Marker เพื่อดูรายละเอียดพืช
 
-นักเรียนไม่สามารถ:
+### 2.2 หัวหน้ากลุ่ม
 
-- ส่งตำแหน่งหรือ Observation ระหว่างที่กลุ่มยังไม่ active
-- ยืนยันผลแทนครู
-- แก้ผลตรวจของครู
-- เห็นข้อมูลที่ไม่ได้รับอนุญาตจาก Class/Session อื่น
+นักเรียนผู้สร้างกลุ่มจะเป็นหัวหน้ากลุ่มคนแรกและเป็นหัวหน้าคนเดียวในเวลาเดียวกัน
 
-### 2.2 ครู
+หัวหน้ากลุ่มสามารถ:
+
+- ตั้งชื่อและแก้รายละเอียดกลุ่มก่อนล็อก
+- ค้นหาเพื่อนที่ยังไม่มีกลุ่มใน Class เดียวกัน
+- ส่งคำเชิญเข้ากลุ่ม
+- ยกเลิกคำเชิญที่ยังไม่ตอบ
+- นำสมาชิกออกก่อนกลุ่มถูกล็อก
+- โอนตำแหน่งหัวหน้าให้สมาชิกคนอื่น
+- แจ้งครูว่ากลุ่มพร้อม
+
+หัวหน้ากลุ่มไม่สามารถ:
+
+- สร้างกลุ่มที่สองใน Class เดียวกัน
+- บังคับเพิ่มเพื่อนโดยไม่ให้เพื่อนกดยอมรับ
+- เชิญคนที่อยู่กลุ่มอื่นแล้ว
+- เพิ่มสมาชิกเกินจำนวนสูงสุด
+- แต่งตั้งหัวหน้าพร้อมกันหลายคน
+- แก้สมาชิกระหว่าง Session ที่กำลังดำเนินการ
+- เปิดกลุ่มให้เริ่มสำรวจเอง
+
+### 2.3 ครู
 
 ครูสามารถ:
 
 - สร้างและจัดการ Class
-- เชิญนักเรียน
-- สร้างกลุ่มหรือจัดการสมาชิกกลุ่ม
-- สร้าง Activity, เส้นทาง, ขอบเขต และ Checkpoint
-- สร้าง เปิด พัก และจบ Session
-- เปิดให้มีเพียงหนึ่งกลุ่ม active ในเวลาเดียวกัน
-- ดูตำแหน่งสมาชิกแบบ Realtime
-- ดู Observation ที่นักเรียน Submit เป็น Marker บนแผนที่
-- เห็น Tag ว่าพืชชนิดนี้ถูกส่งมาแล้วใน Session เดียวกัน
-- กด Marker เพื่อดูภาพ ผล Gemini คำตอบนักเรียน ตำแหน่ง เวลา และประวัติ
-- ตรวจสอบด้วยตนเอง
-- ยืนยันชื่อพืช
-- แก้ชื่อสามัญ ชื่อวิทยาศาสตร์ หรือลักษณะพืช
-- ส่งกลับให้นักเรียนแก้ไข
-- ระบุว่าไม่สามารถยืนยันได้
-- ปฏิเสธ Observation
-- กดจบกิจกรรมด้วยตนเอง
-- ดูแผนที่หลังจบกิจกรรมและ Export ข้อมูล
+- ตั้งจำนวนสมาชิกขั้นต่ำ/สูงสุดต่อกลุ่ม
+- ตั้งจำนวนกลุ่มสูงสุด
+- เปิดหรือปิดการสร้างกลุ่มโดยนักเรียน
+- สร้าง ปิด เปลี่ยน หรือยกเลิก Class Invite
+- ดูทุกกลุ่มและนักเรียนที่ยังไม่มีกลุ่ม
+- สร้างกลุ่มแทนนักเรียน
+- ย้ายสมาชิกระหว่างกลุ่ม
+- เปลี่ยนหัวหน้ากลุ่ม
+- อนุมัติ ล็อก หรือปลดล็อกกลุ่ม
+- ลบกลุ่มที่ยังไม่เคยใช้งาน
+- Archive กลุ่มที่มีประวัติ Session แล้ว
+- รวม/จัดใหม่กลุ่มที่สมาชิกไม่ครบ
+- สร้าง Activity, Route, Boundary, Checkpoint และ Session
+- เปิดให้มีเพียงหนึ่งกลุ่มสำรวจในเวลาเดียวกัน
+- ดูตำแหน่งสมาชิกและ Marker ของ Observation
+- ตรวจและแก้ผลพืชด้วยตนเอง
+- ส่งกลับให้นักเรียนแก้ Observation เดิม
+- กดจบ Session ด้วยตนเอง
 
-### 2.3 Admin
+### 2.4 Admin
 
-Admin จัดการระบบระดับ Platform เช่น ผู้ใช้ โรงเรียน การตั้งค่าระบบ AI และ Audit Log แต่การเข้าถึงข้อมูล Class ต้องมีการควบคุมอย่างชัดเจน ไม่ใช่ให้หน้า UI ทั่วไปมองเห็นทุกอย่างโดยอัตโนมัติ
+Admin จัดการระบบระดับ Platform เช่น ผู้ใช้ โรงเรียน AI Provider การตั้งค่า และ Audit Log แต่ยังต้องมีการควบคุมสิทธิ์ตามโรงเรียนและ Class
 
 ---
 
-## 3. โครงสร้างหลักของระบบ
+## 3. การสร้าง Class และเชิญนักเรียน
+
+ตอนสร้าง Class ครูกำหนด:
+
+- ชื่อ Class
+- วิชา
+- ปีการศึกษาและภาคเรียน
+- รายละเอียด
+- จำนวนสมาชิกขั้นต่ำต่อกลุ่ม
+- จำนวนสมาชิกสูงสุดต่อกลุ่ม
+- จำนวนกลุ่มสูงสุด
+- อนุญาตให้นักเรียนสร้างกลุ่มหรือไม่
+- สถานะการสร้างกลุ่ม `open` หรือ `closed`
+
+ครูจะถูกเพิ่มเป็นสมาชิก Role `teacher` โดยอัตโนมัติ
+
+ระบบเชิญนักเรียนรองรับ:
+
+- Class Code
+- Invitation Link
+- QR Code
+
+Invite สามารถกำหนดวันหมดอายุ จำนวนครั้งที่ใช้ได้ และปิดการใช้งานได้
+
+การ Join ต้องทำผ่าน Server/RPC ที่ตรวจ Invite และสร้าง Role เป็น `student` เท่านั้น นักเรียนไม่สามารถเลือก Role หรือกรอก Class ID เองเพื่อข้ามระบบได้
+
+---
+
+## 4. การสร้างกลุ่มโดยนักเรียน
+
+นักเรียนกดสร้างกลุ่มได้เมื่อครบทุกเงื่อนไข:
 
 ```text
-School
- └─ Class
-     ├─ Class Members
-     ├─ Groups
-     └─ Activities
-         ├─ Route
-         ├─ Boundary
-         ├─ Checkpoints
-         └─ Exploration Sessions
-             ├─ Session Groups
-             ├─ Session Participants
-             ├─ Live Locations
-             ├─ Individual Observations
-             ├─ Gemini Analyses
-             ├─ Student Submissions/Revisions
-             └─ Teacher Reviews
+เป็น Student ที่ active ใน Class
+AND ครูอนุญาตให้นักเรียนสร้างกลุ่ม
+AND สถานะการสร้างกลุ่มเป็น open
+AND นักเรียนยังไม่อยู่กลุ่มใด
+AND นักเรียนยังไม่เคยใช้สิทธิ์สร้างกลุ่มใน Class นี้
+AND จำนวนกลุ่มปัจจุบันยังไม่ถึง maximum_groups
 ```
 
-- **Activity** คือแผนกิจกรรมที่นำกลับมาใช้ใหม่ได้
-- **Session** คือการดำเนิน Activity จริงในวันและเวลาหนึ่ง
-- **Observation** เป็นผลงานของนักเรียนหนึ่งคน ไม่ใช่ของกลุ่ม
+เมื่อสร้างสำเร็จ:
+
+- กลุ่มถูกสร้าง
+- ผู้สร้างเป็น `leader`
+- เพิ่มสมาชิกผู้สร้างเข้าในกลุ่ม
+- บันทึกสิทธิ์ว่าเคยสร้างกลุ่มแล้ว
+- ส่ง Realtime Event ให้หน้าจอของทุกคน Refetch
+
+เมื่อจำนวนกลุ่มครบสูงสุด ปุ่ม **สร้างกลุ่ม** ต้องเป็น Disabled พร้อมข้อความอธิบาย ไม่ควรหายไปแบบไม่มีเหตุผล
+
+ตัวอย่าง:
+
+```text
+ไม่สามารถสร้างกลุ่มเพิ่มได้
+จำนวนกลุ่มครบตามที่ครูกำหนดแล้ว
+กรุณาเข้าร่วมกลุ่มที่มีอยู่หรือรอคำเชิญ
+```
 
 ---
 
-## 4. กฎหนึ่งกลุ่ม Active
+## 5. ป้องกันการแย่งสร้างกลุ่มสุดท้าย
+
+กรณีเหลือช่องกลุ่มสุดท้ายและนักเรียนสองคนกดพร้อมกัน Realtime อย่างเดียวไม่สามารถป้องกัน Race Condition ได้
+
+ต้องใช้ RPC/Transaction:
+
+```text
+create_student_group(class_id, name, description)
+```
+
+ภายใน Transaction:
+
+1. Lock Row การตั้งค่า Class
+2. ตรวจสิทธิ์นักเรียน
+3. ตรวจว่ายังไม่มีกลุ่ม
+4. ตรวจว่ายังไม่เคยสร้างกลุ่ม
+5. นับจำนวนกลุ่มปัจจุบัน
+6. ถ้ายังมีช่อง ให้สร้างกลุ่มและหัวหน้า
+7. Commit
+8. Broadcast ว่ามีกลุ่มใหม่
+
+ผลลัพธ์:
+
+```text
+Student A → สร้างสำเร็จ
+Student B → GROUP_LIMIT_REACHED
+```
+
+Student B ต้อง Refetch และเห็นว่าช่องสุดท้ายถูกใช้ไปแล้ว
+
+หลักการสำคัญ:
+
+```text
+Database Transaction = ความถูกต้อง
+Realtime = อัปเดตหน้าจออย่างรวดเร็ว
+```
+
+---
+
+## 6. การเชิญเพื่อนเข้ากลุ่ม
+
+หัวหน้ากลุ่มสามารถเลือกได้เฉพาะเพื่อนที่:
+
+- อยู่ Class เดียวกัน
+- Membership เป็น active
+- ยังไม่อยู่กลุ่มอื่น
+- กลุ่มปลายทางยังไม่เต็ม
+- ยังไม่มีคำเชิญ Pending ซ้ำ
+
+หัวหน้าส่งคำเชิญผ่านระบบ นักเรียนปลายทางได้รับ Notification และเลือก:
+
+```text
+ยอมรับ
+ปฏิเสธ
+```
+
+สถานะคำเชิญ:
+
+```text
+pending
+accepted
+declined
+cancelled
+expired
+```
+
+ตอนกดยอมรับ ระบบต้องตรวจซ้ำอีกครั้งว่านักเรียนยังไม่มีกลุ่มและกลุ่มยังไม่เต็ม เพราะข้อมูลอาจเปลี่ยนหลังจากส่งคำเชิญ
+
+---
+
+## 7. กฎกลุ่มและหัวหน้ากลุ่ม
+
+กฎที่ต้องบังคับในฐานข้อมูล:
+
+1. หนึ่งกลุ่มมีหัวหน้า active ได้เพียงหนึ่งคน
+2. นักเรียนอยู่ได้เพียงหนึ่งกลุ่ม active/forming ต่อหนึ่ง Class
+3. นักเรียนสร้างกลุ่มได้เพียงหนึ่งครั้งต่อ Class เว้นแต่ครู Reset สิทธิ์อย่างชัดเจน
+4. จำนวนกลุ่มต้องไม่เกิน `maximum_groups`
+5. จำนวนสมาชิกต้องไม่เกิน `max_group_size`
+6. กลุ่มที่มีสมาชิกต้องไม่ถูกปล่อยให้ไม่มีหัวหน้า
+
+ตัวอย่าง Index:
+
+```sql
+create unique index one_active_leader_per_group
+on group_members(group_id)
+where role = 'leader' and status = 'active';
+
+create unique index one_active_group_per_student_per_class
+on group_members(class_id, user_id)
+where status = 'active';
+```
+
+Lifecycle ของกลุ่ม:
+
+```text
+forming → ready → approved → locked → archived
+```
+
+---
+
+## 8. ครูย้ายสมาชิกและจัดการกลุ่ม
+
+### ย้ายสมาชิก
+
+ครูย้ายสมาชิกไปกลุ่มอื่นได้เมื่อ:
+
+- Source และ Destination อยู่ Class เดียวกัน
+- กลุ่มปลายทางยังไม่เต็ม
+- นักเรียนไม่ได้กำลังเข้าร่วม Session ที่ active
+- การย้ายไม่ทำให้กลุ่มเดิมที่มีสมาชิกเหลืออยู่ไม่มีหัวหน้า
+
+ถ้านักเรียนที่ย้ายเป็นหัวหน้า ครูต้อง:
+
+- เลือกหัวหน้าคนใหม่ หรือ
+- ย้ายสมาชิกที่เหลือ หรือ
+- ลบ/Archive กลุ่มถ้ากลุ่มว่าง
+
+เมื่อย้ายสำเร็จ:
+
+- สมาชิกกลุ่มปัจจุบันเปลี่ยน
+- ทุกหน้าจอ Refetch ผ่าน Realtime
+- นักเรียนได้รับ Notification
+- บันทึก Audit และ Membership History
+
+### ลบกลุ่ม
+
+ถ้ากลุ่มยังไม่เคยถูกใช้ใน Session:
+
+- ครูลบได้แบบ Soft Delete
+- ยกเลิกคำเชิญ Pending
+- สมาชิกกลับเป็นยังไม่มีกลุ่ม หรือย้ายตามที่ครูกำหนด
+- ช่องจำนวนกลุ่มกลับมาเพิ่มหนึ่งช่อง
+- แจ้งเตือนสมาชิก
+
+ถ้ากลุ่มเคยถูกใช้ใน Session:
+
+- ห้าม Hard Delete
+- เปลี่ยนเป็น `archived`
+- เก็บชื่อกลุ่ม สมาชิกเดิม Observation และข้อมูลวิจัยไว้
+
+ระหว่าง Session ที่ active การย้าย ลบ เปลี่ยนหัวหน้า หรือแก้สมาชิกแบบปกติต้องถูก Block
+
+---
+
+## 9. Snapshot สมาชิกเมื่อเปิด Session
+
+เมื่อครูเปิด Session ระบบต้อง Copy สมาชิกและ Role ของแต่ละกลุ่มไปยัง `session_participants`
+
+```text
+group_members = สมาชิกปัจจุบันสำหรับ Session ในอนาคต
+session_participants = สมาชิกจริงของ Session นั้นในอดีต
+```
+
+หากครูย้ายนักเรียนหลังจบ Session ประวัติ Session เดิมต้องไม่เปลี่ยน
+
+---
+
+## 10. การแจ้งเตือนภายในแอป
+
+MVP ใช้ In-app Notification ไม่ต้องใช้ Email
+
+ระบบเก็บ Notification เป็น Row ใน PostgreSQL เพื่อให้นักเรียนเปิดแอปภายหลังแล้วยังเห็น และใช้ Realtime ส่งสัญญาณให้หน้าจออัปเดตทันที
+
+ตัวอย่าง Notification นักเรียน:
+
+- ได้รับคำเชิญเข้ากลุ่ม
+- คำเชิญถูกยอมรับ/ปฏิเสธ
+- ถูกย้ายไปกลุ่มใหม่
+- ได้รับหรือถูกโอนตำแหน่งหัวหน้า
+- กลุ่มถูกอนุมัติ ล็อก ปลดล็อก ลบ หรือ Archive
+- กลุ่มกำลังจะได้สำรวจหรือถูกเปิดเป็น active
+- ครูส่ง Observation กลับให้แก้
+- ครูยืนยันหรือปฏิเสธ Observation
+- Session จบแล้ว
+
+ตัวอย่าง Notification ครู:
+
+- นักเรียน Join Class
+- กลุ่มมีสมาชิกครบขั้นต่ำ
+- กลุ่มพร้อมให้ตรวจ
+- มี Observation ใหม่หรือ Resubmit
+- พบพืชชนิดเดียวกันอีกครั้งใน Session
+- มีเหตุการณ์ตำแหน่งสำคัญ
+
+RLS ต้องให้ผู้ใช้เห็นและ Mark Read ได้เฉพาะ Notification ของตนเอง
+
+---
+
+## 11. Realtime สำหรับหน้ากลุ่ม
+
+ไม่ควร Refetch ทุก 5 วินาทีเป็นหลัก
+
+ใช้ Flow:
+
+```text
+เปิดหน้ากลุ่ม
+→ Initial Fetch จาก Database
+→ Subscribe private channel class:{classId}:groups
+→ มีกลุ่ม/สมาชิก/หัวหน้าเปลี่ยน
+→ รับ Realtime Signal
+→ Invalidate และ Refetch ข้อมูลจริง
+```
+
+Refetch เพิ่มเมื่อ:
+
+- App/Browser กลับมา Foreground
+- Internet กลับมา
+- Realtime Reconnect
+- Mutation สำเร็จหรือล้มเหลว
+
+สามารถมี Fallback Poll ทุก 30–60 วินาทีได้ แต่ไม่จำเป็นถ้า Realtime และ Reconnect ทำงานครบ
+
+Channel ที่ใช้:
+
+```text
+class:{classId}:groups
+user:{userId}:notifications
+```
+
+Event ตัวอย่าง:
+
+```text
+group.created
+group.deleted
+group.archived
+group.member_joined
+group.member_moved
+group.leader_changed
+group.invitation_changed
+group.formation_changed
+notification.created
+```
+
+Event เป็นเพียงสัญญาณให้ Refetch ไม่ใช่ข้อมูลที่ใช้ตัดสินสิทธิ์หรือจำนวนกลุ่มโดยตรง
+
+---
+
+## 12. กฎหนึ่งกลุ่ม Active ใน Session
 
 ใน Session เดียวกันมีเพียงหนึ่งกลุ่มที่เป็น `active` ได้ในเวลาเดียวกัน
 
@@ -132,34 +423,32 @@ on exploration_session_groups(session_id)
 where status = 'active';
 ```
 
-กฎนี้ต้องบังคับที่ PostgreSQL ไม่ใช่เช็กเฉพาะหน้าเว็บ
-
 กลุ่มที่รอ:
 
-- ดูเส้นทางและข้อมูลกิจกรรมได้
+- ดู Route ได้
 - ยังส่งตำแหน่งสดไม่ได้
 - ยังสร้างหรือ Submit Observation ไม่ได้
 
-การสลับกลุ่มต้องทำผ่าน Transaction/RPC เดียว เพื่อไม่ให้ครูสองคนเปิดคนละกลุ่มพร้อมกัน
+การสลับกลุ่มต้องทำผ่าน Transaction/RPC เดียว
 
 ---
 
-## 5. Flow การสร้าง Observation
+## 13. Flow การสร้าง Observation
 
-### ขั้นที่ 1 เริ่ม Observation
+### เริ่ม Observation
 
-เมื่อนักเรียนพบพืชและกดเพิ่ม Observation ระบบบันทึก:
+ระบบบันทึก:
 
-- นักเรียนผู้สร้าง
+- ผู้สร้าง
 - Class / Activity / Session / Group
 - `capture_location`
 - `capture_accuracy_m`
 - `captured_at`
-- `client_generated_id` สำหรับ Offline/Retry
+- `client_generated_id`
 
-ตำแหน่งที่แสดง Marker คือ **ตำแหน่งตอนถ่าย/เริ่ม Observation** ไม่ใช่ตำแหน่งตอน Submit
+ตำแหน่ง Marker ใช้ตำแหน่งตอนถ่าย ไม่ใช้ตำแหน่งตอน Submit
 
-### ขั้นที่ 2 ถ่ายภาพ
+### ภาพ
 
 Observation หนึ่งรายการ:
 
@@ -167,7 +456,7 @@ Observation หนึ่งรายการ:
 - สูงสุด 10 ภาพ
 - ต้องมีภาพทั้งต้นอย่างน้อย 1 ภาพ
 
-หมวดภาพที่รองรับ:
+หมวดภาพ:
 
 ```text
 whole_plant
@@ -180,31 +469,17 @@ habitat
 other
 ```
 
-### ขั้นที่ 3 เตรียมภาพก่อน Upload
+ก่อน Upload:
 
-บนอุปกรณ์นักเรียน ระบบควร:
-
-1. แก้ Orientation ของภาพ
-2. เก็บเวลาถ่ายในฐานข้อมูลแยกจาก EXIF
-3. หากด้านยาวเกิน 2,048 px ให้ Resize
-4. Compress คุณภาพประมาณ 82–85
-5. จำกัดไฟล์ที่ผ่านการประมวลผลไม่เกิน 5 MB ต่อภาพ
-6. Upload เข้า Supabase Storage แบบ Private
-
-ขนาดแสดงผลที่แนะนำ:
-
-```text
-Marker preview: 256 px
-Observation list: 512 px
-Teacher review: 1,200 px
-Gemini/ภาพหลัก: สูงสุด 2,048 px
-```
+- แก้ Orientation
+- Resize ด้านยาวไม่เกิน 2,048 px
+- Compress คุณภาพประมาณ 82–85
+- จำกัดไม่เกิน 5 MB ต่อภาพ
+- Upload เข้า Private Supabase Storage
 
 ---
 
-## 6. Worker สำหรับ Gemini
-
-Gemini ไม่ควรทำงานผ่าน Request ที่ต้องเปิดหน้าเว็บค้างไว้
+## 14. Gemini และ Worker
 
 MVP ใช้:
 
@@ -221,119 +496,56 @@ Upload ภาพสำเร็จ
 → สร้าง ai_analysis_run
 → ส่ง Job เข้า Queue
 → Edge Function รับ Job
-→ โหลดภาพ Private ที่ได้รับอนุญาต
 → ส่ง Gemini
-→ ตรวจ JSON ที่ตอบกลับ
+→ Validate JSON
 → บันทึกผลแบบ Versioned
 → อัปเดตสถานะ
-→ แจ้ง Client ผ่าน Realtime/Database State
+→ แจ้ง Client
 ```
 
-ถ้า Gemini ล้มเหลว:
-
-- Draft ต้องไม่หาย
-- นักเรียนกด Retry ได้
-- นักเรียนกรอกข้อมูลด้วยตนเองได้
-- นักเรียนใช้ Google Lens ภายนอกแล้วกลับมากรอกได้
-
-สิ่งที่ยังไม่จำเป็นใน MVP:
-
-- Redis/BullMQ
-- Worker Server แยก
-- Kubernetes
-- GPU Server
-
----
-
-## 7. ผลลัพธ์จาก Gemini
-
-Gemini ต้องตอบกลับในรูปแบบ Structured JSON ที่มี Version ห้ามใช้ข้อความอิสระอย่างเดียว
-
-โครงสร้างจริงจะกำหนดอีกครั้งตอนเชื่อม Gemini แต่ต้องรองรับข้อมูลต่อไปนี้:
-
-```json
-{
-  "schemaVersion": "plant-analysis-v1",
-  "identificationStatus": "possible_match",
-  "candidates": [
-    {
-      "commonNameTh": "มะม่วง",
-      "commonNameEn": "Mango",
-      "scientificName": "Mangifera indica",
-      "confidence": 0.87,
-      "evidenceSummary": "ลักษณะใบและลำต้นสอดคล้องบางส่วน"
-    }
-  ],
-  "traits": {
-    "plantType": {"value": "ไม้ต้น", "visibility": "visible"},
-    "leafType": {"value": "ใบเดี่ยว", "visibility": "visible"},
-    "leafArrangement": {"value": "เรียงสลับ", "visibility": "uncertain"},
-    "flower": {"value": null, "visibility": "not_visible"}
-  },
-  "missingEvidence": ["leaf_underside"],
-  "disclaimer": "ผลลัพธ์เป็นข้อเสนอเบื้องต้น"
-}
-```
-
-ทุก AI Run ต้องเก็บ:
+เก็บ:
 
 - Provider
 - Model
 - Prompt Version
 - Response Schema Version
-- สถานะ Queue/Run
-- เวลาเริ่มและเวลาจบ
-- จำนวนครั้งที่ Retry
-- Error Code
-- Usage Metadata ที่จำเป็น
+- เวลาและสถานะ
+- ผลแบบ JSONB
 
-หากภาพไม่เห็นดอก ผล หรือลักษณะใด Gemini ต้องตอบ `null` หรือ `not_visible` ห้ามเดาข้อมูล
+ถ้า Gemini ล้มเหลว:
 
-### Confidence เริ่มต้น
+- Draft ไม่หาย
+- Retry ได้
+- นักเรียนกรอกเองได้
+- นักเรียนใช้ Google Lens หรือแหล่งภายนอกได้
 
-```text
-ต่ำกว่า 0.40
-→ แจ้งว่าหลักฐานไม่พอและขอภาพเพิ่ม
+ก่อน Submit นักเรียนยังต้องกรอก:
 
-0.40–0.70
-→ แสดงหลาย Candidate และลักษณะที่ใช้แยก
+- ชื่อไทย/ชื่อสามัญ
+- ชื่อวิทยาศาสตร์
+- เหตุผลหรือหลักฐานสั้น ๆ
 
-มากกว่า 0.70
-→ เน้น Candidate แรก แต่ยังต้องแสดงว่าเป็นผลชั่วคราว
-```
-
-Threshold ต้องแก้ได้ภายหลัง
+ไม่อนุญาตให้ Submit เป็น `Unknown`
 
 ---
 
-## 8. การตรวจสอบโดยนักเรียน
-
-นักเรียนต้องเทียบผล Gemini กับต้นพืชจริง
+## 15. นักเรียนตรวจผล Gemini
 
 แต่ละลักษณะเลือกได้:
 
 ```text
-match       = ตรง
-not_match   = ไม่ตรง
-unsure      = ไม่แน่ใจ
-not_visible = มองไม่เห็น
+match
+not_match
+unsure
+not_visible
 ```
 
-ถ้าเลือก `not_match` นักเรียนสามารถใส่ค่าที่แก้ไขและหมายเหตุได้
+ถ้า `not_match` นักเรียนสามารถกรอกค่าที่ถูกต้องและหมายเหตุ
 
-ตัวอย่าง:
+ต้องเก็บแยก:
 
-```text
-Gemini: ใบเรียงสลับ
-นักเรียน: ไม่ตรง
-ค่าที่แก้: ใบเรียงตรงข้าม
-หมายเหตุ: ตรวจจากกิ่งจริงแล้ว
-```
-
-ระบบต้องเก็บแยก:
-
-- ผล Gemini
-- ผลตรวจของนักเรียน
+- ค่า Gemini
+- ผลตรวจนักเรียน
 - ค่าที่นักเรียนแก้
 - Submission แต่ละ Version
 - ผลตรวจและค่าที่ครูแก้
@@ -342,64 +554,37 @@ Gemini: ใบเรียงสลับ
 
 ---
 
-## 9. ข้อมูลบังคับก่อน Submit
+## 16. การตรวจชนิดพืชซ้ำ
 
-ก่อน Submit นักเรียนต้องมี:
-
-- ภาพทั้งต้นอย่างน้อย 1 ภาพ
-- ภาพรวมทั้งหมดไม่เกิน 10 ภาพ
-- ชื่อพืชภาษาไทยหรือชื่อสามัญ
-- ชื่อวิทยาศาสตร์
-- ข้อความสั้นอธิบายหลักฐาน
-- ผลตรวจลักษณะจาก Gemini หรือระบุว่าใช้ Manual Entry
-- ยอมรับคำเตือนพืชชนิดเดียวกัน หากระบบพบ
-
-ระบบไม่อนุญาตให้ใช้ `Unknown` เป็นคำตอบสุดท้าย นักเรียนต้องหาข้อมูลให้ได้ อาจเลือกจาก Gemini หรือใช้ Google Lens/แหล่งข้อมูลอื่นแล้วกรอกเอง
-
----
-
-## 10. การตรวจพืชซ้ำ
-
-ระบบต้องแยกเป็น 2 แบบ
-
-### 10.1 พืชชนิดเดียวกันใน Session
-
-หลังนักเรียนเลือกหรือกรอกชื่อ ระบบค้นหา Observation ที่ Submit แล้วใน Session เดียวกัน
+ระบบตรวจ Observation ที่ Submit แล้วใน Session เดียวกัน
 
 หากพบชนิดเดียวกัน:
 
-- แจ้งนักเรียนว่ามีชนิดนี้แล้ว
-- แสดงรายการที่เกี่ยวข้องเมื่อมีสิทธิ์
-- ยังอนุญาตให้ Submit เพราะเป็นผลงานรายบุคคล
-- บันทึกว่า Student รับทราบ
-- ตั้งค่า `same_species_in_session = true`
-- แสดง Tag ให้ครูเห็นบน Review/Marker Detail
+- เตือนนักเรียน
+- แสดงรายการที่เกี่ยวข้องตามสิทธิ์
+- ยังอนุญาตให้ Submit
+- ใส่ Tag `same_species_in_session`
+- สร้าง Notification ให้ครู
+- แสดง Tag ใน Marker และหน้ารายละเอียด
 
-ห้าม Block การส่ง
+ต้องแยก:
 
-### 10.2 อาจเป็นต้นเดียวกัน
+```text
+same_species = ชนิดเดียวกัน
+possible_same_specimen = อาจเป็นต้นเดียวกัน
+```
 
-ใช้ข้อมูลหลายปัจจัยร่วมกัน:
-
-- ชนิดพืช
-- ลักษณะทางสัณฐาน
-- ความคล้ายของภาพ
-- ระยะห่างตำแหน่ง
-- ช่วงเวลาที่ถ่าย
-
-ห้ามใช้ระยะห่างอย่างเดียว
-
-ระบบแค่เสนอว่าอาจเป็นต้นเดียวกัน ห้าม Merge, Delete หรือ Reject อัตโนมัติ หากคนยืนยันว่าเป็นต้นเดียวกัน Observation หลายรายการยังคงอยู่ได้ และอ้างถึง `specimen_id` เดียวกัน
+การตรวจต้นเดียวกันอาจใช้ชนิดพืช ลักษณะ ภาพ ตำแหน่ง และเวลา ระยะห่างอย่างเดียวไม่พอ และห้ามรวม/ลบ Observation อัตโนมัติ
 
 ---
 
-## 11. สถานะ Observation
+## 17. ครูตรวจ Observation
+
+สถานะหลัก:
 
 ```text
 draft
-→ images_uploading
-→ analysis_queued
-→ analysis_running
+→ analysis
 → student_review
 → submitted
 → teacher_review
@@ -409,210 +594,70 @@ draft
    └─ rejected
 ```
 
-ถ้าครูส่งกลับ:
+ครูสามารถ:
 
-```text
-revision_required
-→ student_review
-→ resubmitted
-→ teacher_review
-```
+- ยืนยัน
+- แก้ชื่อไทย/ชื่อสามัญ
+- แก้ชื่อวิทยาศาสตร์
+- แก้ลักษณะพืช
+- ส่งกลับให้แก้
+- ระบุว่ายืนยันไม่ได้
+- ปฏิเสธ
 
-นักเรียนแก้ Observation เดิม ไม่สร้างรายการใหม่ แต่ระบบสร้าง Submission Version ใหม่และเก็บ Version เดิมไว้
-
----
-
-## 12. การตรวจของครู
-
-ครูเห็นข้อมูล:
-
-- Marker ตำแหน่งตอนถ่าย
-- GPS Accuracy
-- เวลาถ่าย
-- ภาพ 1–10 ภาพ
-- ผล Gemini
-- Confidence
-- สิ่งที่นักเรียนกดตรง/ไม่ตรง/ไม่แน่ใจ/มองไม่เห็น
-- ค่าที่นักเรียนแก้
-- ชื่อพืชที่นักเรียน Submit
-- Evidence Note
-- Tag ว่าพืชชนิดเดียวกันอยู่ใน Session แล้ว
-- รายการที่เกี่ยวข้อง
-- Submission และ Review History
-
-ครูเลือก:
-
-```text
-verified
-revision_required
-unable_to_verify
-rejected
-```
-
-ครูสามารถแก้:
-
-- ชื่อภาษาไทย/ชื่อสามัญ
-- ชื่อวิทยาศาสตร์
-- ลักษณะพืช
-- Feedback
-
-ค่าที่ครูแก้ต้องเก็บแยก ไม่เขียนทับผล Gemini หรือนักเรียน
+ถ้าส่งกลับ นักเรียนแก้ Observation เดิมและ Resubmit โดยสร้าง Submission Version ใหม่
 
 ---
 
-## 13. แผนที่ระหว่างกิจกรรม
+## 18. แผนที่ระหว่างและหลังจบกิจกรรม
 
-### ฝั่งครู
+Draft ไม่แสดงบนแผนที่ครู
 
-Observation ที่ Submit แล้วจะแสดงเป็น Marker ที่ `capture_location`
-
-Draft ของนักเรียนยังไม่แสดง
-
-สถานะ Marker แนะนำ:
+Marker ใช้ตำแหน่งตอนถ่ายและสีตามสถานะ:
 
 ```text
-submitted / teacher_review = สีเหลืองอำพัน
-revision_required          = สีแดง
-resubmitted                = สีฟ้า
-verified                   = สีเขียว
-unable_to_verify           = สีม่วง
-rejected                   = สีเทา
+submitted / teacher_review = เหลืองอำพัน
+revision_required = แดง
+resubmitted = น้ำเงิน
+verified = เขียว
+unable_to_verify = ม่วง
+rejected = เทา
 ```
 
-ต้องมี Icon/ข้อความ/รูปทรงร่วมด้วย ไม่ใช้สีอย่างเดียว
+ต้องมี Icon/ข้อความร่วมกับสีเพื่อ Accessibility
 
-เมื่อกด Marker เปิด Plant Detail Panel
-
-### ฝั่งนักเรียน
-
-นักเรียนเห็นเส้นทาง ขอบเขต จุดตรวจ ตำแหน่งตนเอง/สมาชิกตามสิทธิ์ และ Observation ที่อนุญาตให้ดู
-
----
-
-## 14. แผนที่หลังจบกิจกรรม
-
-ครูเป็นผู้กด Complete ด้วยตนเอง ไม่มีเงื่อนไขจบอัตโนมัติ
-
-หลังจบ:
-
-- ครูดูแผนที่ผลการสำรวจได้
-- นักเรียนที่เข้าร่วมดูแผนที่ผลการสำรวจได้
-- Marker ใช้ตำแหน่งตอนถ่าย
-- กด Marker เปิดรายละเอียดพืชได้
-
-รายละเอียด Marker ประกอบด้วย:
+เมื่อกด Marker แสดง:
 
 - ภาพหลักและ Gallery
-- ชื่อที่นักเรียนส่ง
-- ชื่อที่ครูยืนยัน หากมี
-- ตำแหน่ง ความแม่นยำ และเวลาถ่าย
+- ชื่อนักเรียนตามสิทธิ์
+- ชื่อไทย/ชื่อสามัญ
+- ชื่อวิทยาศาสตร์
+- ชื่อที่ครูยืนยัน
+- เวลาและ GPS Accuracy
 - ผล Gemini
-- คำตอบและค่าที่นักเรียนแก้
-- Feedback/ผลตรวจของครู
-- Same-species Tag
-- Observation ที่เกี่ยวข้อง
+- ผลตรวจ/ค่าที่นักเรียนแก้
+- ประวัติการ Submit
+- ผลตรวจครู
+- Tag ชนิดพืชซ้ำ
 
-ข้อมูลตำแหน่งสดย้อนหลังของนักเรียนไม่จำเป็นต้องแสดงในหน้าผลลัพธ์
-
----
-
-## 15. GPS และ Offline
-
-### GPS ใช้งานไม่ได้
-
-1. แจ้งให้นักเรียนรอและ Retry
-2. หากยังไม่ได้ ให้สร้าง Draft ที่ติด Flag ว่าไม่มีตำแหน่ง
-3. ครูเป็นผู้จัดการ/ยอมรับกรณีดังกล่าว
-4. ห้ามสร้างพิกัดปลอม
-
-### Offline
-
-ใช้ IndexedDB เก็บ:
-
-- Observation Draft
-- Client-generated UUID
-- ภาพรอ Upload
-- Upload Retry
-- AI Job State
-- Research Event ที่ยังไม่ Sync
-
-การ Retry ต้อง Idempotent ห้ามสร้าง Observation หรือภาพซ้ำ
+หลังครูกดจบ Session ครูและนักเรียนที่เข้าร่วมสามารถเปิดแผนที่ผลลัพธ์และดูรายละเอียดพืชได้
 
 ---
 
-## 16. JSONB และโครงสร้างข้อมูล
-
-ใช้ Column ปกติสำหรับข้อมูลที่ต้อง Query, Join, ทำ RLS หรือแสดง Marker เช่น:
-
-```text
-observer_id
-class_id
-activity_id
-session_id
-status
-capture_location
-captured_at
-student_common_name
-student_scientific_name
-teacher_verified_name
-```
-
-ใช้ `jsonb` สำหรับข้อมูลที่ยืดหยุ่น เช่น:
-
-```text
-Gemini normalized result
-Additional traits
-Student verification snapshot
-Teacher corrected traits
-Device context
-Research event payload
-```
-
-ไม่ควรเก็บ Lifecycle ทั้งหมดใน JSON ก้อนเดียว เพราะจะ Query, RLS และรักษาประวัติยาก
-
----
-
-## 17. Research Event Log
-
-ระบบต้องเก็บ Event สำคัญแบบ Append-only เช่น:
-
-```text
-session_joined
-observation_started
-photo_captured
-image_uploaded
-ai_analysis_queued
-ai_analysis_completed
-ai_analysis_failed
-student_reviewed_ai_result
-student_corrected_ai_trait
-same_species_warning_shown
-observation_submitted
-teacher_requested_revision
-observation_resubmitted
-teacher_verified
-session_completed
-map_marker_opened
-```
-
-ตาราง Event มี ID ความสัมพันธ์เป็น Column และรายละเอียดที่เปลี่ยนแปลงได้ใน `payload jsonb`
-
-ตัวแปรงานวิจัยสุดท้ายยังไม่ถูกล็อก แต่โครงนี้ทำให้ Export วิเคราะห์ภายหลังได้โดยไม่ต้องสร้างระบบใหม่
-
----
-
-## 18. Database หลัก
+## 19. ตารางหลักที่ควรมี
 
 ```text
 profiles
-schools
-school_memberships
 classes
 class_members
 class_invites
 
 groups
 group_members
+group_invitations
+student_group_creation_claims
+group_membership_history
+notifications
+
 activities
 activity_routes
 activity_boundaries
@@ -622,7 +667,6 @@ exploration_sessions
 exploration_session_groups
 session_participants
 location_events
-location_tracks
 
 observations
 observation_media
@@ -635,156 +679,75 @@ observation_status_history
 observation_duplicate_candidates
 specimens
 research_events
+audit_logs
 ```
 
+ใช้ Column ปกติสำหรับ Ownership, Role, Status, Group, Location, Time และข้อมูลที่ Query บ่อย ใช้ `jsonb` สำหรับ Gemini Result, Trait เพิ่มเติม, Snapshot, Notification Context และ Research Event Payload
+
 ---
 
-## 19. Security และ RLS
+## 20. Security และ RLS
 
-- ทุก Table ใน Public/Exposed Schema ต้องเปิด RLS
-- Role ใน UI ไม่เพียงพอ ต้องตรวจ Membership ในฐานข้อมูล
-- นักเรียนแก้ได้เฉพาะ Observation ของตนในสถานะที่อนุญาต
-- นักเรียนแก้ Submission Version เก่าหรือ Teacher Review ไม่ได้
-- ครูตรวจได้เฉพาะ Class ที่ตนสอน
+- เปิด RLS ทุก Table ที่ Expose
+- Student เห็นเฉพาะ Class ที่เป็นสมาชิก
+- Student สร้างกลุ่มผ่าน RPC เท่านั้น
+- Leader จัดการได้เฉพาะกลุ่มตนเองและเฉพาะก่อน Lock
+- Student เห็น/Mark Read ได้เฉพาะ Notification ของตน
+- Teacher จัดการกลุ่มเฉพาะ Class ที่ตนสอน
+- Student แก้เฉพาะ Observation ของตนในสถานะที่อนุญาต
+- Teacher ตรวจเฉพาะ Observation ใน Class ของตน
 - Storage เป็น Private
-- URL ภาพต้องผ่านสิทธิ์หรือ Signed URL
-- Gemini Key และ Service Role ห้ามอยู่ใน Browser
-- ห้ามส่งตำแหน่งสดของนักเรียนคนอื่นเข้า Gemini
-- Research/Audit Tables ไม่เปิดให้นักเรียนอ่านทั่วไป
+- Service Role และ Gemini Key ห้ามอยู่ใน Browser
+- Realtime Channel ไม่ใช่การ Authorization
 
 ---
 
-## 20. Tech Stack
+## 21. RPC สำคัญ
 
 ```text
-Frontend
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- React Hook Form
-- Zod
-- TanStack Query
-- Zustand
-- Mapbox GL JS
+join_class_with_invite(code)
+create_student_group(class_id, name, description)
+invite_classmate_to_group(group_id, invitee_id)
+accept_group_invitation(invitation_id)
+decline_group_invitation(invitation_id)
+transfer_group_leadership(group_id, new_leader_id)
+move_student_between_groups(class_id, student_id, destination_group_id, successor_leader_id)
+delete_or_archive_group(group_id, member_handling)
+set_group_formation_state(class_id, state)
 
-Backend
-- Supabase Auth
-- PostgreSQL
-- PostGIS
-- Supabase Realtime
-- Supabase Storage
-- Supabase Queue
-- Supabase Edge Functions
-
-AI
-- Gemini Provider Adapter
-- Versioned Prompt
-- Versioned JSON Schema
-
-Offline
-- IndexedDB
+open_exploration_session(session_id)
+activate_session_group(session_id, group_id)
+start_observation(...)
+queue_observation_analysis(observation_id)
+submit_observation(observation_id, expected_version)
+request_observation_revision(...)
+review_observation(...)
+complete_exploration_session(session_id)
 ```
-
----
-
-## 21. ลำดับการพัฒนา
-
-### Phase 1
-
-Foundation, Auth, Class, Membership, RLS
-
-### Phase 2
-
-Group, Activity, Route, Boundary, Session Participant Snapshot
-
-### Phase 3
-
-One-active-group Constraint, Session Control, Live Map
-
-### Phase 4
-
-Individual Observation, Capture Location/Time
-
-### Phase 5
-
-Image Processing, Storage, 1–10 Images
-
-### Phase 6
-
-Queue + Edge Function + Gemini
-
-### Phase 7
-
-Student Verification, Required Names, Same-species Warning
-
-### Phase 8
-
-Teacher Map, Marker Detail, Manual Review, Revision
-
-### Phase 9
-
-Completed Activity Map สำหรับครูและนักเรียน
-
-### Phase 10
-
-Offline Hardening, Export, Retention, Research Data
 
 ---
 
 ## 22. Acceptance Criteria สำคัญ
 
-MVP ถือว่าทำงานได้เมื่อ:
+ระบบ MVP ถือว่าผ่านเมื่อ:
 
-1. ครูสร้าง Class, Activity, Route, Boundary และ Session ได้
-2. นักเรียนเข้ากลุ่มได้
-3. ระบบป้องกัน Active สองกลุ่มพร้อมกันได้จริง
-4. นักเรียนสร้าง Observation ส่วนบุคคลได้
-5. บันทึกตำแหน่ง เวลา และ GPS Accuracy ได้
-6. Upload ภาพ 1–10 ภาพ โดย Resize/Compress ตาม Spec
-7. Gemini ทำงานผ่าน Queue และตอบแบบ Versioned Structured Data
-8. Gemini ล้มเหลวแล้ว Draft ไม่หาย และกรอก Manual ได้
-9. นักเรียนตรวจลักษณะกับต้นจริงและแก้ค่าที่ไม่ตรงได้
-10. บังคับชื่อพืชภาษาไทย/ชื่อสามัญและชื่อวิทยาศาสตร์ก่อน Submit
-11. พบพืชชนิดเดียวกันแล้วเตือน แต่ยังส่งได้
-12. ครูเห็น Same-species Tag
-13. Observation ที่ Submit แสดงเป็น Marker ตามสถานะ
-14. ครูกด Marker ดูรายละเอียดได้
-15. ครูส่งกลับให้นักเรียนแก้ Observation เดิมได้
-16. Student Resubmit โดยเก็บประวัติเดิม
-17. ครูแก้และยืนยันชื่อพืชได้
-18. ครูกดจบ Session ด้วยตนเอง
-19. หลังจบ ครูและนักเรียนดูแผนที่และกด Marker ดูรายละเอียดได้
-20. RLS ป้องกันข้อมูลข้าม Class/Session ได้
+1. ครูสร้าง Class และตั้งค่ากลุ่มได้
+2. นักเรียน Join ด้วย Code/Link/QR โดยไม่ใช้อีเมล
+3. นักเรียนสร้างกลุ่มและเป็นหัวหน้าคนเดียว
+4. นักเรียนอยู่ได้เพียงหนึ่งกลุ่มต่อ Class
+5. การแย่งช่องกลุ่มสุดท้ายทำให้สำเร็จเพียงหนึ่งคน
+6. เมื่อกลุ่มครบ ปุ่มสร้างกลุ่ม Disabled พร้อมข้อความ
+7. Realtime ทำให้หน้ากลุ่มทุกคนอัปเดตทันที
+8. หัวหน้าส่ง Invite และเพื่อนกดยอมรับในแอป
+9. ครูย้ายนักเรียน เปลี่ยนหัวหน้า และลบกลุ่มที่ยังไม่ใช้ได้
+10. กลุ่มที่มีประวัติถูก Archive ไม่ถูกลบ
+11. Session Snapshot ไม่เปลี่ยนตามการย้ายกลุ่มภายหลัง
+12. มีเพียงหนึ่งกลุ่ม active ใน Session
+13. นักเรียนถ่ายภาพและสร้าง Observation ส่วนบุคคลได้
+14. Gemini ทำงานผ่าน Queue และข้อมูลไม่หายเมื่อ Fail
+15. นักเรียนตรวจและแก้ผล AI ก่อน Submit
+16. ชนิดพืชซ้ำถูกเตือนแต่ยัง Submit ได้และครูได้รับ Notification
+17. ครูตรวจ ส่งกลับ และแก้ผลได้โดยไม่เขียนทับประวัติ
+18. ครูและนักเรียนดูแผนที่ผลลัพธ์หลังจบ Session ได้
 
----
-
-## 23. สิ่งที่ยังไม่ Block การเริ่มพัฒนา
-
-สามารถเริ่มพัฒนาได้แล้ว โดยยังมีเรื่องที่ต้องตัดสินก่อน Pilot/Production แต่ไม่ Block งานพื้นฐาน:
-
-- อายุของนักเรียนและ Consent
-- ระยะเวลาเก็บ Location/Image/AI/Event Log
-- Gemini Model และ Budget จริง
-- แหล่ง Taxonomy มาตรฐานในอนาคต
-- แบบวัด/ตัวแปรวิจัยและรูปแบบ Export ขั้นสุดท้าย
-- เจ้าของ Account Production และผู้ดูแลระบบ
-
----
-
-## 24. สรุปสั้นที่สุด
-
-```text
-นักเรียนแต่ละคนถ่ายพืช 1–10 ภาพในพื้นที่
-→ ระบบเก็บตำแหน่งและเวลา
-→ Queue ส่ง Gemini วิเคราะห์
-→ นักเรียนตรวจข้อมูลกับต้นจริง
-→ ต้องกรอกชื่อสามัญ/ไทยและชื่อวิทยาศาสตร์
-→ ถ้าชนิดซ้ำใน Session ให้เตือนแต่ส่งได้
-→ ครูเห็น Marker และ Same-species Tag
-→ ครูตรวจ แก้ หรือส่งกลับ
-→ ครูกดจบกิจกรรม
-→ ครูและนักเรียนดูแผนที่ผลลัพธ์และกด Marker ดูรายละเอียดพืช
-```
-
-MVP นี้มี Requirement เพียงพอสำหรับเริ่มพัฒนาแล้ว โดยไม่มีคำถามด้าน Product Flow ที่ Block การเริ่ม Coding เหลืออยู่
+เอกสารนี้มี Requirement เพียงพอสำหรับเริ่มพัฒนา MVP โดยไม่มี Product Flow ที่ Block การเริ่ม Coding เหลืออยู่
