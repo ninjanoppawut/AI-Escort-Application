@@ -3,12 +3,13 @@
 ## 1. Principles
 
 - PostgreSQL is the source of truth.
-- Use UUID primary keys and `timestamptz` timestamps.
-- Store geometry in PostGIS columns.
-- Enable RLS on every exposed table.
-- Preserve AI output, student verification, and teacher review separately.
-- Enforce critical session rules with database constraints and transactions.
-- Never auto-delete or auto-merge observations from dedupe scores.
+- Use UUID primary keys and `timestamptz`.
+- Use PostGIS for route, boundary, capture location, and spatial candidate search.
+- Enable RLS on every table in exposed schemas.
+- Critical invariants use constraints, partial unique indexes, and atomic functions.
+- Core queryable data uses relational columns.
+- Flexible AI/research payloads may use versioned `jsonb`.
+- Preserve append-only history for AI runs, submissions, reviews, status changes, and research events.
 
 ## 2. Core tables
 
@@ -19,44 +20,64 @@ school_memberships
 classes
 class_members
 class_invites
+
 groups
 group_members
 activities
 activity_routes
 activity_boundaries
 activity_checkpoints
+activity_plugin_configs
+
 exploration_sessions
 exploration_session_groups
 session_participants
 location_events
 location_tracks
+session_events
+
 observations
 observation_media
 ai_analysis_runs
-ai_plant_candidates
-ai_observed_traits
+observation_ai_results
 student_trait_verifications
-observation_identifications
-plant_specimens
-observation_duplicate_candidates
+observation_submissions
 teacher_reviews
 observation_status_history
-reflections
-assessment_results
+observation_duplicate_candidates
+specimens
+research_events
+
+notifications
 audit_logs
+exports
 ```
 
 ## 3. Session constraints
 
+### `exploration_session_groups`
+
 ```sql
+create table exploration_session_groups (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references exploration_sessions(id) on delete cascade,
+  group_id uuid not null references groups(id),
+  queue_position integer not null,
+  status text not null check (status in ('waiting','ready','active','paused','completed')),
+  activated_at timestamptz,
+  completed_at timestamptz,
+  unique (session_id, group_id),
+  unique (session_id, queue_position)
+);
+
 create unique index one_active_group_per_session
 on exploration_session_groups(session_id)
 where status = 'active';
 ```
 
-Group activation must run through one atomic transaction/RPC.
+Group activation occurs through one atomic RPC that validates teacher permission and session status.
 
-## 4. Session participant snapshot
+### Participant snapshot
 
 ```sql
 create table session_participants (
@@ -66,224 +87,249 @@ create table session_participants (
   user_id uuid not null references profiles(id),
   role_at_start text not null,
   participation_status text not null default 'active',
-  joined_at timestamptz not null default now(),
+  joined_at timestamptz,
   left_at timestamptz,
-  unique(session_id, user_id)
+  unique (session_id, user_id)
 );
 ```
 
-Observation and track ownership should reference the participant snapshot where practical.
+Observations reference `session_participant_id` so later group changes do not rewrite history.
 
-## 5. Observations
+## 4. Observations
 
 ```sql
 create table observations (
   id uuid primary key default gen_random_uuid(),
   client_generated_id uuid not null,
-  session_id uuid not null references exploration_sessions(id),
   activity_id uuid not null references activities(id),
+  session_id uuid not null references exploration_sessions(id),
   session_group_id uuid not null references exploration_session_groups(id),
-  participant_id uuid not null references session_participants(id),
+  session_participant_id uuid not null references session_participants(id),
   observer_id uuid not null references profiles(id),
 
-  capture_location geography(point, 4326) not null,
+  capture_location geography(point, 4326),
   capture_accuracy_m numeric,
   captured_at timestamptz not null,
-  capture_boundary_state text,
-
-  submission_location geography(point, 4326),
-  submission_accuracy_m numeric,
-  submitted_at timestamptz,
-
-  normalized_taxon_id text,
-  specimen_id uuid,
-  duplicate_status text not null default 'not_checked',
+  location_status text not null default 'captured'
+    check (location_status in ('captured','unavailable','teacher_accepted_missing')),
 
   status text not null check (status in (
-    'draft','media_pending','analyzing','student_review','duplicate_review',
-    'ready_to_submit','submitted','teacher_review','verified',
-    'revision_required','unable_to_verify','rejected'
+    'draft','images_uploading','analysis_queued','analysis_running',
+    'student_review','submitted','teacher_review','revision_required',
+    'resubmitted','verified','unable_to_verify','rejected'
   )),
 
+  student_common_name text,
+  student_scientific_name text,
+  student_evidence_note text,
+  normalized_taxon_key text,
+  specimen_id uuid,
+
+  same_species_in_session boolean not null default false,
+  same_species_count integer not null default 0,
+
+  first_submitted_at timestamptz,
+  latest_submitted_at timestamptz,
+  verified_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique(observer_id, client_generated_id)
+
+  unique (observer_id, client_generated_id)
 );
 ```
 
-Capture location is authoritative for the plant record. Submission location is retained separately.
+Submission validation requires:
 
-## 6. Observation media
+- at least one uploaded media row;
+- no more than ten media rows;
+- Thai/common name;
+- scientific name;
+- evidence note;
+- student review payload;
+- location or explicit flagged location state.
+
+The capture location is the marker location. Do not require or store submission location for normal map behavior.
+
+## 5. Observation media
 
 ```sql
 create table observation_media (
   id uuid primary key default gen_random_uuid(),
   observation_id uuid not null references observations(id) on delete cascade,
+  position integer not null check (position between 1 and 10),
+  category text not null check (category in (
+    'whole_plant','leaf','leaf_underside','stem_trunk',
+    'flower','fruit','habitat','other'
+  )),
   storage_path text not null,
-  media_type text not null,
-  evidence_type text,
+  mime_type text not null,
+  byte_size bigint not null check (byte_size > 0 and byte_size <= 5242880),
+  width_px integer,
+  height_px integer,
+  image_hash text,
   captured_at timestamptz,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (observation_id, position)
 );
 ```
 
-## 7. Gemini analysis
+Application validation enforces one `whole_plant` image and a maximum of ten images. Bucket policy/config should limit accepted MIME types and processed file size.
+
+## 6. AI analysis
+
+### `ai_analysis_runs`
 
 ```sql
 create table ai_analysis_runs (
   id uuid primary key default gen_random_uuid(),
   observation_id uuid not null references observations(id) on delete cascade,
-  provider text not null,
+  provider text not null default 'gemini',
   model text not null,
-  schema_version integer not null,
   prompt_version text not null,
-  status text not null,
-  started_at timestamptz not null default now(),
+  response_schema_version text not null,
+  status text not null check (status in (
+    'queued','running','succeeded','failed','cancelled'
+  )),
+  attempt_count integer not null default 0,
+  queued_at timestamptz not null default now(),
+  started_at timestamptz,
   completed_at timestamptz,
-  error_code text,
-  raw_response_path text
+  failure_code text,
+  latency_ms integer,
+  usage_metadata jsonb not null default '{}'::jsonb
 );
 ```
+
+### `observation_ai_results`
 
 ```sql
-create table ai_plant_candidates (
+create table observation_ai_results (
   id uuid primary key default gen_random_uuid(),
-  analysis_run_id uuid not null references ai_analysis_runs(id) on delete cascade,
-  rank integer not null,
-  provider_taxon_id text,
-  normalized_taxon_id text,
-  common_name_th text,
-  common_name_en text,
-  scientific_name text,
-  confidence numeric,
-  evidence_summary text,
-  unique(analysis_run_id, rank)
+  analysis_run_id uuid not null unique references ai_analysis_runs(id) on delete cascade,
+  observation_id uuid not null references observations(id) on delete cascade,
+  normalized_result jsonb not null,
+  raw_response_reference text,
+  top_common_name text,
+  top_scientific_name text,
+  top_confidence numeric,
+  created_at timestamptz not null default now()
 );
 ```
 
-```sql
-create table ai_observed_traits (
-  id uuid primary key default gen_random_uuid(),
-  analysis_run_id uuid not null references ai_analysis_runs(id) on delete cascade,
-  trait_key text not null,
-  proposed_value text,
-  visibility_state text not null default 'visible',
-  confidence numeric,
-  unique(analysis_run_id, trait_key)
-);
-```
+The exact JSON shape may be finalized later, but every stored payload must declare/associate its schema version and pass server validation.
 
-`visibility_state` should distinguish visible, uncertain, not_visible, and unknown.
+## 7. Student verification and submissions
 
-## 8. Student verification
+### Trait verification
 
 ```sql
 create table student_trait_verifications (
   id uuid primary key default gen_random_uuid(),
   observation_id uuid not null references observations(id) on delete cascade,
-  ai_trait_id uuid not null references ai_observed_traits(id),
+  analysis_run_id uuid references ai_analysis_runs(id),
+  trait_key text not null,
+  ai_value jsonb,
   student_status text not null check (student_status in (
     'match','not_match','unsure','not_visible'
   )),
-  corrected_value text,
-  evidence_note text,
-  verified_by uuid not null references profiles(id),
-  verified_at timestamptz not null default now(),
-  unique(observation_id, ai_trait_id, verified_by)
+  corrected_value jsonb,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (observation_id, analysis_run_id, trait_key)
 );
 ```
 
-## 9. Identification records
+Additional flexible student verification context may be stored in a `jsonb` summary on the submission row, but key decisions remain queryable.
+
+### Submission history
 
 ```sql
-create table observation_identifications (
+create table observation_submissions (
   id uuid primary key default gen_random_uuid(),
   observation_id uuid not null references observations(id) on delete cascade,
-  source text not null check (source in ('ai','student','teacher','expert')),
-  suggested_by uuid references profiles(id),
-  normalized_taxon_id text,
-  scientific_name text,
-  common_name_th text,
-  common_name_en text,
-  confidence numeric,
-  evidence_summary text,
-  is_accepted boolean not null default false,
-  created_at timestamptz not null default now()
+  submission_number integer not null,
+  submitted_by uuid not null references profiles(id),
+  common_name text not null,
+  scientific_name text not null,
+  evidence_note text not null,
+  verification_snapshot jsonb not null,
+  media_snapshot jsonb not null,
+  same_species_acknowledged boolean not null default false,
+  submitted_at timestamptz not null default now(),
+  unique (observation_id, submission_number)
 );
 ```
 
-Only an authorized teacher/expert workflow may mark the final identification accepted.
+A revision creates a new submission row; it does not erase the previous row.
 
-## 10. Species and specimen deduplication
-
-### Plant specimens
+## 8. Teacher review
 
 ```sql
-create table plant_specimens (
+create table teacher_reviews (
   id uuid primary key default gen_random_uuid(),
-  activity_id uuid not null references activities(id),
-  normalized_taxon_id text,
-  representative_location geography(point, 4326),
-  created_at timestamptz not null default now()
+  observation_id uuid not null references observations(id) on delete cascade,
+  submission_id uuid not null references observation_submissions(id),
+  reviewer_id uuid not null references profiles(id),
+  decision text not null check (decision in (
+    'verified','revision_required','unable_to_verify','rejected'
+  )),
+  verified_common_name text,
+  verified_scientific_name text,
+  corrected_traits jsonb not null default '{}'::jsonb,
+  feedback text,
+  reviewed_at timestamptz not null default now()
 );
 ```
 
-Observations confirmed to represent the same physical plant may share a specimen record. Observation evidence remains separate.
+Teacher corrections are separate from Gemini and student values. The latest verified review is used for the verified display identity.
 
-### Duplicate candidates
+## 9. Same-species and specimen relationships
+
+### Candidate table
 
 ```sql
 create table observation_duplicate_candidates (
   id uuid primary key default gen_random_uuid(),
   observation_id uuid not null references observations(id) on delete cascade,
   candidate_observation_id uuid not null references observations(id) on delete cascade,
-  duplicate_level text not null check (duplicate_level in ('species','specimen')),
+  relationship_type text not null check (relationship_type in (
+    'same_species','possible_same_specimen'
+  )),
   taxon_match_score numeric,
-  trait_similarity_score numeric,
+  morphology_similarity_score numeric,
   visual_similarity_score numeric,
   location_distance_m numeric,
-  time_difference_seconds integer,
+  temporal_distance_seconds integer,
   combined_score numeric,
   system_recommendation text,
-  student_decision text check (student_decision in (
-    'same_specimen','different_specimen','unsure'
-  )),
-  student_decided_by uuid references profiles(id),
-  student_decided_at timestamptz,
+  student_acknowledged_at timestamptz,
   teacher_decision text,
-  teacher_decided_by uuid references profiles(id),
-  teacher_decided_at timestamptz,
+  decided_by uuid references profiles(id),
+  decided_at timestamptz,
   created_at timestamptz not null default now(),
-  unique(observation_id, candidate_observation_id, duplicate_level)
+  unique (observation_id, candidate_observation_id, relationship_type)
 );
 ```
 
-Rules:
+Same-species matching is scoped to the same session for the MVP. It warns and tags but never blocks.
 
-- Same normalized taxon creates a species-level warning.
-- Species-level duplication does not block submission.
-- Specimen-level ranking combines taxon, traits, image similarity, location, and time.
-- Distance alone cannot create a confirmed duplicate.
-- No automatic delete or merge is allowed.
-
-## 11. Teacher review
+### Specimen
 
 ```sql
-create table teacher_reviews (
+create table specimens (
   id uuid primary key default gen_random_uuid(),
-  observation_id uuid not null references observations(id) on delete cascade,
-  reviewer_id uuid not null references profiles(id),
-  decision text not null check (decision in (
-    'verified','revision_required','unable_to_verify','rejected'
-  )),
-  accepted_identification_id uuid references observation_identifications(id),
-  duplicate_decision text,
-  feedback text,
-  reviewed_at timestamptz not null default now()
+  class_id uuid not null references classes(id),
+  normalized_taxon_key text,
+  canonical_location geography(point, 4326),
+  created_by uuid references profiles(id),
+  created_at timestamptz not null default now()
 );
 ```
 
-## 12. Status history
+Separate observations may reference one specimen only after human confirmation. Never merge automatically.
+
+## 10. Status and research events
 
 ```sql
 create table observation_status_history (
@@ -295,37 +341,55 @@ create table observation_status_history (
   reason text,
   created_at timestamptz not null default now()
 );
+
+create table research_events (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null,
+  occurred_at timestamptz not null default now(),
+  user_id uuid references profiles(id),
+  class_id uuid references classes(id),
+  activity_id uuid references activities(id),
+  session_id uuid references exploration_sessions(id),
+  observation_id uuid references observations(id),
+  payload jsonb not null default '{}'::jsonb
+);
 ```
 
-## 13. Recommended RPCs
+Use rows for events, not one growing JSON array. `jsonb` payloads may evolve while relational IDs support filtering and research export.
+
+## 11. Recommended RPCs
 
 ```text
+join_class_with_invite(code)
 open_exploration_session(session_id)
 activate_session_group(session_id, group_id)
-create_observation_draft(payload)
-request_gemini_analysis(observation_id)
-record_student_trait_verification(payload)
-run_observation_dedupe(observation_id)
-submit_observation(observation_id, submission_location)
-review_observation(observation_id, decision, feedback)
-resolve_duplicate_candidate(candidate_id, decision)
+start_observation(session_id, client_generated_id, capture_metadata)
+queue_observation_analysis(observation_id)
+submit_observation(observation_id, expected_version)
+request_observation_revision(observation_id, submission_id, feedback)
+review_observation(observation_id, submission_id, decision, corrections)
+complete_exploration_session(session_id)
 ```
 
-Sensitive functions must validate `auth.uid()`, use fixed `search_path`, and restrict execution grants.
+Sensitive functions validate `auth.uid()`, set a fixed `search_path`, restrict execute grants, and emit audit/status events.
 
-## 14. RLS intent
+## 12. RLS intent
 
-- Students create and edit only their own drafts while their group is active.
-- Submitted records become immutable to students except through a revision workflow.
-- Students see only observations allowed by class/session policy.
-- Teachers review observations in classes they teach.
-- Gemini service writes only through trusted server functions.
-- Duplicate candidates never expose observations outside authorized class/session scope.
+- Student reads class/session data only with active membership/participant access.
+- Student creates and edits only their own observation while workflow state permits.
+- Student cannot edit prior submission or teacher-review rows.
+- Teacher reads/reviews observations only for classes they teach.
+- Draft observation/media are private to creator and authorized teacher only as specifically required.
+- Submitted/completed observation visibility to classmates follows session/class rules.
+- AI worker access uses trusted server credentials and validates target observation/session.
+- Research/audit tables are not broadly exposed to students.
 
-## 15. Retention
+## 13. Storage paths
 
-- Raw live-location events: short configurable retention.
-- Capture location and summarized track: retained with educational evidence according to school/research policy.
-- Original observation images: private by default.
-- Gemini payloads: retain normalized output; minimize raw prompt/response retention.
-- Audit, review, and status history: restricted and retained longer.
+```text
+observation-images/{class_id}/{session_id}/{observation_id}/{media_id}.webp
+activity-assets/{class_id}/{activity_id}/{asset_id}
+activity-exports/{class_id}/{session_id}/{export_id}
+```
+
+Do not trust path segments as authorization. Storage policies derive permission from database membership and observation ownership/status.
