@@ -2,161 +2,195 @@
 
 ## Purpose
 
-The plant-survey plugin implements a systematic field-observation workflow. It is modular so future activities can add insect, soil, water, or biodiversity plugins without changing the session engine.
-
-## Plugin contract
-
-```ts
-export interface ExplorationPlugin<TDraft, TSubmission> {
-  id: string;
-  version: string;
-  validateDraft(input: unknown): TDraft;
-  validateSubmission(input: unknown): TSubmission;
-  getRequirements(config: unknown): SurveyRequirement[];
-  getCompletion(input: TDraft): CompletionResult;
-}
-```
-
-The UI implementation may expose capture, editor, summary, and review components, but stored data must be validated independently on the server.
+The plant-survey plugin supports a focused field workflow: a student photographs a plant inside the assigned area, Gemini proposes names and visible characteristics, the student checks those results against the real plant, and the teacher performs final review.
 
 ## Observation workflow
 
 ```text
-select plant
-→ capture location and context
-→ capture required images
-→ describe observable traits
-→ record ecological context
-→ request optional AI guidance
-→ completeness check
-→ submit
-→ peer/teacher review
-→ verification
+start observation
+→ capture GPS, accuracy, and capture time
+→ capture one or more plant images
+→ send images to Gemini
+→ validate structured Gemini response
+→ normalize plant candidates
+→ run species/specimen dedupe
+→ student verifies AI characteristics
+→ student corrects mismatches or adds evidence
+→ capture submission GPS and submission time
+→ submit to teacher
+→ teacher verifies / requests revision / cannot verify / rejects
 ```
 
-## Required evidence
+## Capture requirements
 
-Teacher-configurable photo types:
+The app must store:
 
-- whole plant;
-- trunk or stem;
-- upper leaf surface;
-- lower leaf surface;
-- flower;
-- fruit;
-- surrounding habitat.
+- original image files;
+- observation and media IDs;
+- observer, group, activity, and session;
+- capture location;
+- capture GPS accuracy;
+- captured time;
+- image type when supplied, such as whole plant, leaf, stem, flower, or fruit;
+- optional additional images requested by Gemini.
 
-Students may mark a feature as unavailable, for example no visible flower or fruit. The system should request a reason rather than force an irrelevant image.
+Capture location is the primary plant location. Submission location is separate.
 
-## Structured plant fields
+## Gemini behavior
 
-- local/common name proposed by student;
-- scientific name proposed by student, when known;
-- growth habit;
-- stem or bark characteristics;
-- leaf arrangement;
-- leaf shape, margin, and venation;
-- flower and fruit characteristics;
-- abundance or frequency observed;
-- notes and uncertainty.
+Gemini may:
 
-## Ecological context
+- suggest multiple possible taxa;
+- return Thai, English, and scientific names when supported;
+- describe visible leaf, flower, fruit, stem, bark, and growth-habit characteristics;
+- explain short observable evidence;
+- request additional photos;
+- explicitly identify missing or uncertain evidence.
 
-- light level;
-- moisture;
-- soil description;
-- nearby water;
-- associated organisms;
-- neighboring plants;
-- human activity;
-- signs of disturbance;
-- possible threats;
-- student's explanation of ecological relationships.
+Gemini must not:
 
-## AI behavior
+- label its answer as verified;
+- invent characteristics that are not visible;
+- replace the student's later verification;
+- silently choose a final identification;
+- merge or delete observations.
 
-AI may:
-
-- detect missing or low-quality evidence;
-- request a specific additional image;
-- suggest multiple possible taxa with uncertainty;
-- highlight observable differences between candidates;
-- ask inquiry questions;
-- prompt links between the plant and environmental factors;
-- generate a completeness summary.
-
-AI must not:
-
-- silently replace the student's answer;
-- label a suggestion as verified;
-- invent traits that are not visible or recorded;
-- expose private observations outside authorized scope;
-- penalize a student solely because model confidence is low.
-
-## Normalized AI response
+## Normalized Gemini response
 
 ```json
 {
-  "suggestions": [
+  "schemaVersion": 1,
+  "identificationStatus": "possible_match",
+  "candidates": [
     {
       "taxonId": "provider-or-catalog-id",
+      "commonNameTh": "มะม่วง",
+      "commonNameEn": "Mango",
       "scientificName": "Mangifera indica",
-      "commonName": "มะม่วง",
-      "confidence": 0.82,
-      "evidenceSummary": "รูปใบและลักษณะทรงพุ่มสอดคล้องบางส่วน"
+      "confidence": 0.87,
+      "evidenceSummary": "ลักษณะใบและทรงพุ่มสอดคล้องบางส่วน"
     }
   ],
-  "needsMoreEvidence": true,
+  "visibleTraits": {
+    "growthHabit": "ไม้ต้น",
+    "leafType": "ใบเดี่ยว",
+    "leafArrangement": "เรียงสลับ",
+    "leafShape": "รูปรีถึงรูปหอก",
+    "leafMargin": "ขอบเรียบ",
+    "leafVenation": "ไม่แน่ชัดจากภาพ",
+    "stemOrBark": "ลำต้นเป็นเนื้อไม้ เปลือกสีน้ำตาล",
+    "flower": null,
+    "fruit": null
+  },
   "requestedEvidence": ["leaf_underside"],
-  "guidingQuestions": [
-    "ใบเรียงแบบสลับหรือตรงข้าม?",
-    "บริเวณนี้ได้รับแสงต่างจากจุดก่อนหน้าอย่างไร?"
-  ],
-  "disclaimer": "ผลลัพธ์เป็นข้อเสนอเบื้องต้นและต้องตรวจสอบเพิ่มเติม"
+  "uncertainties": ["ไม่เห็นดอกหรือผล"],
+  "disclaimer": "ผลลัพธ์เป็นข้อเสนอเบื้องต้น ต้องตรวจสอบกับต้นพืชจริง"
 }
 ```
 
-## Identification states
+Responses must be validated against a versioned schema. Unknown or unseen values must be `null`, `unknown`, or an explicit uncertainty string.
 
-Keep these separately:
+## Student verification
+
+Each AI trait is reviewed using:
 
 ```text
-student proposed
-AI suggested
-peer suggested
-teacher verified
-expert verified
-unresolved
+match
+not_match
+unsure
+not_visible
 ```
 
-A final accepted identification must reference a stored identification record and verifier.
+When a student selects `not_match`, they may provide:
+
+- corrected value;
+- evidence note;
+- additional image.
+
+Store separately:
+
+```text
+AI-proposed value
+student verification state
+student corrected value
+student note/evidence
+teacher-reviewed value
+```
 
 ## Duplicate detection
 
-Warn when a new observation is near an existing observation and has similar media or proposed identity. Do not automatically merge; plants of the same species may legitimately be separate specimens.
+Duplicate detection has two distinct meanings.
+
+### Species-level duplicate
+
+The normalized taxon already exists in the configured scope, initially the same activity/session.
+
+This is informational. It must not block a student from recording another plant of the same species.
+
+### Specimen-level duplicate
+
+The observation may refer to the same physical plant as an earlier observation.
+
+The matcher should combine:
+
+- normalized taxon overlap;
+- visible and student-verified trait similarity;
+- visual embedding/image similarity;
+- capture-location distance;
+- capture-time distance;
+- observer/group context as a weak signal.
+
+Distance alone must never decide duplication.
+
+Suggested output:
+
+```json
+{
+  "candidateObservationId": "uuid",
+  "taxonMatchScore": 0.95,
+  "traitSimilarityScore": 0.84,
+  "visualSimilarityScore": 0.89,
+  "distanceMeters": 3.2,
+  "timeDifferenceSeconds": 420,
+  "combinedScore": 0.88,
+  "recommendation": "possible_same_specimen"
+}
+```
+
+Student decision:
+
+```text
+same_specimen
+different_specimen
+unsure
+```
+
+Teacher may override or finalize the decision. Confirmed records for the same physical plant may share one `specimen_id`, but their observation records remain separate.
 
 ## Completion rules
 
-A submission can require:
+A submission requires:
 
-- valid session and group;
-- location and GPS accuracy;
-- minimum photo evidence;
-- required trait fields;
-- minimum ecological-context fields;
-- a student identification or explicit `unknown`;
-- a short evidence statement;
-- acknowledgement that AI output is provisional.
+- valid open session and active group;
+- capture location, accuracy, and capture time;
+- minimum image evidence;
+- completed Gemini analysis or an explicit AI failure fallback;
+- student review of required AI traits;
+- duplicate warnings acknowledged;
+- student identification selection or unresolved state;
+- submission location and submission time.
 
 ## Teacher review
 
 Teacher can:
 
+- verify the record;
 - request revision;
-- accept data quality while leaving identification unresolved;
-- select an accepted identification;
-- add feedback;
-- flag duplicate or invalid records;
-- export original and reviewed values.
+- accept evidence while leaving identification unresolved;
+- mark unable to verify;
+- reject invalid content;
+- select the final accepted identification;
+- confirm same/different specimen;
+- add feedback.
 
-Never overwrite the original submitted values. Store reviewed corrections as separate revision or verification records.
+Never overwrite original Gemini or student values. Preserve status and review history.
