@@ -1,146 +1,144 @@
 # Implementation Plan
 
+## Delivery strategy
+
+Build vertical slices in the same order as the real field workflow. Prove authorization and data preservation before optimizing AI or map visuals.
+
 ## Phase 0 — Foundation
 
 - Scaffold Next.js App Router with TypeScript strict mode.
 - Add Tailwind, shadcn/ui, ESLint, formatting, Vitest, and Playwright.
-- Configure browser/server Supabase clients and environment validation.
-- Add CI for lint, typecheck, test, and build.
+- Configure Supabase browser/server clients and environment validation.
+- Add CI for lint, typecheck, tests, and build.
+- Establish domain modules, stable error codes, and an event-logging interface.
 
-**Exit:** application builds locally and in CI.
+**Exit:** application builds locally and in CI; secrets are separated correctly.
 
-## Phase 1 — Authentication and RBAC
+## Phase 1 — Auth, classes, and RBAC
 
-- Sign in, sign out, password reset, and profile bootstrap.
-- Classes, memberships, invite flow, teacher/student dashboards.
-- RLS policy tests with multiple authenticated users.
+- Sign in/out, reset, and profile bootstrap.
+- Classes, memberships, and invite flow.
+- Student, teacher, and admin route protection.
+- RLS policy tests with multiple users/classes.
 
-**Exit:** a teacher creates a class and a student joins without seeing another class.
+**Exit:** a student sees only authorized class data; UI checks are backed by RLS.
 
 ## Phase 2 — Groups, activities, and geometry
 
-- Group creation and membership.
-- Teacher-created activity CRUD.
-- Route, boundary, and checkpoint builder.
-- Map geometry validation.
+- Group creation/membership.
+- Teacher activity CRUD.
+- Route, boundary, checkpoint builder.
+- PostGIS validation and GeoJSON read models.
+- Session creation and participant snapshot.
 
-**Exit:** an activity has a valid route and exploration boundary.
+**Exit:** teacher can create a valid mobile field activity and session.
 
-## Phase 3 — Session control
+## Phase 3 — Session control and live map
 
-- Create/open/pause/complete session.
-- Snapshot session participants and groups.
-- Queue groups and atomic group activation RPC.
-- Partial unique index preventing two active groups.
-- Waiting-group route preview with publishing disabled.
+- Open/pause/complete session.
+- Queue groups.
+- Atomic active-group RPC and partial unique index.
+- Presence/Broadcast location flow.
+- Teacher map with group members, route, boundary, and checkpoint progress.
+- Waiting groups can preview route but cannot publish/submit.
 
-**Exit:** concurrency tests prove only one active group can publish.
+**Exit:** only one group can be active under concurrency; unauthorized users cannot subscribe/read.
 
-## Phase 4 — Live field map
+## Phase 4 — Individual observation foundation
 
-- Mapbox student field screen and teacher dashboard.
-- Presence and Broadcast channels.
-- Member markers, last-update state, route, track, and checkpoints.
-- Boundary warning with GPS-accuracy tolerance.
+- Start observation with client-generated UUID.
+- Capture location, GPS accuracy, and capture time.
+- Handle GPS retry and explicit missing-location state.
+- Student-owned draft workflow.
+- Research/status events.
 
-**Exit:** authorized active-group users share location; waiting and unauthorized users cannot publish.
+**Exit:** one student creates an idempotent private draft tied to a participant snapshot.
 
-## Phase 5 — Observation capture
+## Phase 5 — Image pipeline
 
-- Create observation draft with client-generated UUID.
-- Capture and store GPS, accuracy, and capture time.
-- Camera/media upload and offline media queue.
-- Separate capture location from later submission location.
-- Private Storage policies.
+- Camera/gallery capture.
+- Client orientation correction, resize, compression, and preview.
+- Limits: 1–10 images, required whole-plant category, maximum 2,048 px longest edge and 5 MB per processed image.
+- Private Storage bucket, deterministic paths, RLS/policies, upload retry.
+- Presentation transformations for marker/list/review.
 
-**Exit:** a student captures a plant observation with durable image and location evidence.
+**Exit:** oversized images are reduced, uploads retry safely, and unauthorized access is denied.
 
-## Phase 6 — Gemini analysis
+## Phase 6 — Durable Gemini analysis worker
 
-- Gemini provider adapter behind trusted server route.
-- Versioned prompt and JSON response schema.
-- Candidate plant names and visible trait extraction.
-- Explicit unknown/not-visible handling.
-- Additional-image requests.
-- Rate limits, usage logs, error states, and manual fallback.
+- Create `ai_analysis_runs` and queue message contract.
+- Supabase Queue + Edge Function consumer.
+- Gemini provider adapter.
+- Prompt/model/schema version logging.
+- Zod validation of normalized response.
+- Retry/failure/manual-entry path.
+- Student receives durable analysis-state updates.
 
-**Exit:** Gemini analysis is validated and stored without becoming the final answer.
+**Exit:** browser may close/reconnect without losing the job; failed analysis leaves the draft usable.
 
-## Phase 7 — Student verification
+## Phase 7 — Student verification and submission
 
-- Trait review UI with `match`, `not_match`, `unsure`, and `not_visible`.
-- Corrected values, notes, and additional evidence.
-- Candidate selection or unresolved identification.
-- Preserve AI and student values separately.
+- Candidate selection/manual identity entry.
+- Trait checks: match, not_match, unsure, not_visible.
+- Corrected/additional trait fields.
+- Required Thai/common name, scientific name, and evidence note.
+- Same-species-in-session query, warning, acknowledgement, and teacher tag.
+- Immutable submission version and optimistic concurrency.
 
-**Exit:** a student completes verification against the real plant.
+**Exit:** student reviews the real plant, acknowledges a same-species warning, and submits successfully.
 
-## Phase 8 — Species and specimen dedupe
+## Phase 8 — Teacher marker and review workflow
 
-- Normalize Gemini/student taxonomy through an adapter.
-- Species-level duplicate lookup.
-- Visual embedding/image similarity service.
-- Trait similarity, distance, and time features.
-- Combined candidate ranking.
-- Student decisions: same specimen, different specimen, unsure.
-- Teacher override/finalization.
-- Shared specimen IDs without merging observation records.
+- Submitted markers on teacher map using capture location.
+- Status-aware accessible marker styles.
+- Marker detail panel with images, AI result, student corrections, capture metadata, same-species tag, and history.
+- Manual teacher decisions and corrections.
+- Revision request and student resubmission of the same observation.
 
-**Exit:** same-species records are warned but allowed; likely same-specimen records require human confirmation.
+**Exit:** teacher requests revision; student resubmits; teacher corrects and verifies without overwriting history.
 
-## Phase 9 — Submission and teacher review
+## Phase 9 — Completed activity map
 
-- Submission location, accuracy, and time.
-- Observation status machine and immutable status history.
-- Teacher review screen showing images, Gemini output, student corrections, locations, times, and dedupe evidence.
-- Verify, revision required, unable to verify, reject.
-- Accepted identification and duplicate decision.
+- Teacher manually completes session/activity.
+- Completed-session map read model.
+- Authorized teacher and participating-student access.
+- Click marker to open plant details.
+- Hide/restrict raw historical live-location data.
 
-**Exit:** teacher reviews without overwriting original AI/student evidence.
+**Exit:** both permitted roles can review the completed plant map and details.
 
-## Phase 10 — Offline synchronization
+## Phase 10 — Offline hardening and exports
 
-- IndexedDB observation and media queue.
-- Idempotent draft, upload, verification, and submission synchronization.
+- IndexedDB drafts and upload queue.
+- Deferred media and event synchronization.
 - Conflict/retry interface.
+- CSV/GeoJSON export.
+- Retention/privacy controls and research-event export.
 
-**Exit:** airplane-mode capture syncs once with no duplicate records.
-
-## Phase 11 — Learning and reporting
-
-- Reflection and assessment instruments.
-- CSV/GeoJSON exports.
-- Export AI, student, and teacher layers separately.
-- Privacy, retention, and deletion controls.
-
-**Exit:** teacher completes a session and exports traceable reviewed results.
+**Exit:** airplane-mode draft synchronizes once without duplicates; reviewed map data exports correctly.
 
 ## Testing priorities
 
-1. RLS and cross-class isolation.
-2. Concurrent active-group switching.
-3. Capture versus submission location/time preservation.
-4. Gemini schema validation and failure fallback.
-5. Student verification preservation.
-6. Species duplicate warning without blocking.
-7. Specimen candidate ranking using more than distance.
-8. No automatic observation deletion or merge.
-9. Offline idempotency.
-10. Storage access and private media.
+1. Cross-class/session RLS isolation.
+2. Active-group concurrency.
+3. Observation ownership and participant snapshot.
+4. Image count/size/category validation.
+5. Private Storage access.
+6. Queue idempotency and AI retry.
+7. Required student identity fields.
+8. Same-species warning allows submission and tags teacher view.
+9. Immutable submission/review history.
+10. Map marker visibility/status and capture-location accuracy.
+11. Completed-map role access.
+12. Mobile field usability under weak connectivity.
 
-## Recommended first delivery slice
+## Recommended first sprint
 
-Build one end-to-end vertical slice before advanced features:
+- Foundation and CI.
+- Auth/profile/classes/RBAC.
+- Class and membership RLS tests.
+- Group/activity/session schema.
+- Participant snapshot.
+- Active-group database constraint and RPC.
 
-```text
-teacher creates class/activity/session
-→ activates one group
-→ student sees map and captures plant image
-→ Gemini returns structured result
-→ student verifies traits
-→ basic species dedupe warning
-→ student submits with location/time
-→ teacher reviews
-```
-
-Implement visual specimen dedupe after this vertical slice is stable. Do not build public/community identification for the pilot MVP.
+Do not begin Gemini integration before observation ownership, Storage authorization, and lifecycle persistence are proven.
