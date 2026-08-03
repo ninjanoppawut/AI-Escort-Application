@@ -9,7 +9,8 @@
 - Critical invariants use constraints, partial unique indexes, and atomic functions.
 - Core queryable data uses relational columns.
 - Flexible AI/research payloads may use versioned `jsonb`.
-- Preserve append-only history for AI runs, submissions, reviews, status changes, and research events.
+- Preserve append-only history for AI runs, submissions, reviews, status changes, group changes, and research events.
+- Realtime improves UI responsiveness but never replaces database validation.
 
 ## 2. Core tables
 
@@ -23,6 +24,9 @@ class_invites
 
 groups
 group_members
+group_invitations
+group_membership_history
+
 activities
 activity_routes
 activity_boundaries
@@ -53,7 +57,283 @@ audit_logs
 exports
 ```
 
-## 3. Session constraints
+## 3. Classes and class membership
+
+### `classes`
+
+```sql
+create table classes (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid references schools(id),
+  name text not null,
+  subject text,
+  academic_year text,
+  semester text,
+  description text,
+
+  min_group_size integer not null default 1 check (min_group_size >= 1),
+  max_group_size integer not null default 5 check (max_group_size >= min_group_size),
+  maximum_groups integer not null default 1 check (maximum_groups >= 1),
+  allow_student_groups boolean not null default true,
+  group_formation_status text not null default 'closed'
+    check (group_formation_status in ('open','closed')),
+
+  created_by uuid not null references profiles(id),
+  status text not null default 'active'
+    check (status in ('active','archived')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+Application and RPC validation must ensure `max_group_size >= min_group_size` and handle configuration changes that conflict with already formed groups.
+
+### `class_members`
+
+```sql
+create table class_members (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  role text not null check (role in ('student','teacher','assistant_teacher')),
+  status text not null check (status in ('invited','active','suspended','left')),
+  joined_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (class_id, user_id)
+);
+```
+
+### `class_invites`
+
+```sql
+create table class_invites (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  code text not null unique,
+  created_by uuid not null references profiles(id),
+  expires_at timestamptz,
+  max_uses integer,
+  used_count integer not null default 0,
+  disabled_at timestamptz,
+  created_at timestamptz not null default now()
+);
+```
+
+Joining must occur through an RPC that validates the invite, increments usage atomically, and creates a student membership. The caller never supplies the joined role.
+
+## 4. Student-led groups
+
+### `groups`
+
+```sql
+create table groups (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  name text not null,
+  description text,
+  icon_key text,
+  created_by uuid not null references profiles(id),
+  creator_type text not null check (creator_type in ('student','teacher')),
+  status text not null default 'forming'
+    check (status in ('forming','ready','approved','locked','archived')),
+  approved_by uuid references profiles(id),
+  approved_at timestamptz,
+  locked_at timestamptz,
+  archived_at timestamptz,
+  deleted_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+Only groups with `deleted_at is null` and status other than `archived` count toward current group capacity.
+
+### `group_members`
+
+```sql
+create table group_members (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  group_id uuid not null references groups(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  role text not null check (role in ('leader','member')),
+  status text not null check (status in ('active','left','removed')),
+  invited_by uuid references profiles(id),
+  joined_at timestamptz not null default now(),
+  left_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (group_id, user_id)
+);
+```
+
+The application must verify that `group_members.class_id` matches `groups.class_id`. This may be enforced with a composite foreign key or through trusted mutation functions and database triggers.
+
+### Exactly one leader per active group
+
+```sql
+create unique index one_active_leader_per_group
+on group_members(group_id)
+where role = 'leader' and status = 'active';
+```
+
+A populated forming/ready/approved/locked group must always have exactly one leader. The unique index prevents more than one; RPCs must prevent zero.
+
+### One current group per student per class
+
+```sql
+create unique index one_active_group_per_student_per_class
+on group_members(class_id, user_id)
+where status = 'active';
+```
+
+This applies equally to leaders and ordinary members.
+
+### One student-created group per class
+
+A permanent creation claim prevents a student from repeatedly creating and deleting groups to become leader again.
+
+Recommended table:
+
+```sql
+create table student_group_creation_claims (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  student_id uuid not null references profiles(id) on delete cascade,
+  group_id uuid references groups(id),
+  status text not null default 'claimed'
+    check (status in ('claimed','reset_by_teacher')),
+  reset_by uuid references profiles(id),
+  reset_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (class_id, student_id)
+);
+```
+
+The teacher may reset a claim only when the previous group was invalid, deleted before use, or otherwise explicitly resolved. The reset is audited.
+
+### `group_invitations`
+
+```sql
+create table group_invitations (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  group_id uuid not null references groups(id) on delete cascade,
+  invitee_id uuid not null references profiles(id) on delete cascade,
+  invited_by uuid not null references profiles(id),
+  status text not null default 'pending'
+    check (status in ('pending','accepted','declined','cancelled','expired')),
+  expires_at timestamptz,
+  responded_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (group_id, invitee_id)
+);
+```
+
+Only a current leader or teacher may create invitations. Acceptance checks current group membership and destination capacity again; a stale invitation does not bypass constraints.
+
+### Group membership history
+
+```sql
+create table group_membership_history (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id),
+  group_id uuid references groups(id),
+  user_id uuid not null references profiles(id),
+  event_type text not null check (event_type in (
+    'joined','left','removed','moved_in','moved_out',
+    'became_leader','leadership_transferred'
+  )),
+  actor_id uuid references profiles(id),
+  related_group_id uuid references groups(id),
+  payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+```
+
+## 5. Atomic group operations
+
+### `create_student_group(class_id, name, description)`
+
+The function must run in one transaction and:
+
+1. validate `auth.uid()` is an active student in the class;
+2. lock the class configuration row;
+3. verify student group creation is enabled and formation is open;
+4. verify the student has no active group in the class;
+5. verify no unreset creation claim exists;
+6. count current non-archived/non-deleted groups;
+7. fail with `GROUP_LIMIT_REACHED` when count >= `maximum_groups`;
+8. create the group;
+9. create the creation claim;
+10. add the creator as the sole active leader;
+11. write audit/research events;
+12. create/broadcast the class group-change event.
+
+The row lock ensures two students racing for the final slot cannot both succeed.
+
+### `accept_group_invitation(invitation_id)`
+
+The function revalidates:
+
+- invitation is pending and not expired;
+- student is an active class member;
+- student is not already in another active group;
+- destination group is accepting members and not full;
+- group formation/membership is not locked.
+
+It then activates membership, marks the invitation accepted, expires/cancels incompatible pending invitations, creates notifications, and emits group-change events.
+
+### `transfer_group_leadership(group_id, new_leader_id)`
+
+The function changes the old leader to member and new member to leader atomically. It is allowed for the current leader before lock or for a teacher. It must never commit a state with zero or two active leaders.
+
+### `move_student_between_groups(class_id, student_id, destination_group_id, successor_leader_id)`
+
+Teacher-only operation. It must:
+
+- lock source/destination memberships and groups;
+- verify same class and destination capacity;
+- block normal movement during an affected active session;
+- handle source leadership before moving;
+- update memberships atomically;
+- cancel incompatible invitations;
+- write membership history, audit events, and notifications;
+- emit group-change events.
+
+### `delete_or_archive_group(group_id, member_handling)`
+
+Teacher-only operation.
+
+- If no session/history dependency exists, soft-delete the group, cancel invitations, and return members to unassigned or move them as explicitly requested.
+- If the group has session history, set status `archived` and preserve all relationships.
+- An affected active session blocks the ordinary operation.
+- Deletion/archival emits notifications and restores a group slot only when the group no longer counts toward current formation.
+
+## 6. In-app notifications
+
+```sql
+create table notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references profiles(id) on delete cascade,
+  type text not null,
+  title text not null,
+  message text not null,
+  entity_type text,
+  entity_id uuid,
+  payload jsonb not null default '{}'::jsonb,
+  read_at timestamptz,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz
+);
+
+create index notifications_unread_by_user
+on notifications(recipient_id, created_at desc)
+where read_at is null;
+```
+
+RLS permits recipients to select and mark only their own notifications. Trusted domain functions create notifications. Email delivery is out of scope for the MVP.
+
+## 7. Session constraints
 
 ### `exploration_session_groups`
 
@@ -95,7 +375,7 @@ create table session_participants (
 
 Observations reference `session_participant_id` so later group changes do not rewrite history.
 
-## 4. Observations
+## 8. Observations
 
 ```sql
 create table observations (
@@ -150,7 +430,7 @@ Submission validation requires:
 
 The capture location is the marker location. Do not require or store submission location for normal map behavior.
 
-## 5. Observation media
+## 9. Observation media
 
 ```sql
 create table observation_media (
@@ -175,7 +455,7 @@ create table observation_media (
 
 Application validation enforces one `whole_plant` image and a maximum of ten images. Bucket policy/config should limit accepted MIME types and processed file size.
 
-## 6. AI analysis
+## 10. AI analysis
 
 ### `ai_analysis_runs`
 
@@ -218,7 +498,7 @@ create table observation_ai_results (
 
 The exact JSON shape may be finalized later, but every stored payload must declare/associate its schema version and pass server validation.
 
-## 7. Student verification and submissions
+## 11. Student verification and submissions
 
 ### Trait verification
 
@@ -239,8 +519,6 @@ create table student_trait_verifications (
   unique (observation_id, analysis_run_id, trait_key)
 );
 ```
-
-Additional flexible student verification context may be stored in a `jsonb` summary on the submission row, but key decisions remain queryable.
 
 ### Submission history
 
@@ -263,7 +541,7 @@ create table observation_submissions (
 
 A revision creates a new submission row; it does not erase the previous row.
 
-## 8. Teacher review
+## 12. Teacher review
 
 ```sql
 create table teacher_reviews (
@@ -284,9 +562,7 @@ create table teacher_reviews (
 
 Teacher corrections are separate from Gemini and student values. The latest verified review is used for the verified display identity.
 
-## 9. Same-species and specimen relationships
-
-### Candidate table
+## 13. Same-species and specimen relationships
 
 ```sql
 create table observation_duplicate_candidates (
@@ -312,9 +588,7 @@ create table observation_duplicate_candidates (
 );
 ```
 
-Same-species matching is scoped to the same session for the MVP. It warns and tags but never blocks.
-
-### Specimen
+Same-species matching is scoped to the same session for the MVP. It warns, tags, and creates a teacher notification but never blocks.
 
 ```sql
 create table specimens (
@@ -329,7 +603,7 @@ create table specimens (
 
 Separate observations may reference one specimen only after human confirmation. Never merge automatically.
 
-## 10. Status and research events
+## 14. Status and research events
 
 ```sql
 create table observation_status_history (
@@ -348,6 +622,7 @@ create table research_events (
   occurred_at timestamptz not null default now(),
   user_id uuid references profiles(id),
   class_id uuid references classes(id),
+  group_id uuid references groups(id),
   activity_id uuid references activities(id),
   session_id uuid references exploration_sessions(id),
   observation_id uuid references observations(id),
@@ -357,10 +632,20 @@ create table research_events (
 
 Use rows for events, not one growing JSON array. `jsonb` payloads may evolve while relational IDs support filtering and research export.
 
-## 11. Recommended RPCs
+## 15. Recommended RPCs
 
 ```text
 join_class_with_invite(code)
+create_student_group(class_id, name, description)
+invite_classmate_to_group(group_id, invitee_id)
+accept_group_invitation(invitation_id)
+decline_group_invitation(invitation_id)
+transfer_group_leadership(group_id, new_leader_id)
+move_student_between_groups(class_id, student_id, destination_group_id, successor_leader_id)
+delete_or_archive_group(group_id, member_handling)
+set_group_formation_state(class_id, state)
+mark_notification_read(notification_id)
+
 open_exploration_session(session_id)
 activate_session_group(session_id, group_id)
 start_observation(session_id, client_generated_id, capture_metadata)
@@ -371,11 +656,16 @@ review_observation(observation_id, submission_id, decision, corrections)
 complete_exploration_session(session_id)
 ```
 
-Sensitive functions validate `auth.uid()`, set a fixed `search_path`, restrict execute grants, and emit audit/status events.
+Sensitive functions validate `auth.uid()`, set a fixed `search_path`, restrict execute grants, and emit audit/status/notification events.
 
-## 12. RLS intent
+## 16. RLS intent
 
 - Student reads class/session data only with active membership/participant access.
+- Student reads class group summaries required for group formation.
+- Student creates a group only through the trusted group-creation RPC.
+- Leader manages invitations/membership only for their own unlocked group.
+- Student reads and marks only their own notifications.
+- Teacher manages groups only in classes they teach.
 - Student creates and edits only their own observation while workflow state permits.
 - Student cannot edit prior submission or teacher-review rows.
 - Teacher reads/reviews observations only for classes they teach.
@@ -384,7 +674,7 @@ Sensitive functions validate `auth.uid()`, set a fixed `search_path`, restrict e
 - AI worker access uses trusted server credentials and validates target observation/session.
 - Research/audit tables are not broadly exposed to students.
 
-## 13. Storage paths
+## 17. Storage paths
 
 ```text
 observation-images/{class_id}/{session_id}/{observation_id}/{media_id}.webp
