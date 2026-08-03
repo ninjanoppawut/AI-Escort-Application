@@ -10,8 +10,12 @@ AI assists observation; it does not replace student judgment or teacher verifica
 
 ### Student
 
-- Join a class using an invite code or link.
-- Create or join a group.
+- Join a class using an invite code, invitation link, or QR code.
+- Create one group in a class when group formation is open and a group slot remains.
+- Become the group leader automatically when creating that group.
+- Invite eligible classmates through in-app notifications.
+- Accept or decline group invitations inside the application.
+- Belong to only one active/forming group per class.
 - Join an authorized exploration session.
 - Preview the route while waiting.
 - Publish live location and create observations only while the group is active.
@@ -23,9 +27,40 @@ AI assists observation; it does not replace student judgment or teacher verifica
 - Revise and resubmit the same observation when requested.
 - View the completed activity map and plant details for observations visible in the class/session.
 
+### Group leader
+
+A group leader is a student role scoped to one group. The student who successfully creates a group becomes its first leader.
+
+The leader may:
+
+- rename the group while group formation is unlocked;
+- invite eligible classmates from the same class;
+- cancel pending invitations;
+- remove members before the group is locked;
+- transfer leadership to another active member;
+- notify the teacher that the group is ready.
+
+The leader may not:
+
+- create another group in the same class;
+- force a classmate into the group without acceptance;
+- invite a student who is already in another group;
+- exceed the teacher-defined maximum group size;
+- create a second active leader;
+- modify membership during an active session;
+- activate the group for exploration.
+
 ### Teacher
 
 - Create and manage classes, memberships, groups, activities, routes, boundaries, checkpoints, and sessions.
+- Configure group formation: minimum size, maximum size, maximum group count, and open/closed state.
+- Generate, disable, rotate, and expire class invites.
+- View every group and unassigned student in the class.
+- Move a student between groups when allowed.
+- Change a group leader.
+- Create a group manually.
+- Approve, lock, unlock, archive, or delete an unused group.
+- Merge or reorganize undersized groups before a session.
 - Activate one group at a time.
 - View live locations and submitted observation markers.
 - Receive a visible same-species tag when a new submission matches a species already submitted in the same session.
@@ -45,7 +80,11 @@ AI assists observation; it does not replace student judgment or teacher verifica
 School
  └─ Class
      ├─ Memberships
+     ├─ Class invites
      ├─ Groups
+     │   ├─ One leader
+     │   ├─ Members
+     │   └─ Group invitations
      └─ Activities
          ├─ Route, boundary, checkpoints
          └─ Exploration sessions
@@ -60,7 +99,177 @@ School
 
 An activity is a reusable learning plan. A session is one real execution of that activity.
 
-## 4. Locked business rules
+## 4. Class creation and invitation flow
+
+When creating a class, the teacher enters:
+
+- class name;
+- subject;
+- academic year and semester;
+- optional description;
+- minimum and maximum group size;
+- maximum number of groups;
+- whether students may create groups;
+- initial group-formation state: `open` or `closed`.
+
+The system creates the teacher as an active class member with role `teacher`.
+
+The teacher may create class invitations using:
+
+- short class code;
+- invitation link;
+- QR code based on the invitation link.
+
+An invitation may include:
+
+- expiry time;
+- maximum uses;
+- disabled/revoked state;
+- created-by and usage audit data.
+
+Joining occurs through a trusted server operation that validates the invite and always creates a class-scoped student membership. The browser must not be allowed to choose an arbitrary role or class ID.
+
+## 5. Student-led group formation
+
+### Creating a group
+
+A student may create a group only when all conditions are true:
+
+```text
+active student in class
+AND student-created groups enabled
+AND group formation open
+AND student not already in a forming/active group
+AND student has not already created a student group in the class
+AND current forming/active group count < maximum_groups
+```
+
+The group creator becomes the single active leader automatically.
+
+When the maximum group count is reached, the Create Group control becomes disabled, not silently hidden. The UI explains that all group slots are occupied and directs the student to join or accept an invitation from an existing group.
+
+### Realtime group availability
+
+The group screen uses:
+
+1. an authoritative initial database fetch;
+2. private Realtime events to invalidate/refetch class-group data immediately;
+3. refetch when the app regains focus, reconnects to the network, or reconnects to Realtime.
+
+A fixed five-second poll is not the primary synchronization mechanism. An optional slow fallback poll may be used, but correctness comes from the database transaction and current refetch.
+
+### Preventing race conditions
+
+Group creation occurs through one atomic database operation. If two students attempt to claim the last available group slot, exactly one succeeds. The other receives `GROUP_LIMIT_REACHED`, refetches, and sees the updated state.
+
+### Inviting classmates
+
+The group leader sees only classmates who:
+
+- are active members of the same class;
+- are not already active/forming members of another group;
+- have not already accepted another invitation;
+- can join without exceeding group capacity.
+
+The leader sends an in-app invitation. The classmate accepts or declines. A leader cannot directly force-add another student.
+
+Invitation states:
+
+```text
+pending
+accepted
+declined
+cancelled
+expired
+```
+
+## 6. Group rules and lifecycle
+
+Recommended group statuses:
+
+```text
+forming → ready → approved → locked → archived
+```
+
+- `forming`: leader may invite classmates and membership may change.
+- `ready`: group meets the minimum size and may be submitted for teacher review.
+- `approved`: teacher accepts the group configuration.
+- `locked`: normal membership changes are blocked for session preparation/participation.
+- `archived`: group is no longer used for future sessions but historical records remain.
+
+Locked business rules:
+
+1. Each group has exactly one active leader.
+2. A student may belong to only one forming/active group per class.
+3. A student may create only one student-created group per class unless a teacher explicitly resets the failed/removed group state.
+4. The maximum number of forming/active groups is teacher-configurable and database-enforced.
+5. Group capacity is teacher-configurable and database-enforced.
+6. Leadership transfer is atomic; a populated group cannot be left without a leader.
+7. Teacher actions and leadership changes create audit events and in-app notifications.
+
+## 7. Teacher group management
+
+### Move student between groups
+
+A teacher may move a student when:
+
+- source and destination groups belong to the same class;
+- the destination has capacity;
+- the student is not currently participating in an active exploration;
+- the operation does not leave a populated source group without a leader.
+
+If the student is the source group leader, the teacher must assign a successor, move all remaining members, or delete/archive the now-empty group as part of the same workflow.
+
+A move changes current group membership for future sessions. It never rewrites a historical session snapshot.
+
+### Delete or archive group
+
+- An unused group with no session history may be deleted.
+- Pending invitations are cancelled.
+- Members return to unassigned state unless the teacher moves them first.
+- Deletion restores an available group slot.
+- A group already referenced by a session must not be hard-deleted; it is archived.
+- Archived groups remain visible in historical maps, reports, observations, and research data.
+
+### Active-session restriction
+
+Normal move, removal, deletion, and leadership changes are blocked while the affected student/group participates in an active session. Emergency removal is a separate teacher-supervised operation with explicit audit history.
+
+### Participant snapshot
+
+When a session is opened, current group membership is copied into session participant records. Later class-group changes affect future sessions only.
+
+## 8. In-app notifications
+
+The MVP uses in-app notifications; email is not required.
+
+Notifications are durable PostgreSQL rows and are delivered immediately while the app is open using private Realtime channels. Users can reopen the app and still see unread notifications.
+
+Student notifications include:
+
+- class joined;
+- group invitation received;
+- invitation accepted/declined/cancelled;
+- moved to another group;
+- leadership assigned or transferred;
+- group approved, locked, unlocked, archived, or deleted;
+- group is next or active;
+- teacher requested observation revision;
+- observation verified, unable to verify, or rejected;
+- session completed.
+
+Teacher notifications include:
+
+- student joined class;
+- group reached minimum size;
+- group requested approval;
+- new or resubmitted observation;
+- same species submitted again in the session;
+- important location/session warning.
+
+Notification access is recipient-scoped through RLS. Realtime events improve responsiveness but do not replace durable notification rows.
+
+## 9. Locked observation business rules
 
 1. Each observation belongs to one student.
 2. A session may contain many groups, but only one may have `active` status at a time.
@@ -82,7 +291,7 @@ An activity is a reusable learning plan. A session is one real execution of that
 18. The teacher manually decides when to complete a session/activity.
 19. After completion, authorized teachers and participating students may view the result map and click markers to open plant details.
 
-## 5. Core observation workflow
+## 10. Core observation workflow
 
 ```text
 student starts observation
@@ -106,7 +315,7 @@ student starts observation
 → student changes/adds evidence and resubmits
 ```
 
-## 6. Observation statuses
+## 11. Observation statuses
 
 ```text
 draft
@@ -124,7 +333,7 @@ draft
 
 AI failure is a separate analysis state and does not invalidate the observation draft.
 
-## 7. Student verification fields
+## 12. Student verification fields
 
 For each AI-proposed trait, the student may select:
 
@@ -137,7 +346,7 @@ not_visible
 
 When `not_match` is selected, a corrected value should be allowed. Flexible additional trait fields may be stored without requiring a schema migration, but frequently queried fields should be normalized later.
 
-## 8. Gemini confidence behavior
+## 13. Gemini confidence behavior
 
 Initial recommended behavior:
 
@@ -147,7 +356,7 @@ Initial recommended behavior:
 
 The threshold configuration must be changeable without redesigning the observation schema.
 
-## 9. Same-species warning
+## 14. Same-species warning
 
 After a student selects or enters the plant identity, the system checks observations in the same session.
 
@@ -157,11 +366,12 @@ If the normalized species matches an existing submission:
 - show related records when authorized;
 - allow the new individual observation to continue;
 - tag the submission as `same_species_in_session`;
+- create a teacher notification;
 - make the tag visible in the teacher review panel and map/detail interface.
 
 This warning supports teacher awareness and later analysis; it is not a submission lock.
 
-## 10. Map requirements
+## 15. Map requirements
 
 ### During activity
 
@@ -192,7 +402,7 @@ Participating students and authorized teachers can open the completed session ma
 - teacher review and feedback;
 - same-species/related-observation indicators.
 
-## 11. Image requirements
+## 16. Image requirements
 
 - Minimum: one whole-plant image.
 - Maximum: ten images.
@@ -202,7 +412,7 @@ Participating students and authorized teachers can open the completed session ma
 - Store capture timestamp separately from image metadata.
 - Use transformed derivatives for map/list/review presentation.
 
-## 12. Offline and failure behavior
+## 17. Offline and failure behavior
 
 - Draft and pending uploads are stored locally using client-generated UUIDs.
 - Retrying must be idempotent.
@@ -211,11 +421,20 @@ Participating students and authorized teachers can open the completed session ma
 - Manual plant entry remains available.
 - If GPS is unavailable, prompt the student to wait/retry; if still unavailable, allow a flagged draft/submission for teacher handling rather than silently fabricating a location.
 
-## 13. Research and audit data
+## 18. Research and audit data
 
 Use append-only event rows for meaningful actions such as:
 
 ```text
+class_joined
+group_created
+group_invitation_sent
+group_invitation_accepted
+group_leader_changed
+student_moved_between_groups
+group_locked
+group_deleted
+group_archived
 session_joined
 observation_started
 photo_captured
@@ -236,18 +455,29 @@ map_marker_opened
 
 Each event has relational identifiers and a flexible `payload jsonb`. The final research variables are not yet fixed, so the event model must remain flexible while avoiding sensitive data duplication.
 
-## 14. MVP acceptance scenarios
+## 19. MVP acceptance scenarios
 
-1. Teacher creates a class, activity boundary, route, session, and two groups.
-2. A concurrency test proves that only one group can be active.
-3. Student A creates an individual observation with capture location/time and 1–10 images.
-4. Oversized images are reduced before upload and remain usable for teacher review.
-5. Gemini analysis runs asynchronously and returns a versioned structured result.
-6. Student compares traits with the real plant, corrects at least one field, enters both required names, and submits.
-7. Student B submits the same species in the same session; the system warns but allows submission and tags the teacher view.
-8. Teacher sees status-colored markers and opens the plant detail panel.
-9. Teacher requests revision; Student A edits the same observation and resubmits without losing previous values.
-10. Teacher corrects and verifies the final plant identity.
-11. Teacher manually completes the session.
-12. Teacher and participating students open the completed map and plant details.
-13. A failed Gemini request leaves the draft intact and allows manual entry/retry.
+1. Teacher creates a class and configures group size, maximum groups, and group formation.
+2. Students join using an in-app class invite flow without email.
+3. The first eligible students atomically create the available groups and become their single leaders.
+4. When the maximum group count is reached, classmates receive Realtime updates and the Create Group control becomes disabled with an explanation.
+5. Two students racing for the final group slot produce one success and one `GROUP_LIMIT_REACHED` response.
+6. A leader invites an eligible classmate; the classmate receives an in-app notification and accepts.
+7. A student cannot belong to or lead multiple active groups in the same class.
+8. Teacher moves a non-active-session student to another group and both students/groups update in Realtime.
+9. Teacher changes leadership without leaving a populated group leaderless.
+10. Teacher deletes an unused group, cancelling invitations and restoring one group slot.
+11. A group with session history is archived rather than hard-deleted.
+12. Session opening snapshots group membership so later moves do not alter history.
+13. A concurrency test proves that only one exploration group can be active.
+14. Student creates an individual observation with capture location/time and 1–10 images.
+15. Oversized images are reduced before upload and remain usable for teacher review.
+16. Gemini analysis runs asynchronously and returns a versioned structured result.
+17. Student compares traits with the real plant, corrects at least one field, enters both required names, and submits.
+18. Another student submits the same species in the same session; the system warns, allows submission, tags the teacher view, and creates an in-app teacher notification.
+19. Teacher sees status-colored markers and opens the plant detail panel.
+20. Teacher requests revision; the student edits the same observation and resubmits without losing previous values.
+21. Teacher corrects and verifies the final plant identity.
+22. Teacher manually completes the session.
+23. Teacher and participating students open the completed map and plant details.
+24. A failed Gemini request leaves the draft intact and allows manual entry/retry.
