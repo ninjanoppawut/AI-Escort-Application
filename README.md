@@ -1,45 +1,55 @@
 # AI Escort Application
 
-AI-assisted field exploration platform for schools. Teachers define an exploration area and control live sessions. Students walk inside the area, photograph plants, receive structured Gemini suggestions, verify the result against the real plant, and submit evidence with location and time for teacher review.
+AI-assisted, mobile-first field exploration application for schools. Teachers create classes and plant-exploration activities, students form groups, walk inside a defined area, photograph plants, receive provisional Gemini analysis, verify the result against the real plant, and submit observations for manual teacher review.
 
-## Core observation flow
+## Locked MVP workflow
 
 ```text
-enter active session
-→ walk inside exploration boundary
-→ photograph a plant
-→ capture GPS, accuracy, and capture time
-→ Gemini suggests possible names and visible traits
+Teacher creates class, activity, route, boundary, and session
+→ students join a class and form groups
+→ teacher activates one group
+→ student walks inside the activity boundary
+→ student creates an individual observation
+→ app records capture location, GPS accuracy, and capture time
+→ student uploads 1–10 plant images
+→ durable AI job sends images to Gemini
+→ Gemini returns provisional plant candidates and visible traits
 → student checks each trait against the real plant
-→ system checks same-species and possible same-specimen duplicates
-→ student submits with separate submission GPS/time
-→ teacher verifies or requests revision
+→ student confirms or corrects the result
+→ student provides required Thai/common and scientific names
+→ system warns about the same species already submitted in this session
+→ student may still submit another individual observation
+→ submitted observation appears as a status-colored map marker
+→ teacher manually verifies, corrects, rejects, or requests revision
+→ student edits the same observation and resubmits when revision is required
+→ teacher manually completes the activity/session
+→ after completion, teachers and students can view the result map and open plant details from each marker
 ```
 
-## Core capabilities
+## Core decisions
 
-- RBAC: student, teacher, admin
-- Teacher-created classes, groups, activities, routes, and boundaries
-- One active exploration group per session, enforced by PostgreSQL
-- Mapbox live map with Supabase Broadcast and Presence
-- Private observation images and offline synchronization
-- Gemini structured plant candidates and visible characteristics
-- Student trait verification: match, not match, unsure, not visible
-- Separate AI, student, and teacher evidence layers
-- Species-level duplicate warning without blocking another individual plant
-- Specimen-level duplicate ranking using taxon, traits, image similarity, location, and time
-- Human confirmation before linking observations to the same specimen
-- Teacher review with capture/submission location and timestamps
+- Each observation belongs to one student.
+- Only one group may be `active` in a session at one time.
+- Gemini is the MVP plant-analysis provider.
+- Gemini output is provisional and never becomes verified automatically.
+- Students must provide a Thai/common name and scientific name before submission; `unknown` is not accepted.
+- Students may use external tools such as Google Lens and manually enter information when Gemini fails.
+- The map uses the capture location, not the later submission location.
+- Same-species detection warns and tags the teacher but does not block submission.
+- Teacher verification is manual and may correct the final identity while preserving all prior AI and student values.
+- One observation supports 1–10 images.
+- The teacher manually decides when a session/activity is complete.
+- Submitted and reviewed observations remain available on a post-activity map for both teachers and participating students.
 
-## Proposed stack
+## MVP technology
 
 - Next.js App Router + TypeScript
 - Tailwind CSS + shadcn/ui
-- Supabase Auth, PostgreSQL, PostGIS, Realtime, Storage, Edge Functions
+- Supabase Auth, PostgreSQL, PostGIS, Realtime, Storage, Queues, and Edge Functions
 - Mapbox GL JS
-- Gemini through a provider adapter and versioned JSON schema
-- TanStack Query, React Hook Form, Zod, Zustand
-- IndexedDB for offline drafts and media queues
+- Gemini through a server-side provider adapter
+- IndexedDB for offline drafts and upload retry
+- Zod, React Hook Form, TanStack Query, and Zustand
 
 ## Documentation
 
@@ -50,29 +60,9 @@ enter active session
 5. [Plant survey plugin](docs/PLANT_SURVEY_PLUGIN.md)
 6. [Implementation plan](docs/IMPLEMENTATION_PLAN.md)
 7. [Decisions and open questions](docs/DECISIONS_AND_QUESTIONS.md)
-8. [AI coding-agent instructions](AGENTS.md)
-
-## Recommended vertical slice
-
-1. Authentication, class membership, and RLS.
-2. Teacher activity boundary and session control.
-3. Single active group and live map.
-4. Plant image capture with capture GPS/time.
-5. Gemini structured analysis.
-6. Student verification.
-7. Basic species dedupe, then specimen candidate matching.
-8. Submission GPS/time and teacher review.
-9. Offline synchronization and exports.
-
-## Important domain rules
-
-- Gemini output is provisional.
-- Capture location is the primary plant location; submission location is stored separately.
-- Same species does not automatically mean duplicate observation.
-- Distance alone cannot identify the same physical plant.
-- The system never auto-deletes or auto-merges observations from dedupe scores.
-- Original AI, student, and teacher values must remain traceable.
+8. [Thai consolidated specification](docs/สรุประบบ_AI_ESCORT_ภาษาไทย.md)
+9. [AI coding-agent instructions](AGENTS.md)
 
 ## Status
 
-The repository currently contains the updated product and engineering specification. Application code has not yet been scaffolded.
+The repository contains the locked MVP product and engineering specification. The exact Gemini normalized JSON schema will be finalized during the AI integration phase, but it must be versioned, validated, and compatible with the fields described in the documentation.
