@@ -2,51 +2,40 @@
 
 ## 1. Architecture goals
 
-The system must support mobile field use, strict class-scoped authorization, real-time collaboration, intermittent connectivity, modular survey plugins, and provider-independent AI services.
+The system must support mobile field use, strict class/session authorization, real-time supervision, intermittent connectivity, Gemini image analysis, student verification, teacher review, and plant deduplication without losing the original evidence.
 
 ## 2. High-level design
 
 ```text
 Next.js Web/PWA
- ├─ Student field experience
- ├─ Teacher dashboard and route builder
- └─ Admin console
+ ├─ Student live map and observation capture
+ ├─ Student Gemini-result verification
+ ├─ Teacher live supervision and review
+ └─ Admin configuration
         │
         ├─ Supabase Auth
         ├─ PostgreSQL + PostGIS
         ├─ Supabase Realtime Broadcast + Presence
         ├─ Supabase Storage
-        └─ Edge Functions / server routes
-                 │
-                 ├─ Plant identification provider
-                 ├─ Learning-escort LLM provider
-                 └─ Export and background processing
+        └─ Trusted server routes / Edge Functions
+                 ├─ Gemini provider adapter
+                 ├─ Taxonomy normalization adapter
+                 ├─ Visual similarity / embedding adapter
+                 ├─ Dedupe ranking service
+                 └─ Export and reporting
 ```
 
 ## 3. Frontend boundaries
 
 ### Server components
 
-Use for:
-
-- authenticated page shells;
-- initial class and activity data;
-- teacher dashboards;
-- read-heavy screens;
-- role-aware navigation.
+Use for authenticated shells, initial class/activity data, teacher dashboards, role-aware navigation, and read-heavy review screens.
 
 ### Client components
 
-Use for:
+Use for Mapbox, live-location subscriptions, camera/media capture, offline queues, Gemini-analysis progress, student trait verification, and duplicate-candidate review.
 
-- Mapbox map and route editing;
-- live location subscription;
-- camera and media capture;
-- offline queue;
-- forms requiring local interaction;
-- Realtime Presence and Broadcast.
-
-Do not put the entire application behind a single client component.
+Business rules must remain outside page components and must be validated again on the server/database.
 
 ## 4. Suggested modules
 
@@ -58,7 +47,6 @@ src/
     (teacher)/
     (admin)/
     api/
-  components/
   features/
     auth/
     classes/
@@ -67,149 +55,175 @@ src/
     sessions/
     live-map/
     observations/
-    assessment/
+    gemini-analysis/
+    trait-verification/
+    plant-dedupe/
+    teacher-review/
   lib/
     supabase/
     mapbox/
     authz/
     offline/
     validation/
+    taxonomy/
   plugins/
     plant-survey/
 ```
 
-Business logic should remain independent from page components.
-
 ## 5. Authentication and authorization
 
 - Supabase Auth provides identity.
-- `profiles` stores display information only.
-- Class and school permissions are stored in membership tables.
-- Global admin authorization may use protected app metadata, but database membership remains the source of truth for class-scoped access.
+- Class and session membership tables are authoritative.
 - Every public table has RLS.
-- Server code must still validate input and authorization; service-role usage is restricted to trusted backend operations.
+- Only active-group participants may publish location or create/submit observations.
+- Waiting groups may preview routes but cannot publish.
+- Gemini, taxonomy, and similarity services are called only through trusted server code.
+- Service-role credentials never reach the client.
 
 ## 6. Realtime strategy
 
 ### Presence
 
-Use Presence for low-frequency state:
-
-- connected participants;
-- ready/exploring/paused status;
-- current screen or capability;
-- last heartbeat.
+Use for connected participants and low-frequency state.
 
 ### Broadcast
 
-Use Broadcast for high-frequency ephemeral events:
+Use for high-frequency ephemeral events:
 
-- location update;
-- heading, speed, accuracy;
+- live location;
+- heading, speed, and accuracy;
 - checkpoint reached;
-- teacher alert;
-- acknowledgement;
-- route progress.
-
-Channel naming:
-
-```text
-session:{sessionId}:group:{groupId}
-session:{sessionId}:teachers
-```
-
-Membership and session authorization must be checked before a user receives channel credentials or subscribes to private channels.
+- session state;
+- observation status notification;
+- teacher alert.
 
 ### Durable persistence
 
-Do not insert every GPS sample. Broadcast frequent samples and persist only sampled or meaningful events:
+Persist sampled track points and meaningful events, not every GPS sample.
 
-- every configurable interval while moving;
-- when reaching a checkpoint;
-- when leaving the boundary for a sustained duration;
-- when recording an observation;
-- at pause, resume, and completion.
+## 7. Observation evidence pipeline
 
-## 7. Map architecture
+```text
+client creates idempotent draft
+→ capture location/time stored
+→ original media uploaded privately
+→ trusted server sends selected media to Gemini
+→ Gemini response validated against schema version
+→ candidates and visible traits stored
+→ taxonomy candidates normalized
+→ student verification stored separately
+→ dedupe services rank species/specimen candidates
+→ student acknowledges candidates
+→ submission location/time stored
+→ teacher review stored separately
+```
 
-Mapbox renders:
+No stage overwrites an earlier evidence layer.
 
-- route LineString;
-- boundary Polygon/MultiPolygon;
-- checkpoint Points;
-- observation Points;
-- member markers;
-- actual track;
-- GPS accuracy radius.
-
-PostGIS performs server-side spatial validation, distance queries, point-in-polygon checks, and export preparation. Client-side Turf-compatible utilities may provide immediate feedback, but the database is authoritative for saved geometry.
-
-## 8. Offline design
-
-Use IndexedDB through a small abstraction. Store:
-
-- observation drafts;
-- client-generated UUIDs;
-- pending media uploads;
-- location track segments;
-- synchronization attempts and errors.
-
-Synchronization rules:
-
-1. Create observation record idempotently using `client_generated_id`.
-2. Upload media to deterministic paths.
-3. Attach media metadata.
-4. Submit observation only after required records are durable.
-5. Resolve server validation errors without discarding the local draft.
-
-Live location cannot be guaranteed offline. Display the last known server timestamp clearly and upload historical track segments after reconnection.
-
-## 9. AI provider architecture
+## 8. Gemini adapter
 
 ```ts
-export interface PlantIdentificationProvider {
-  identify(input: PlantIdentificationInput): Promise<PlantIdentificationResult>;
-}
-
-export interface LearningEscortProvider {
-  guide(input: LearningEscortInput): Promise<LearningEscortResult>;
+export interface PlantAnalysisProvider {
+  analyze(input: PlantAnalysisInput): Promise<NormalizedPlantAnalysis>;
 }
 ```
 
-Provider responses must be normalized before reaching the UI. Store provider name, model, request version, confidence when available, and a safe summary. Do not expose hidden chain-of-thought or store unnecessary raw prompts containing student data.
+The adapter must:
 
-AI calls run through trusted server routes or Edge Functions. Apply rate limits, file-size validation, media-type checks, and usage logs.
+- validate media type and size;
+- remove unnecessary metadata before provider transmission;
+- use versioned prompts and JSON schemas;
+- normalize provider errors;
+- return explicit unknown/not-visible values;
+- record provider, model, latency, schema version, and request status;
+- avoid sending other students' location or unrelated personal data.
 
-## 10. Privacy and safety
+## 9. Taxonomy normalization
 
-- Location sharing exists only during authorized sessions.
-- Raw tracks are not public to classmates after the session.
-- Teacher views show the minimum information required for supervision.
-- Store explicit timestamps for last location update.
-- Set a retention period for raw location events.
-- Strip unnecessary EXIF data from exported or publicly shared images.
-- Provide a teacher-controlled emergency stop that closes location publishing and marks the session paused.
+Gemini names are not sufficient as stable identifiers. A taxonomy adapter should map candidates to a normalized taxon when possible while retaining the original Gemini text.
 
-## 11. Deployment
+```ts
+export interface TaxonomyProvider {
+  normalize(candidate: PlantNameCandidate): Promise<NormalizedTaxonMatch[]>;
+}
+```
+
+Normalization uncertainty must remain visible.
+
+## 10. Duplicate detection architecture
+
+### Species duplicate service
+
+Searches authorized observations for the same normalized taxon. It generates informational warnings only.
+
+### Specimen duplicate service
+
+Combines independent signals:
+
+```text
+taxon overlap
++ student-verified trait similarity
++ image embedding similarity
++ capture-location distance
++ capture-time difference
+= ranked possible specimen matches
+```
+
+Location is one feature, never the sole decision.
+
+The service returns ranked candidates and scores. It cannot delete, merge, or finalize duplication. Student and teacher decisions are stored separately. Confirmed records may share a specimen ID.
+
+## 11. Map and location architecture
+
+Mapbox renders route, boundary, checkpoints, live members, accuracy radius, tracks, and observation markers. PostGIS is authoritative for saved geometry and boundary/distance calculations.
+
+Store separately:
+
+- capture location, accuracy, captured time;
+- submission location, accuracy, submitted time;
+- sampled live track.
+
+The capture location is the primary plant location.
+
+## 12. Offline design
+
+IndexedDB stores observation drafts, media blobs/references, client UUIDs, verification state, duplicate decisions, and sync attempts.
+
+Recommended sync order:
+
+1. create observation idempotently;
+2. upload media;
+3. request or resume Gemini analysis when online;
+4. sync student verification;
+5. run dedupe;
+6. capture and sync submission event;
+7. resolve server validation without deleting local work.
+
+## 13. Privacy and safety
+
+- Images are private by default.
+- Exact student locations are visible only to authorized session participants/teachers as required.
+- Do not include exact location in generic application logs.
+- Strip unnecessary EXIF from provider-bound or exported images.
+- Configure retention for raw live tracks and provider payloads.
+- Store normalized Gemini output longer than raw prompts/responses where possible.
+
+## 14. Deployment and observability
 
 Recommended initial deployment:
 
 - Vercel for Next.js;
-- Supabase hosted project;
-- Mapbox token restricted by allowed URLs;
-- separate development, staging, and production environments;
-- environment validation at build and runtime;
+- hosted Supabase with separate development/staging/production projects;
+- restricted Mapbox token;
+- Gemini credentials held in trusted server environment;
 - preview deployments connected only to non-production data.
 
-## 12. Observability
+Observe:
 
-Capture:
-
-- application errors;
-- failed sync operations;
+- RLS failures and cross-class tests;
 - Realtime connection state;
-- AI request latency and failure category;
-- session-control audit events;
-- database and RLS policy tests.
-
-Never log access tokens, exact student locations in general application logs, or private image URLs.
+- upload/sync failures;
+- Gemini latency, schema failures, and rate limits;
+- taxonomy normalization coverage;
+- dedupe score distributions and human decisions;
+- session-control and teacher-review audit events.
