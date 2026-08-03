@@ -1,12 +1,19 @@
 # AI Escort Application
 
-AI-assisted, mobile-first field exploration application for schools. Teachers create classes and plant-exploration activities, students form groups, walk inside a defined area, photograph plants, receive provisional Gemini analysis, verify the result against the real plant, and submit observations for manual teacher review.
+AI-assisted, mobile-first field exploration application for schools. Teachers create classes and plant-exploration activities, students form teacher-controlled groups, walk inside a defined area, photograph plants, receive provisional Gemini analysis, verify the result against the real plant, and submit observations for manual teacher review.
 
 ## Locked MVP workflow
 
 ```text
-Teacher creates class, activity, route, boundary, and session
-→ students join a class and form groups
+Teacher creates class and group settings
+→ teacher shares class code/link/QR
+→ students join the class
+→ eligible students create the available groups and become group leaders
+→ leaders invite classmates through in-app notifications
+→ classmates accept or decline
+→ teacher may move students, change leaders, lock groups, delete unused groups, or archive historical groups
+→ teacher creates activity, route, boundary, and session
+→ session snapshots group membership
 → teacher activates one group
 → student walks inside the activity boundary
 → student creates an individual observation
@@ -28,18 +35,27 @@ Teacher creates class, activity, route, boundary, and session
 
 ## Core decisions
 
+- Class invitations use code, link, or QR; email is not required for the MVP.
+- In-app notifications are durable PostgreSQL rows with private Realtime update signals.
+- Teacher configures group size, maximum group count, student group creation, and formation open/closed state.
+- The student who successfully creates a group becomes its sole leader.
+- A student may belong to only one current group and create only one student group per class unless a teacher resets the claim.
+- Group creation is atomic; only one student can claim the final available group slot.
+- Group screens use initial fetch + Realtime signal + authoritative refetch, not five-second primary polling.
+- Teacher may move students, change leaders, delete unused groups, and archive groups with session history.
+- Session participant snapshots preserve historical membership after later group changes.
 - Each observation belongs to one student.
-- Only one group may be `active` in a session at one time.
+- Only one exploration group may be `active` in a session at one time.
 - Gemini is the MVP plant-analysis provider.
 - Gemini output is provisional and never becomes verified automatically.
 - Students must provide a Thai/common name and scientific name before submission; `unknown` is not accepted.
 - Students may use external tools such as Google Lens and manually enter information when Gemini fails.
-- The map uses the capture location, not the later submission location.
-- Same-species detection warns and tags the teacher but does not block submission.
+- The map uses the capture location.
+- Same-species detection warns, tags, and notifies the teacher but does not block submission.
 - Teacher verification is manual and may correct the final identity while preserving all prior AI and student values.
 - One observation supports 1–10 images.
 - The teacher manually decides when a session/activity is complete.
-- Submitted and reviewed observations remain available on a post-activity map for both teachers and participating students.
+- Submitted and reviewed observations remain available on a post-activity map for teachers and participating students.
 
 ## MVP technology
 
@@ -48,7 +64,7 @@ Teacher creates class, activity, route, boundary, and session
 - Supabase Auth, PostgreSQL, PostGIS, Realtime, Storage, Queues, and Edge Functions
 - Mapbox GL JS
 - Gemini through a server-side provider adapter
-- IndexedDB for offline drafts and upload retry
+- IndexedDB for offline observation drafts and upload retry
 - Zod, React Hook Form, TanStack Query, and Zustand
 
 ## Documentation
