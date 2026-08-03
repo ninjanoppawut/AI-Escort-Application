@@ -1,23 +1,35 @@
 # AI Escort Application
 
-AI-assisted field exploration platform for schools. Teachers create classes and exploration activities, students form groups, follow a defined route in real time, systematically survey plants, and reflect on ecological relationships.
+AI-assisted field exploration platform for schools. Teachers define an exploration area and control live sessions. Students walk inside the area, photograph plants, receive structured Gemini suggestions, verify the result against the real plant, and submit evidence with location and time for teacher review.
 
-## Product goal
+## Core observation flow
 
-The application acts as an **AI learning escort**. It guides students through a teacher-defined area, prompts observation, checks data completeness, suggests possible plant identifications, and supports ecological reflection. AI suggestions are never treated as final expert verification.
+```text
+enter active session
+→ walk inside exploration boundary
+→ photograph a plant
+→ capture GPS, accuracy, and capture time
+→ Gemini suggests possible names and visible traits
+→ student checks each trait against the real plant
+→ system checks same-species and possible same-specimen duplicates
+→ student submits with separate submission GPS/time
+→ teacher verifies or requests revision
+```
 
 ## Core capabilities
 
-- RBAC: `student`, `teacher`, `admin`
-- Teacher-created classes and invite codes
-- Student-created groups and proposed activities inside a class
-- Teacher approval and live session control
-- One active exploration group per session
-- Real-time map, route, checkpoints, presence, and location updates
-- Modular systematic plant-survey plugin
-- Observation images, structured traits, ecology context, comments, and verification
-- Offline queue and later synchronization
-- Teacher review, assessment, analytics, and export
+- RBAC: student, teacher, admin
+- Teacher-created classes, groups, activities, routes, and boundaries
+- One active exploration group per session, enforced by PostgreSQL
+- Mapbox live map with Supabase Broadcast and Presence
+- Private observation images and offline synchronization
+- Gemini structured plant candidates and visible characteristics
+- Student trait verification: match, not match, unsure, not visible
+- Separate AI, student, and teacher evidence layers
+- Species-level duplicate warning without blocking another individual plant
+- Specimen-level duplicate ranking using taxon, traits, image similarity, location, and time
+- Human confirmation before linking observations to the same specimen
+- Teacher review with capture/submission location and timestamps
 
 ## Proposed stack
 
@@ -25,8 +37,9 @@ The application acts as an **AI learning escort**. It guides students through a 
 - Tailwind CSS + shadcn/ui
 - Supabase Auth, PostgreSQL, PostGIS, Realtime, Storage, Edge Functions
 - Mapbox GL JS
+- Gemini through a provider adapter and versioned JSON schema
 - TanStack Query, React Hook Form, Zod, Zustand
-- AI provider adapters for plant identification and guided learning prompts
+- IndexedDB for offline drafts and media queues
 
 ## Documentation
 
@@ -39,20 +52,27 @@ The application acts as an **AI learning escort**. It guides students through a 
 7. [Decisions and open questions](docs/DECISIONS_AND_QUESTIONS.md)
 8. [AI coding-agent instructions](AGENTS.md)
 
-## Recommended implementation order
+## Recommended vertical slice
 
-1. Bootstrap Next.js and Supabase clients.
-2. Implement authentication, profiles, classes, memberships, and RBAC.
-3. Add groups, activities, route builder, and approval workflow.
-4. Add exploration sessions and database-enforced single active group.
-5. Add Mapbox live exploration using Supabase Broadcast and Presence.
-6. Add the plant-survey plugin and observation review.
-7. Add offline synchronization, assessment, analytics, and exports.
+1. Authentication, class membership, and RLS.
+2. Teacher activity boundary and session control.
+3. Single active group and live map.
+4. Plant image capture with capture GPS/time.
+5. Gemini structured analysis.
+6. Student verification.
+7. Basic species dedupe, then specimen candidate matching.
+8. Submission GPS/time and teacher review.
+9. Offline synchronization and exports.
 
-## Important domain rule
+## Important domain rules
 
-Within one exploration session, only one group may have `active` status at a time. This must be enforced by PostgreSQL, not only by the UI.
+- Gemini output is provisional.
+- Capture location is the primary plant location; submission location is stored separately.
+- Same species does not automatically mean duplicate observation.
+- Distance alone cannot identify the same physical plant.
+- The system never auto-deletes or auto-merges observations from dedupe scores.
+- Original AI, student, and teacher values must remain traceable.
 
 ## Status
 
-The repository currently contains the product and engineering specification. Application code has not yet been scaffolded.
+The repository currently contains the updated product and engineering specification. Application code has not yet been scaffolded.
