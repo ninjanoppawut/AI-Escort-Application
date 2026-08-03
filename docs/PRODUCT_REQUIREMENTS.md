@@ -2,9 +2,9 @@
 
 ## 1. Product vision
 
-AI Escort is a school field-learning platform where an AI assistant guides students through a defined exploration area and a systematic plant-survey process. The application combines route navigation, collaboration, structured scientific observation, and ecological reflection.
+AI Escort is a school field-learning platform where an AI assistant guides students inside a teacher-defined exploration boundary and supports a structured plant-observation workflow. The application combines route navigation, real-time group supervision, image-based plant analysis, student verification, teacher review, and traceable location/time evidence.
 
-The AI must support inquiry rather than replace it. It may suggest plant candidates, ask for better evidence, detect missing fields, and prompt ecological thinking. Teachers remain responsible for activity approval, live-session control, and final academic review.
+The AI must support observation rather than replace it. Gemini may suggest plant names and visible characteristics, request additional evidence, and highlight uncertainty. Students must compare the AI result with the actual plant before submission. Teachers remain responsible for final academic review.
 
 ## 2. Primary users
 
@@ -12,30 +12,31 @@ The AI must support inquiry rather than replace it. It may suggest plant candida
 
 - Join a class using an invite code or link.
 - Create or join a group in that class.
-- Draft and submit an activity proposal when allowed.
 - Join the active exploration session.
-- Follow the route and checkpoints.
-- Capture structured plant observations.
-- Comment on or suggest identification for observations visible in the class.
-- Complete reflection and assessment tasks.
+- Walk within the configured exploration boundary.
+- Capture plant photos with location, GPS accuracy, and capture time.
+- Send the observation images to Gemini for structured analysis.
+- Compare each AI-proposed characteristic with the real plant.
+- Mark each characteristic as matching, not matching, uncertain, or not visible.
+- Correct AI-proposed values and add notes or additional images.
+- Review possible duplicate species or specimen matches.
+- Submit the completed observation to the teacher.
+- Respond to revision requests.
 
 ### Teacher
 
-- Create and manage classes.
-- Invite and remove students.
-- Review student-created groups and activities.
-- Define route, boundary, checkpoints, requirements, schedule, and safety notes.
+- Create and manage classes and groups.
+- Define route, exploration boundary, checkpoints, schedule, and safety notes.
 - Open, pause, resume, and complete sessions.
 - Activate one group at a time.
 - View live group location and progress.
-- Send guidance and safety alerts.
-- Review observations and verify identifications.
-- Assess work and export data.
+- Review submitted images, Gemini analysis, student verification, corrections, capture location, capture time, submission location, and submission time.
+- Verify, request revision, mark unable to verify, reject, or flag duplicate records.
+- Export original AI values, student-reviewed values, and teacher-reviewed values separately.
 
 ### Admin
 
-- Manage schools, users, global roles, and system configuration.
-- Manage AI providers, usage limits, reference taxonomies, and audit logs.
+- Manage schools, users, global roles, providers, usage limits, retention settings, and audit logs.
 - Suspend abusive or unsafe content.
 
 ## 3. Core entities
@@ -51,9 +52,14 @@ School
          ├─ Plugin configuration
          └─ Exploration sessions
              ├─ Queued groups
-             ├─ Participants
-             ├─ Location tracking
-             ├─ Observations
+             ├─ Session participant snapshot
+             ├─ Live locations
+             ├─ Plant observations
+             │   ├─ Original media
+             │   ├─ Gemini analysis
+             │   ├─ Student verification
+             │   ├─ Duplicate candidates
+             │   └─ Teacher review
              └─ Reflections and assessments
 ```
 
@@ -62,127 +68,214 @@ An **activity** is a reusable learning plan. A **session** is one actual executi
 ## 4. Critical business rules
 
 1. Only active class members may access a class.
-2. Students may create activities only in classes where the teacher enables this capability.
-3. Student-created activities require teacher approval before scheduling.
-4. A session may contain several groups, but only one group may be `active` at a time.
-5. Only authorized teachers may activate or switch groups.
-6. Students may publish location only while participating in an open session.
-7. Student location must not become a public or school-wide social feature.
-8. AI identification is always labeled as provisional.
-9. Final plant verification must record the verifying person and timestamp.
-10. Data collected offline must use idempotent client-generated IDs during synchronization.
+2. A session may contain several groups, but only one group may be `active` at a time.
+3. Only authorized teachers may activate or switch groups.
+4. Students may publish location and create observations only while participating in the active group of an open session.
+5. Waiting groups may preview the route but cannot publish live location or submit observations.
+6. Student location must not become a public or school-wide social feature.
+7. The plant location is primarily the location captured when the image was taken, not the later submission location.
+8. Capture and submission coordinates, accuracy, and timestamps must be stored separately.
+9. Gemini output is provisional and must never silently become the final identification.
+10. Gemini must return `null`, `unknown`, or an explicit uncertainty state when a characteristic cannot be observed; it must not invent unseen traits.
+11. Students must review AI-proposed characteristics before submission.
+12. Original AI output, student verification/corrections, and teacher review must be preserved separately.
+13. Duplicate detection must distinguish a repeated species from a repeated individual specimen.
+14. Duplicate detection must consider normalized taxon identity, plant characteristics, visual similarity, location, and time. Distance alone is insufficient.
+15. A same-species warning must not block recording another individual plant.
+16. Suspected specimen duplicates must require student or teacher confirmation; the system must not auto-delete or auto-merge observations.
+17. Data collected offline must use idempotent client-generated IDs during synchronization.
 
-## 5. Activity lifecycle
+## 5. Activity and session lifecycle
 
-### Teacher-created
+### Activity
 
 ```text
 draft → published → scheduled → active → completed → archived
 ```
 
-### Student-created
-
-```text
-draft → submitted → under_review
-                     ├─ approved → published
-                     ├─ revision_required → draft
-                     └─ rejected
-```
-
-An approved activity includes:
-
-- title and description;
-- class and creator;
-- learning objectives;
-- route and exploration boundary;
-- checkpoints;
-- expected duration and distance;
-- minimum observation requirements;
-- enabled survey plugins;
-- safety instructions;
-- reflection questions;
-- visibility and schedule.
-
-## 6. Exploration session lifecycle
+### Session
 
 ```text
 scheduled → open → paused → completed
                     └────→ cancelled
 ```
 
-Group state:
+### Group state
 
 ```text
 waiting → ready → active → completed
                    └────→ paused
 ```
 
-Teacher controls must show the current active group and require a deliberate confirmation before switching. The switch operation must be atomic.
+Group switching must be atomic and the database must reject two active groups in one session.
 
-## 7. Functional requirements
+## 6. Primary plant-observation flow
 
-### Class and membership
+```text
+student enters active session
+→ system confirms session/group permission
+→ student walks inside exploration boundary
+→ student starts a plant observation
+→ app captures location, GPS accuracy, and capture time
+→ student takes one or more plant photos
+→ images are uploaded or queued offline
+→ Gemini returns structured plant candidates and visible characteristics
+→ app normalizes candidate taxonomy
+→ system checks species-level and specimen-level duplicate candidates
+→ student compares AI results with the real plant
+→ student marks each characteristic: match / not_match / unsure / not_visible
+→ student corrects mismatched values or adds evidence
+→ student chooses how to handle duplicate warnings
+→ app captures submission location and submission time
+→ student submits
+→ teacher reviews
+→ verified / revision_required / unable_to_verify / rejected
+```
 
-- Teacher creates class with name, academic term, subject, and optional school.
-- System generates expiring invite code and share link.
-- Teacher can disable an invite.
-- Membership statuses: `invited`, `active`, `suspended`, `left`.
+## 7. Gemini analysis requirements
 
-### Group management
+Gemini must return structured JSON containing:
 
-- Teacher configures minimum and maximum group size.
-- Students create a named group and invite classmates.
-- Teacher may lock group membership before a session.
-- A student may belong to only one group for a particular session unless the teacher explicitly reassigns them.
+- one or more possible plant candidates;
+- Thai common name when available;
+- English common name when available;
+- scientific name when reasonably supported;
+- normalized/provider taxon identifier when available;
+- confidence or uncertainty indicator;
+- short evidence summary;
+- visible growth habit;
+- visible leaf type, arrangement, shape, margin, and venation;
+- visible stem/bark characteristics;
+- visible flower and fruit characteristics;
+- missing evidence and requested additional photos;
+- explicit disclaimer that the result is provisional.
 
-### Route builder
+The system must validate Gemini output against a versioned schema before saving it.
 
-- Draw or import route as GeoJSON LineString.
-- Draw exploration boundary as Polygon or MultiPolygon.
-- Add ordered checkpoints and instructions.
-- Validate that checkpoints are inside or near the boundary.
-- Estimate distance and duration.
+## 8. Student verification requirements
 
-### Live exploration
+For each AI-proposed characteristic, students choose:
 
-- Display planned route, actual track, user location, group members, checkpoints, plant markers, and GPS accuracy.
-- Display last update time for every member.
-- Detect likely off-route and outside-boundary conditions using configurable tolerance and persistence duration.
-- Avoid treating a single inaccurate GPS sample as an emergency.
-- Allow teacher alerts and group acknowledgements.
+```text
+match
+not_match
+unsure
+not_visible
+```
 
-### Observation
+When `not_match` is selected, the student may enter a corrected value and evidence note. The student may also change the proposed plant name, choose another AI candidate, or leave identification unresolved.
 
-- Capture GPS, accuracy, timestamp, observer, group, and session.
-- Capture required photos and structured fields.
-- Support draft, pending sync, submitted, reviewed, and verified states.
-- Preserve revision history for academically relevant fields.
+Submission must not overwrite the original Gemini response.
 
-### Reflection and assessment
+## 9. Duplicate detection requirements
 
-- Student submits individual reflection after the session.
-- Teacher can attach rubric criteria to an activity.
-- System separates group observation score from individual reflection score.
+### Species duplicate
 
-## 8. Non-functional requirements
+A species duplicate means the same normalized plant taxon has already been recorded in the configured scope, initially the same activity/session.
 
-- Mobile-first interface; target modern mobile Safari and Chrome.
-- Thai-first user interface with architecture ready for English.
-- Graceful behavior on weak or intermittent networks.
+The warning must show existing matching records and allow:
+
+- record another individual of the same species;
+- view previous records;
+- add evidence to an existing record when permitted;
+- indicate that the AI identification is likely incorrect.
+
+### Specimen duplicate
+
+A specimen duplicate means the new observation may describe the same physical plant as an existing observation.
+
+Candidate ranking should consider:
+
+- normalized taxon match or candidate overlap;
+- AI-observed and student-verified characteristics;
+- visual embedding/image similarity;
+- distance between capture locations;
+- capture-time difference;
+- same group or observer as a weak supporting signal.
+
+The system may rank candidates but must present them as uncertain. Student decisions:
+
+```text
+same_specimen
+different_specimen
+unsure
+```
+
+Teacher may override or finalize the duplicate decision. Confirmed observations of the same physical plant may share a `specimen_id`; their records and evidence remain separate.
+
+## 10. Observation status lifecycle
+
+```text
+draft
+→ media_pending
+→ analyzing
+→ student_review
+→ duplicate_review
+→ ready_to_submit
+→ submitted
+→ teacher_review
+   ├─ verified
+   ├─ revision_required → student_review
+   ├─ unable_to_verify
+   └─ rejected
+```
+
+## 11. Teacher review requirements
+
+The teacher review screen must show:
+
+- original images and any additional images;
+- capture coordinate, GPS accuracy, and captured time;
+- submission coordinate, GPS accuracy, and submitted time;
+- boundary status at capture;
+- Gemini candidates and characteristics;
+- student verification decisions and corrections;
+- duplicate candidate scores and student decision;
+- status history and previous feedback.
+
+Teacher actions:
+
+- verify identification and data quality;
+- verify data quality but leave identification unresolved;
+- request revision with required actions;
+- mark unable to verify;
+- reject invalid, unrelated, or inappropriate records;
+- confirm same specimen or different specimen;
+- select or enter the final accepted identification.
+
+## 12. Boundary and location behavior
+
+- Validate the capture location against the activity boundary.
+- Use GPS accuracy and a configurable tolerance; do not reject from one inaccurate sample alone.
+- Warn when location accuracy is poor.
+- An outside-boundary capture may require a student reason and teacher review rather than automatic deletion.
+- Store capture location as the primary observation location.
+- Store submission location separately for audit and workflow analysis.
+
+## 13. Non-functional requirements
+
+- Mobile-first interface targeting modern mobile Safari and Chrome.
+- Thai-first UI with architecture ready for English.
+- Graceful behavior on intermittent networks.
+- Offline observation drafts and media queues.
 - Accessible controls and readable map overlays.
 - No secrets in client bundles.
-- Audit logs for membership changes, approvals, session control, verification, and admin actions.
+- RLS on every exposed table.
+- Audit logs for session control, Gemini requests, submissions, duplicate decisions, reviews, and admin actions.
 - Raw location retention must be configurable and minimized.
-- Observations and tracks must be exportable as CSV and GeoJSON.
+- Observation exports must preserve AI, student, and teacher layers separately.
 
-## 9. MVP acceptance scenarios
+## 14. Pilot MVP acceptance scenarios
 
-1. Teacher creates a class and students join using a code.
-2. Students form two groups.
-3. Teacher creates an activity with boundary, route, and three checkpoints.
-4. Teacher opens a session and activates Group A.
-5. A second attempt to activate Group B at the same time is rejected by the database.
-6. Group A members see one another on the live map.
-7. A student captures an offline observation and it syncs once online without duplication.
-8. AI requests a missing leaf image and suggests possible taxa without overwriting the student's answer.
-9. Teacher completes Group A, activates Group B, verifies observations, and exports results.
+1. Teacher creates a class, activity boundary, route, and session.
+2. Two student groups join; the database permits only one active group.
+3. A student in the active group captures a plant image inside the boundary.
+4. The app stores capture location, accuracy, and time.
+5. Gemini returns multiple possible names and visible characteristics using the required JSON schema.
+6. The student marks characteristics as matching, mismatching, uncertain, or not visible and corrects one value.
+7. The system finds an earlier observation of the same species and warns without blocking a new specimen record.
+8. The system finds a possible same-specimen candidate using taxon, visual, location, and time signals.
+9. The student marks it as a different specimen and submits.
+10. The app stores submission location and time separately.
+11. The teacher sees all evidence layers and verifies or requests revision.
+12. An offline observation syncs without duplication using the client-generated ID.
