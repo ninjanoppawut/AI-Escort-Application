@@ -1,164 +1,202 @@
 # Decisions and Open Questions
 
-This file records product decisions for developers and AI coding agents.
+This file records accepted product decisions for developers and AI coding agents. The decisions below are authoritative for the MVP.
 
 ## Accepted decisions
 
-### D-001 — One active group scope
+### D-001 — Observation ownership
+
+- **Status:** accepted
+- **Decision:** Each observation belongs to one student, not to the group.
+- **Reason:** Supports individual learning evidence, grading, revision history, and research analysis.
+
+### D-002 — Activity and session
+
+- **Status:** accepted
+- **Decision:** An activity is a reusable plan; a session is one actual execution.
+
+### D-003 — One active group
 
 - **Status:** accepted
 - **Decision:** Only one group may be active per exploration session.
-- **Consequence:** PostgreSQL partial unique index on `session_id` where status is `active`.
+- **Consequence:** Enforce with a PostgreSQL partial unique index and atomic RPC.
 
-### D-002 — Activity versus session
+### D-004 — Waiting groups
 
 - **Status:** accepted
-- **Decision:** Activity is a reusable plan; session is one actual execution.
+- **Decision:** Waiting groups may preview route/activity information but may not publish live location or submit observations.
 
-### D-003 — Initial client
+### D-005 — Client and map
 
 - **Status:** accepted for MVP
-- **Decision:** Build a mobile-first Next.js PWA first.
-- **Consequence:** background location is not guaranteed when the browser is closed.
+- **Decision:** Build a mobile-first Next.js PWA and use Mapbox GL JS behind an adapter.
+- **Consequence:** Detailed UI may be designed during implementation, but mobile usability and locked workflows cannot change.
 
-### D-004 — Map provider
+### D-006 — Realtime
+
+- **Status:** accepted
+- **Decision:** Use Broadcast for frequent live-location events, Presence for participant state, and PostgreSQL for durable records and observation markers.
+
+### D-007 — Plant-analysis provider
 
 - **Status:** accepted for MVP
-- **Decision:** Use Mapbox GL JS behind a small adapter.
+- **Decision:** Use Gemini behind a server-only provider adapter.
 
-### D-005 — Realtime transport
-
-- **Status:** accepted
-- **Decision:** Use Broadcast for frequent location events, Presence for participant state, and PostgreSQL for durable samples.
-
-### D-006 — AI authority
+### D-008 — AI authority
 
 - **Status:** accepted
-- **Decision:** Gemini output is provisional and never becomes the final plant identification automatically.
+- **Decision:** Gemini output is provisional. It never becomes verified automatically.
 
-### D-007 — Authorization source
+### D-009 — Gemini confidence behavior
 
-- **Status:** accepted
-- **Decision:** Class/session membership tables are authoritative; UI role checks are insufficient.
+- **Status:** accepted as configurable MVP default
+- **Decision:** Below 0.40 request more evidence; 0.40–0.70 show multiple candidates; above 0.70 emphasize the top candidate while retaining alternatives/provisional labeling.
 
-### D-008 — Observation flow
-
-- **Status:** accepted
-- **Decision:** Student captures a plant image, Gemini proposes names and visible characteristics, student compares the result with the real plant, then submits to the teacher.
-
-### D-009 — Evidence layers
+### D-010 — Gemini response contract
 
 - **Status:** accepted
-- **Decision:** Store Gemini output, student verification/corrections, and teacher review separately. Never overwrite prior layers.
+- **Decision:** The exact normalized JSON shape will be finalized during integration, but it must be versioned, server-validated, and store provider/model/prompt/schema versions.
 
-### D-010 — Location and time
-
-- **Status:** accepted
-- **Decision:** Store capture location/time and submission location/time separately. Capture location is the primary plant location.
-
-### D-011 — Student trait verification
-
-- **Status:** accepted
-- **Decision:** Each AI trait is marked `match`, `not_match`, `unsure`, or `not_visible`. A mismatched value may include a correction and evidence note.
-
-### D-012 — Species dedupe
-
-- **Status:** accepted
-- **Decision:** The system warns when the same normalized plant species already exists in the configured activity/session scope.
-- **Consequence:** Same-species warnings do not block recording a different individual plant.
-
-### D-013 — Specimen dedupe
-
-- **Status:** accepted
-- **Decision:** Possible same-plant detection combines taxon match, trait similarity, image similarity, capture distance, and time difference.
-- **Consequence:** Distance alone is never sufficient. The system cannot auto-delete or auto-merge observations.
-
-### D-014 — Duplicate confirmation
-
-- **Status:** accepted
-- **Decision:** Student chooses `same_specimen`, `different_specimen`, or `unsure`; teacher may finalize or override. Confirmed observations may share a specimen ID while remaining separate records.
-
-### D-015 — Gemini provider
+### D-011 — Durable worker
 
 - **Status:** accepted for MVP
-- **Decision:** Use Gemini as the initial image-analysis provider behind a provider adapter and versioned response schema.
+- **Decision:** Use Supabase Queue + Edge Function consumer for Gemini processing.
+- **Consequence:** A separate Node worker, Redis/BullMQ, Kubernetes, or GPU service is out of scope initially.
 
-### D-016 — Waiting group behavior
+### D-012 — AI failure fallback
 
-- **Status:** accepted for MVP
-- **Decision:** Waiting groups may preview the route but cannot publish live location or create/submit observations.
+- **Status:** accepted
+- **Decision:** Keep the draft, allow retry, and allow manual entry. Students may use external references such as Google Lens.
+
+### D-013 — Required student identity
+
+- **Status:** accepted
+- **Decision:** Submission requires a Thai/common name and a scientific name. `Unknown` is not accepted as the final student submission.
+
+### D-014 — Student verification
+
+- **Status:** accepted
+- **Decision:** Student checks each relevant AI trait as `match`, `not_match`, `unsure`, or `not_visible`; mismatches may include corrected values.
+
+### D-015 — Evidence layers
+
+- **Status:** accepted
+- **Decision:** Gemini output, student verification/correction, submission versions, and teacher review/correction are stored separately and never overwritten.
+
+### D-016 — Revision workflow
+
+- **Status:** accepted
+- **Decision:** Teacher may request revision. The student edits the same observation and resubmits, creating a new immutable submission version.
+
+### D-017 — Teacher verification
+
+- **Status:** accepted
+- **Decision:** Teacher manually verifies every accepted observation and may correct the final common name, scientific name, and traits while preserving prior values.
+
+### D-018 — Teacher completion
+
+- **Status:** accepted
+- **Decision:** The teacher manually decides when the session/activity is complete. No automatic completion formula is required for the MVP.
+
+### D-019 — Capture location
+
+- **Status:** accepted
+- **Decision:** Capture location, capture accuracy, and capture time define the plant marker. Submission location is not required for normal MVP behavior.
+
+### D-020 — GPS failure
+
+- **Status:** accepted
+- **Decision:** Prompt retry/wait. If GPS remains unavailable, keep an explicitly flagged record for teacher handling; never fabricate a coordinate.
+
+### D-021 — Image limits and preprocessing
+
+- **Status:** accepted
+- **Decision:** One observation supports 1–10 images, with at least one whole-plant image. Before upload, correct orientation, limit longest edge to 2,048 px, compress toward quality 82–85, and limit each processed image to 5 MB.
+
+### D-022 — Same-species behavior
+
+- **Status:** accepted
+- **Decision:** Search submitted observations in the same session. Warn the student but allow another individual submission.
+- **Consequence:** Set a teacher-visible same-species tag on the observation/map detail.
+
+### D-023 — Same species versus same specimen
+
+- **Status:** accepted
+- **Decision:** Same-species and possible-same-specimen are separate relationships.
+
+### D-024 — Specimen candidate signals
+
+- **Status:** accepted
+- **Decision:** Possible same-specimen detection may combine taxon, morphology, image similarity, location, and time. Distance alone is insufficient.
+
+### D-025 — No automatic merge
+
+- **Status:** accepted
+- **Decision:** Never automatically merge, delete, or reject observations because of dedupe. Human confirmation is required; separate observations may later share a `specimen_id`.
+
+### D-026 — Map marker visibility
+
+- **Status:** accepted
+- **Decision:** Drafts do not appear on the teacher map. Submitted/reviewed observations appear at capture location with status-aware markers and accessible labels/icons.
+
+### D-027 — Completed map
+
+- **Status:** accepted
+- **Decision:** After activity/session completion, authorized teachers and participating students can view the result map. Clicking a marker opens plant details.
+
+### D-028 — Flexible data and JSONB
+
+- **Status:** accepted
+- **Decision:** Use relational columns for ownership, status, authorization, required identity, location/time, and map/review queries. Use versioned `jsonb` for flexible Gemini output, extra traits, verification snapshots, device context, and research-event payloads.
+
+### D-029 — Research event log
+
+- **Status:** accepted
+- **Decision:** Store meaningful actions as append-only event rows with explicit relational IDs and a flexible `payload jsonb`.
+
+### D-030 — Authorization source
+
+- **Status:** accepted
+- **Decision:** Database membership and session participant tables are authoritative. UI role checks alone are insufficient.
 
 ## Working defaults
 
 - Thai is the default UI language.
-- Location broadcast: every 2–5 seconds while moving.
-- Durable location sample: every 10–30 seconds and on meaningful events.
 - Observation images are private by default.
-- Dedupe scope starts with the same activity/session.
-- Species matching uses normalized taxonomy when available.
-- Specimen matching is advisory and always requires human confirmation.
-- Gemini must return `null`, `unknown`, or uncertainty when evidence is not visible.
+- Location broadcast is approximately every 2–5 seconds while moving.
+- Durable location sampling is approximately every 10–30 seconds or meaningful event.
+- Same-species matching begins within the same session.
+- Teacher-map status presentation uses amber/submitted, red/revision, blue/resubmitted, green/verified, purple/unable-to-verify, and gray/rejected, with non-color labels/icons.
+- Gemini missing/unseen traits use `null` or explicit unavailable state.
 
-## Remaining open questions
+## Remaining non-blocking questions
 
-### Q-001 — Target users and consent
+These do not block initial implementation but must be finalized before production/pilot deployment.
 
-What exact student age range will use the production system, and what guardian/school consent is required for location and image collection?
+### Q-001 — Consent and target age
 
-### Q-002 — Raw location retention
+What school/guardian consent and student age rules apply to location, image, and research-event collection?
 
-How many days should raw location events be retained? Should summarized routes remain after raw points are deleted?
+### Q-002 — Retention
 
-### Q-003 — Plant taxonomy source
+How long should raw live-location events, processed images, AI payloads, and research logs be retained?
 
-Which source will normalize Thai names, scientific names, synonyms, and taxon IDs?
+### Q-003 — Production Gemini configuration
 
-### Q-004 — Gemini model and budget
+Which Gemini model, rate limits, latency target, and monthly budget will production use?
 
-Which Gemini model, image limits, rate limits, latency target, and monthly budget should production use?
+### Q-004 — Taxonomy normalization source
 
-### Q-005 — Gemini failure fallback
+Gemini text is acceptable for MVP display, but which authoritative source will later normalize names/synonyms/taxon IDs?
 
-When Gemini is unavailable, may students manually enter an unknown plant and submit, or must analysis complete first?
+### Q-005 — Research instruments and exports
 
-**Recommended MVP:** allow manual unresolved submission with a recorded AI failure state.
+Which final research variables, scales, reflections, and anonymized export fields are required?
 
-### Q-006 — Required photo evidence
+### Q-006 — Deployment ownership
 
-Is one photo sufficient to begin analysis, and which additional views are mandatory before submission?
-
-**Recommended MVP:** one photo starts analysis; Gemini or teacher may request leaf/stem/flower/fruit images as applicable.
-
-### Q-007 — Dedupe scope
-
-Should species/specimen matching search only the current session, the entire activity, or historical activities in the same area?
-
-**Recommended MVP:** current activity, prioritizing current session results.
-
-### Q-008 — Dedupe threshold calibration
-
-What thresholds should generate informational species warnings versus possible same-specimen warnings?
-
-**Recommended MVP:** keep thresholds configurable and collect pilot data before treating scores as strong evidence.
-
-### Q-009 — Revision behavior
-
-Can a student revise a submitted observation after leaving the plant location, or must additional evidence be captured during another active session?
-
-### Q-010 — Teacher final identification
-
-May teachers enter free-text plant names, or must they select a normalized taxonomy record?
-
-**Recommended MVP:** allow free text with optional normalized taxon link.
-
-### Q-011 — Research instruments
-
-Which assessment and reflection instruments must be embedded in the app?
-
-### Q-012 — Deployment ownership
-
-Who owns the Supabase, Mapbox, Vercel, Gemini, privacy, and support accounts?
+Who owns and supports the Supabase, Vercel, Mapbox, Gemini, privacy, and production accounts?
 
 ## Agent behavior
 
-Ask the product owner only when a decision affects privacy, retention, grading, paid provider selection, destructive migration, emergency escalation, or public sharing. For ordinary implementation details, choose the safest simple default, document it here, and continue.
+Do not ask the product owner about already accepted decisions. Ask only when a new choice materially affects privacy, retention, grading, public sharing, paid provider configuration, destructive migrations, or emergency behavior. For ordinary implementation details, choose the safest simple option, document it, and proceed.
