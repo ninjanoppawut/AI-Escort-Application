@@ -2,14 +2,15 @@
 
 ## 1. Architecture goals
 
-The MVP must support mobile field use, strict class/session authorization, one-active-group control, live maps, individual observations, durable image/AI processing, intermittent connectivity, manual teacher review, and a post-activity map.
+The MVP must support mobile field use, strict class/session authorization, student-led group formation with teacher control, one-active-group exploration, in-app notifications, live maps, individual observations, durable image/AI processing, intermittent connectivity, manual teacher review, and a post-activity map.
 
 ## 2. High-level architecture
 
 ```text
 Next.js mobile-first PWA
+ ├─ Student class/group workflow
  ├─ Student field workflow
- ├─ Teacher live/review dashboard
+ ├─ Teacher class/group/live/review dashboard
  └─ Admin functions
         │
         ├─ Supabase Auth
@@ -28,13 +29,24 @@ The browser never holds Gemini or service-role secrets.
 
 ### Server components
 
-Use for authenticated shells, initial data, completed-session pages, teacher review queues, role-aware navigation, and read-heavy pages.
+Use for authenticated shells, initial class/group data, completed-session pages, teacher review queues, role-aware navigation, and read-heavy pages.
 
 ### Client components
 
-Use for Mapbox, camera/media capture, live location, Presence/Broadcast, offline queue, image preprocessing, interactive student verification, marker details, and upload progress.
+Use for:
 
-Detailed screen design may be decided during implementation, but it must be mobile-first and preserve the locked workflow.
+- class group board and invitation interactions;
+- notification bell and inbox;
+- Mapbox;
+- camera/media capture;
+- live location;
+- Presence/Broadcast;
+- offline queue;
+- image preprocessing;
+- interactive student verification;
+- marker details and upload progress.
+
+Detailed screen design may be decided during implementation, but it must be mobile-first and preserve the locked workflows.
 
 ## 4. Suggested feature modules
 
@@ -48,7 +60,10 @@ src/
     api/
   features/
     classes/
+    class-invites/
     groups/
+    group-invitations/
+    notifications/
     activities/
     sessions/
     live-map/
@@ -74,14 +89,87 @@ Keep domain logic independent from page components.
 
 - Supabase Auth provides identity.
 - Membership tables are authoritative for school/class/session access.
+- Class invitation joining occurs through trusted server logic; the client cannot choose a role.
 - Participant rows snapshot membership for each session.
 - RLS protects every exposed table and Storage object.
 - Live-channel access does not replace database authorization.
+- Students may create groups only through the atomic group-creation function.
+- Leaders manage only their own unlocked group and may not bypass class membership or capacity rules.
+- Students may read and mark only their own notifications.
+- Teachers may manage groups only for classes they teach.
 - Students may create/submit observations only for themselves and only in an authorized active-group context.
-- Teachers may review sessions belonging to classes they teach.
 - Completed-map visibility is limited to authorized teachers and participating/authorized students.
 
-## 6. Realtime architecture
+## 6. Class and group architecture
+
+### Initial class setup
+
+Teacher creates the class and group configuration in one trusted operation:
+
+```text
+class identity
++ minimum/maximum group size
++ maximum group count
++ student group creation enabled/disabled
++ group formation open/closed
++ teacher membership
+```
+
+### Student group creation
+
+```text
+student presses Create Group
+→ trusted RPC locks class configuration row
+→ validates class membership, current membership, creation claim, and group count
+→ reserves group slot
+→ creates group
+→ creates student creation claim
+→ assigns creator as sole leader
+→ commits
+→ writes audit/research events and notifications as applicable
+→ emits group.created signal
+```
+
+The transaction, not Realtime, prevents two students from taking the final slot.
+
+### Group leader invariant
+
+- A partial unique index prevents two active leaders in one group.
+- Trusted transfer/move functions prevent a populated group from having zero leaders.
+- The one-group-per-student-per-class invariant includes both leader and member roles.
+
+### Teacher move/delete architecture
+
+Teacher mutations use atomic functions that lock affected groups/memberships, check capacity and active-session dependencies, preserve session snapshots, generate notifications/audit records, and emit group-change signals.
+
+Unused groups may be soft-deleted. Groups referenced by sessions are archived.
+
+## 7. In-app notification architecture
+
+The MVP does not depend on email.
+
+```text
+domain mutation succeeds
+→ insert durable notification row
+→ emit notification.created on private user channel
+→ client invalidates/refetches unread count and notification list
+```
+
+Notification rows are the source of truth. Realtime is only the immediate signal. RLS limits reads/updates to the recipient.
+
+Notification examples:
+
+- group invitation;
+- invitation accepted/declined;
+- student moved to another group;
+- leadership transferred;
+- group approved/locked/deleted/archived;
+- group active/next;
+- observation revision/verification;
+- same species submitted again;
+- session completed.
+
+## 8. Realtime architecture
 
 ### Presence
 
@@ -94,18 +182,46 @@ Use for low-frequency state:
 
 ### Broadcast
 
-Use for ephemeral high-frequency events:
+Use for ephemeral or change-signal events:
 
 - live location updates;
 - heading, speed, accuracy;
 - checkpoint progress;
 - teacher alerts;
-- session/group state changes.
+- session/group state changes;
+- class group-board invalidation;
+- notification-created signal.
 
-### Database/Realtimes changes
+Recommended private channels:
 
-Use durable rows and subscriptions for:
+```text
+class:{classId}:groups
+user:{userId}:notifications
+session:{sessionId}:group:{groupId}
+session:{sessionId}:teachers
+session:{sessionId}:observations
+user:{userId}:observation-jobs
+```
 
+### Authoritative refetch pattern
+
+For class/group and notification UI:
+
+```text
+initial database fetch
+→ subscribe to private channel
+→ signal arrives
+→ invalidate/refetch authoritative query
+```
+
+Also refetch on browser foreground, network reconnect, Realtime reconnect, and after a mutation result. Five-second polling is not the primary mechanism. An optional slow fallback poll is acceptable.
+
+### Durable changes
+
+Use durable rows for:
+
+- groups, memberships, invitations, and group history;
+- notifications;
 - submitted observation markers;
 - observation status changes;
 - AI analysis state;
@@ -115,7 +231,7 @@ Use durable rows and subscriptions for:
 
 Draft observations are not broadcast to the teacher map.
 
-## 7. Map architecture
+## 9. Map architecture
 
 Mapbox renders:
 
@@ -130,7 +246,7 @@ Clicking a marker opens an observation detail panel. Marker color is supplementa
 
 PostGIS is authoritative for point-in-boundary checks, distance, spatial candidate search, and GeoJSON export. Client-side geometry provides immediate feedback only.
 
-## 8. Image pipeline
+## 10. Image pipeline
 
 ### Client preprocessing
 
@@ -157,7 +273,7 @@ Use Storage image transformations or equivalent controlled derivatives for:
 
 The uploaded processed source remains private.
 
-## 9. Durable Gemini worker
+## 11. Durable Gemini worker
 
 Gemini analysis must not depend on one long browser request.
 
@@ -179,7 +295,7 @@ In MVP, the worker is Supabase Queue + Edge Function. A separate Node worker, Re
 
 The queue must support retries, idempotency, failure status, and dead-letter/manual retry handling. Students may continue manual entry while analysis is pending or failed.
 
-## 10. Gemini response handling
+## 12. Gemini response handling
 
 The exact normalized JSON schema will be finalized during integration. Until then, architecture requirements are:
 
@@ -191,12 +307,13 @@ The exact normalized JSON schema will be finalized during integration. Until the
 - raw provider result is restricted and retained minimally;
 - UI never treats AI output as teacher verification.
 
-## 11. Flexible JSONB and relational data
+## 13. Flexible JSONB and relational data
 
 Use relational columns for:
 
 - ownership;
 - class/session/group relationships;
+- group role and current membership;
 - status;
 - capture location/time;
 - required names;
@@ -208,16 +325,17 @@ Use `jsonb` for:
 - normalized Gemini result;
 - additional/experimental traits;
 - student verification payload;
+- notification context;
 - device context;
 - research-event payload.
 
-Do not store the entire mutable lifecycle as one JSON document. Use append-only analysis, submission, review, status, and event rows.
+Do not store the entire mutable lifecycle as one JSON document. Use append-only analysis, submission, review, status, group-history, notification, and event rows.
 
-## 12. Same-species and specimen relationships
+## 14. Same-species and specimen relationships
 
 ### Same species in session
 
-Normalize the selected/entered identity sufficiently to compare against submitted observations in the same session. A match creates a warning and a teacher-visible tag, not a block.
+Normalize the selected/entered identity sufficiently to compare against submitted observations in the same session. A match creates a warning, a teacher-visible tag, and a teacher in-app notification, not a block.
 
 ### Possible same specimen
 
@@ -231,7 +349,7 @@ Candidate scoring may combine:
 
 Distance alone is never decisive. No automatic merge/delete is allowed. Confirmed relationships may share a `specimen_id` while preserving separate observations.
 
-## 13. Offline behavior
+## 15. Offline behavior
 
 IndexedDB stores:
 
@@ -244,7 +362,9 @@ IndexedDB stores:
 
 Sync is idempotent. A failure must not discard the draft. Gemini failure does not prevent manual completion.
 
-## 14. Review and completed-map architecture
+Group formation and invitation acceptance require current server validation. Offline UI may show cached groups but cannot guarantee a slot or membership until the mutation succeeds online.
+
+## 16. Review and completed-map architecture
 
 Teacher review reads an immutable chain of:
 
@@ -256,8 +376,8 @@ Teacher review reads an immutable chain of:
 
 After teacher manually completes the session, an authorized completed-session page displays the map and marker detail panel for teachers and participating students. Visibility of personal fields follows role/privacy rules.
 
-## 15. Observability and event logging
+## 17. Observability and event logging
 
-Capture application errors, failed uploads, queue/job state, Gemini latency/failure category, Realtime connection state, session-control events, observation lifecycle events, and RLS test results.
+Capture application errors, failed group mutations, group-slot race outcomes, invitations, leadership changes, student moves, group deletion/archive, failed uploads, queue/job state, Gemini latency/failure category, Realtime connection state, session-control events, observation lifecycle events, notification delivery state, and RLS test results.
 
 Never log access tokens, secret keys, exact live locations in general-purpose logs, or unrestricted private image URLs.
