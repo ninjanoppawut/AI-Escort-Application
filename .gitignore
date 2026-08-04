@@ -1,0 +1,9 @@
+# Vendored agent skills — reinstall with `npx impeccable install`
+.claude/skills/impeccable/
+
+# Per-developer harness settings (hooks, permissions)
+.claude/settings.local.json
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

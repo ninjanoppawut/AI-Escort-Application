@@ -62,6 +62,9 @@ POST /api/activities
 POST /api/sessions
 POST /api/sessions/:id/open
 POST /api/sessions/:id/activate-group
+POST /api/sessions/:id/pause
+POST /api/sessions/:id/resume
+POST /api/sessions/:id/groups/:groupId/complete
 POST /api/sessions/:id/complete
 
 POST /api/observations/start
@@ -74,6 +77,9 @@ GET  /api/observations/:id/related
 POST /api/observations/:id/submit
 POST /api/observations/:id/resubmit
 POST /api/observations/:id/review
+POST /api/observations/:id/unlock-request
+POST /api/observations/:id/unlock-request/:requestId/grant
+POST /api/observations/:id/report
 GET  /api/sessions/:id/map
 GET  /api/observations/:id/details
 ```
@@ -132,8 +138,14 @@ PLANT_NAME_REQUIRED
 SCIENTIFIC_NAME_REQUIRED
 SAME_SPECIES_ACKNOWLEDGEMENT_REQUIRED
 INVALID_STATUS_TRANSITION
+FIELD_NOT_UNLOCKED_FOR_REVISION
+SESSION_PAUSED
 RATE_LIMITED
 ```
+
+Every code above requires a defined UI state before the feature that raises it ships. `RATE_LIMITED` and `CLASS_NOT_ACTIVE` are currently unmapped (D-060).
+
+`OBSERVATION_VERSION_CONFLICT` blocks the second writer, states the reason, and returns the refreshed record with a repeat action (D-052).
 
 ## 4. Create class
 

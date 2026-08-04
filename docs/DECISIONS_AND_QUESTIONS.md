@@ -244,6 +244,100 @@ This file records accepted product decisions for developers and AI coding agents
 - **Decision:** Normal group move, removal, deletion, and leadership changes are blocked while the affected group/student participates in an active session.
 - **Consequence:** Emergency removal is a separate teacher-supervised audited action.
 
+### D-046 — Export delivery
+
+- **Status:** accepted
+- **Decision:** Reviewed-data export is delivered in-app. A large export becomes a queued job that notifies the teacher in-app when the download is ready.
+- **Consequence:** No email dependency is introduced for exports. D-031 and D-032 stand unchanged.
+
+### D-047 — Maximum group count is absolute
+
+- **Status:** accepted
+- **Decision:** `maximum_groups` is database-enforced for every actor, including teachers. No UI confirmation may create a group beyond the configured maximum.
+- **Consequence:** A teacher who needs another group raises the class setting first. There is no over-quota override path.
+
+### D-048 — Revision edit scope
+
+- **Status:** accepted
+- **Decision:** During revision, the student may edit only the topics the teacher flagged. Other fields are read-only.
+- **Consequence:** The student may send an in-app "ขอแก้เพิ่ม" request with a reason; the teacher opens additional topics. This requires a new notification type and a request/approval endpoint. Supersedes the unrestricted-edit reading of `PLANT_SURVEY_PLUGIN.md` §13.
+
+### D-049 — Observation issue report
+
+- **Status:** accepted
+- **Decision:** A student may report a problem on a plant detail record. The reporter's identity is not shown to the observation owner.
+- **Consequence:** Requires an endpoint, a teacher-visible queue entry, and a rate limit of one report per record per 24 hours.
+
+### D-050 — Rejected feature surface
+
+- **Status:** accepted
+- **Decision:** The following are explicitly out of scope and must not be implemented or designed:
+  - student request-to-invite ("ขอให้หัวหน้ากลุ่มเชิญฉัน");
+  - student-side same-specimen linking — S-21 displays the relationship read-only and only a teacher confirms it at review;
+  - school email-domain whitelist on sign-in;
+  - display-name change limit;
+  - class-member suspend.
+- **Reason:** None is supported by a product requirement. Each would add authorization, notification, or state surface that nothing else in the MVP needs.
+
+### D-051 — GPS accuracy handling
+
+- **Status:** accepted
+- **Decision:** Poor accuracy warns only. The observation is flagged solely when no fix is obtainable.
+- **Consequence:** The capture step shows the accuracy in metres with an amber chip and an option to wait, while the primary action remains "use this location". Refines D-020 rather than replacing it.
+
+### D-052 — Concurrent observation update
+
+- **Status:** accepted
+- **Decision:** On `OBSERVATION_VERSION_CONFLICT`, the second writer is blocked, shown the reason, and given the refreshed record plus a repeat action.
+- **Consequence:** Reuses the group-slot-race presentation. A teacher decision never lands silently on a version the teacher did not read.
+
+### D-053 — Status token coverage
+
+- **Status:** accepted
+- **Decision:** Colour, shape, icon, and Thai text tokens are defined for all three status sets: observation (12), group (5), and session group (5).
+- **Consequence:** Group and session-group statuses may not rely on colour alone, matching the existing observation tokens.
+
+### D-054 — Live-location identifiability
+
+- **Status:** accepted
+- **Decision:** The live session map identifies students by name, visible to the class teacher only. Location broadcast stops when the session ends.
+- **Reason:** Closes design question Q-A. A teacher responding to an out-of-boundary warning needs to know which student to reach.
+
+### D-055 — Completed-map visibility
+
+- **Status:** accepted
+- **Decision:** Participants of the same session see each other's plant images and the recorder's name on the completed map.
+- **Reason:** Closes design question Q-B. Consistent with D-027 and required for the same-species comparison discussion.
+
+### D-056 — Session pause and per-group completion
+
+- **Status:** accepted
+- **Decision:** A teacher may pause and resume a session, and may complete an individual group without ending the session.
+- **Consequence:** Adds a `paused` session-group status and the corresponding operations. While paused, students keep their drafts and may edit them but cannot submit.
+
+### D-057 — Review feedback recipient
+
+- **Status:** accepted
+- **Decision:** Teacher review feedback is addressed to the owning student, never to the group.
+- **Reason:** An observation belongs to one student (D-001). Corrects contradictory wording in the review UI.
+
+### D-058 — Notification type coverage
+
+- **Status:** accepted
+- **Decision:** Every notification type in `PRODUCT_REQUIREMENTS.md` §8 maps to one of the eight designed row layouts, with a defined icon, Thai copy string, and deep-link target.
+- **Consequence:** No notification copy is written at implementation time.
+
+### D-059 — Required additional screens
+
+- **Status:** accepted
+- **Decision:** The following need a full screen specification before implementation handoff: manual plant entry, group unlock and group-creation-claim reset, the cross-class student observation list, and the class member list for both roles.
+- **Reason:** Each is referenced by an accepted rule or an API operation but exists only as a navigation node.
+
+### D-060 — Unmapped error codes
+
+- **Status:** accepted
+- **Decision:** `RATE_LIMITED` and `CLASS_NOT_ACTIVE` require defined UI states before the features that raise them ship.
+
 ## Working defaults
 
 - Thai is the default UI language.

@@ -233,8 +233,9 @@ When revision is required:
 
 - the same observation returns to the owner;
 - teacher feedback is displayed;
-- the student may add/replace evidence within the 10-image limit;
-- student may change names, traits, and evidence note;
+- the student may edit **only the topics the teacher flagged**; all other fields are read-only (D-048);
+- within the flagged topics the student may change names, traits, and the evidence note, and may add or replace evidence within the 10-image limit;
+- the student may send an in-app request to unlock further topics, with a reason; the teacher decides (D-048);
 - a new immutable submission version is created;
 - prior versions remain visible to the teacher.
 

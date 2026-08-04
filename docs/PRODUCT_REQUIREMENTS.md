@@ -255,6 +255,7 @@ Student notifications include:
 - group approved, locked, unlocked, archived, or deleted;
 - group is next or active;
 - teacher requested observation revision;
+- additional edit access granted during revision;
 - observation verified, unable to verify, or rejected;
 - session completed.
 
@@ -265,7 +266,11 @@ Teacher notifications include:
 - group requested approval;
 - new or resubmitted observation;
 - same species submitted again in the session;
+- student requested additional edit access during revision;
+- student reported an issue on an observation;
 - important location/session warning.
+
+Every notification type above maps to one of the eight designed row layouts, with a defined icon, Thai copy string, and deep-link target (D-058).
 
 Notification access is recipient-scoped through RLS. Realtime events improve responsiveness but do not replace durable notification rows.
 
@@ -333,6 +338,16 @@ draft
 
 AI failure is a separate analysis state and does not invalidate the observation draft.
 
+Session group statuses:
+
+```text
+waiting → ready → active → paused → completed
+```
+
+A teacher may pause and resume a session, and may complete one group without ending the session (D-056). While paused, students keep and may edit their drafts but cannot submit.
+
+Group statuses, observation statuses, and session group statuses each require colour, shape, icon, and Thai text tokens; none may rely on colour alone (D-053).
+
 ## 12. Student verification fields
 
 For each AI-proposed trait, the student may select:
@@ -390,7 +405,9 @@ Color must be accompanied by text/icon/shape for accessibility.
 
 ### After activity
 
-Participating students and authorized teachers can open the completed session map. Clicking a marker opens plant details, including:
+Participating students and authorized teachers can open the completed session map. Participants of the same session see each other's images and the recorder's name (D-055). Live-location identification is teacher-only and stops when the session ends (D-054). Reviewed-data export is delivered in-app; a large export becomes a queued job with an in-app notification when ready (D-046).
+
+Clicking a marker opens plant details, including:
 
 - main image and gallery;
 - student identity according to role/privacy rules;

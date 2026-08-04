@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@0,400;1,400;1,600&display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: #F3F6F2; }
+  a { color: #1F6B47; }
+  a:hover { color: #14472F; }
+</style>
+</helmet>
+<div style="font-family: 'IBM Plex Sans Thai', system-ui, sans-serif; color: #16211C; background: #F3F6F2; padding: 0 0 96px;">
+
+  <div style="background: #14472F; color: #EAF2EC; padding: 56px 40px 44px;">
+    <div style="max-width: 1120px; margin: 0 auto;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #8FBFA4;">Design Phase · Deliverables 1–4, 6, 9</div>
+      <h1 style="font-size: 44px; line-height: 1.15; font-weight: 700; margin: 14px 0 10px; letter-spacing: -0.01em;">AI Escort — เอกสารออกแบบระบบ</h1>
+      <p style="font-size: 18px; line-height: 1.6; color: #C3DACB; margin: 0; max-width: 720px;">แอปสำรวจพรรณไม้ภาคสนามสำหรับโรงเรียน — ความเข้าใจงานออกแบบ, โครงสร้างข้อมูล, โฟลว์ผู้ใช้, รายการหน้าจอ, ระบบภาพ และเอกสารส่งต่อ</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">
+        <span style="border: 1px solid #2F6E4E; border-radius: 999px; padding: 6px 12px; color: #A8CDB6;">repo · ninjanoppawut/AI-Escort-Application</span>
+        <span style="border: 1px solid #2F6E4E; border-radius: 999px; padding: 6px 12px; color: #A8CDB6;">mobile-first 360–430px</span>
+        <span style="border: 1px solid #2F6E4E; border-radius: 999px; padding: 6px 12px; color: #A8CDB6;">TH primary language</span>
+        <span style="border: 1px solid #2F6E4E; border-radius: 999px; padding: 6px 12px; color: #A8CDB6;">design only · no production code</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 1120px; margin: 0 auto; padding: 0 40px;">
+
+    <section style="margin-top: 56px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid #16211C; padding-bottom: 10px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F6B47;">01</span>
+        <h2 style="font-size: 28px; font-weight: 700; margin: 0;">ความเข้าใจงานออกแบบ <span style="font-size: 15px; font-weight: 400; color: #7C8B83;">Design understanding</span></h2>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 24px;">
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 22px;">
+          <h3 style="font-size: 16px; margin: 0 0 12px; font-weight: 600;">ผู้ใช้หลัก</h3>
+          <div style="display: grid; gap: 12px; font-size: 14px; line-height: 1.65; color: #4E5F56;">
+            <div><strong style="color: #16211C;">นักเรียน ม.ต้น–ม.ปลาย</strong> — ใช้งานกลางแดด ยืน/เดิน ถือมือถือมือเดียว สัญญาณไม่ต่อเนื่อง สมาธิสั้น เป็นผู้สร้าง Observation รายบุคคล</div>
+            <div><strong style="color: #16211C;">หัวหน้ากลุ่ม</strong> — นักเรียนที่สร้างกลุ่ม มีสิทธิ์เชิญ/ยกเลิกคำเชิญ/โอนหัวหน้า ไม่มีสิทธิ์บังคับเพิ่มสมาชิกหรือเปิดใช้งานกลุ่ม</div>
+            <div><strong style="color: #16211C;">ครู</strong> — ผู้มีอำนาจสูงสุดในชั้นเรียน คุมการจัดกลุ่ม เปิด/ปิดกลุ่มสำรวจทีละกลุ่ม และเป็นผู้ตรวจสอบชนิดพืชขั้นสุดท้าย ใช้ทั้งมือถือในสนามและเดสก์ท็อปหลังกิจกรรม</div>
+            <div><strong style="color: #16211C;">ผู้ดูแลระบบ</strong> — ออกแบบเฉพาะทางเข้าที่จำเป็น ไม่ข้ามขอบเขตโรงเรียน/ชั้นเรียน</div>
+          </div>
+        </div>
+
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 22px;">
+          <h3 style="font-size: 16px; margin: 0 0 12px; font-weight: 600;">เป้าหมายหลักของงานออกแบบ</h3>
+          <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8; color: #4E5F56;">
+            <li>ให้นักเรียนบันทึกพืช 1 ต้นได้ครบถ้วนกลางสนามภายในเวลาไม่กี่นาที โดยไม่ต้องพิมพ์มาก</li>
+            <li>แยกชั้นหลักฐานสามชั้นให้เห็นชัดตลอดเวลา — <em>AI เสนอ → นักเรียนตัดสิน → ครูรับรอง</em></li>
+            <li>ทำให้กติกากลุ่ม (หนึ่งคนหนึ่งกลุ่ม, หนึ่งหัวหน้า, จำนวนกลุ่มจำกัด) เข้าใจได้โดยไม่ต้องอธิบาย</li>
+            <li>ทำให้ครูรู้เสมอว่า “ตอนนี้กลุ่มไหนกำลังสำรวจ” และควบคุมได้จากมือถือ</li>
+            <li>ไม่ทำให้ผู้ใช้ติดค้าง — ทุกสถานะรอมีทางออกเสมอ</li>
+          </ol>
+        </div>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 22px; margin-top: 20px;">
+        <h3 style="font-size: 16px; margin: 0 0 14px; font-weight: 600;">ข้อจำกัดที่กำหนดรูปร่างของดีไซน์ <span style="font-weight: 400; color: #7C8B83; font-size: 13px;">Constraints that shape the design</span></h3>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+          <div style="border-left: 3px solid #1F6B47; padding: 4px 0 4px 14px;"><div style="font-size: 13px; font-weight: 600;">แดดจ้า + มือเดียว</div><div style="font-size: 13px; color: #4E5F56; line-height: 1.6; margin-top: 4px;">คอนทราสต์สูง ตัวอักษรขั้นต่ำ 15px ปุ่มหลักอยู่ครึ่งล่าง เป้าแตะ ≥ 44px (สนาม 56px)</div></div>
+          <div style="border-left: 3px solid #1F6B47; padding: 4px 0 4px 14px;"><div style="font-size: 13px; font-weight: 600;">เน็ตขาดหาย</div><div style="font-size: 13px; color: #4E5F56; line-height: 1.6; margin-top: 4px;">ร่างเก็บในเครื่องด้วย UUID ฝั่งไคลเอนต์ คิวอัปโหลดมองเห็นได้ รีเฟรชหน้าจอแล้วงานไม่หาย</div></div>
+          <div style="border-left: 3px solid #1F6B47; padding: 4px 0 4px 14px;"><div style="font-size: 13px; font-weight: 600;">AI เป็นเพียงข้อเสนอ</div><div style="font-size: 13px; color: #4E5F56; line-height: 1.6; margin-top: 4px;">ผล Gemini ใช้กรอบเส้นประ + ป้าย <span style="font-family:'IBM Plex Mono',monospace;">AI</span> เสมอ ไม่เคยใช้สีสถานะเดียวกับผลตรวจของครู</div></div>
+          <div style="border-left: 3px solid #1F6B47; padding: 4px 0 4px 14px;"><div style="font-size: 13px; font-weight: 600;">Realtime + การแย่งสล็อต</div><div style="font-size: 13px; color: #4E5F56; line-height: 1.6; margin-top: 4px;">ทุกหน้าจอกลุ่มต้องมีสถานะ “กำลังอัปเดต” และข้อความเมื่อสล็อตสุดท้ายถูกคนอื่นใช้ไปก่อน</div></div>
+          <div style="border-left: 3px solid #1F6B47; padding: 4px 0 4px 14px;"><div style="font-size: 13px; font-weight: 600;">ภาษาไทยเป็นหลัก</div><div style="font-size: 13px; color: #4E5F56; line-height: 1.6; margin-top: 4px;">เผื่อความยาวข้อความ +30% line-height 1.6–1.75 ชื่อวิทยาศาสตร์ใช้ serif เอียงแยกชัด</div></div>
+          <div style="border-left: 3px solid #1F6B47; padding: 4px 0 4px 14px;"><div style="font-size: 13px; font-weight: 600;">ครูต้องมีอำนาจเสมอ</div><div style="font-size: 13px; color: #4E5F56; line-height: 1.6; margin-top: 4px;">ไม่มีการรวม/ลบ/รับรองอัตโนมัติ ทุกการกระทำที่ย้อนกลับไม่ได้มีหน้ายืนยันพร้อมสรุปผลกระทบ</div></div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; margin-top: 20px;">
+        <div style="background: #FBF0DC; border: 1px solid #E5C88A; border-radius: 12px; padding: 22px;">
+          <h3 style="font-size: 16px; margin: 0 0 12px; font-weight: 600; color: #6B3E05;">ความเสี่ยงด้าน UX ที่สำคัญที่สุด</h3>
+          <div style="display: grid; gap: 10px; font-size: 13.5px; line-height: 1.65; color: #5A3A0C;">
+            <div><strong>R1 — ฟอร์มตรวจลักษณะยาวเกินไป</strong> นักเรียนจะกดผ่านโดยไม่ดูของจริง → แก้ด้วยการแบ่งเป็นการ์ดทีละกลุ่มลักษณะ + ตัวนับความคืบหน้า + ปุ่มใหญ่ 4 ตัวเลือกต่อแถว</div>
+            <div><strong>R2 — ติดค้างรอ AI</strong> → หน้าจอวิเคราะห์มีปุ่ม “กรอกเอง” ตั้งแต่วินาทีแรก และสามารถออกไปถ่ายต้นถัดไปได้</div>
+            <div><strong>R3 — ร่างหาย</strong> → แถบ “บันทึกในเครื่องแล้ว” ถาวรในโหมดสนาม + คิวซิงก์ที่กดดูได้</div>
+            <div><strong>R4 — แย่งสล็อตกลุ่มสุดท้าย</strong> ดูเหมือนบั๊ก → ข้อความเฉพาะกิจ + แสดงกลุ่มที่ยังรับสมาชิกทันที</div>
+            <div><strong>R5 — สถานะสื่อด้วยสีอย่างเดียว</strong> กลางแดด/ตาบอดสี → ทุกสถานะมีรูปทรง + ไอคอน + ข้อความไทยกำกับ</div>
+            <div><strong>R6 — นักเรียนเข้าใจว่า AI คือคำตอบ</strong> → คำว่า “ผลชั่วคราว” และปุ่ม “ไม่ตรง” ต้องเด่นเท่าปุ่ม “ตรง”</div>
+          </div>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 22px;">
+          <h3 style="font-size: 16px; margin: 0 0 12px; font-weight: 600;">สมมติฐานที่ตั้งไว้ <span style="font-weight: 400; color: #7C8B83; font-size: 13px;">Assumptions</span></h3>
+          <ol style="margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.75; color: #4E5F56;">
+            <li>นักเรียนล็อกอินด้วยอีเมล/รหัสโรงเรียนก่อนรับคำเชิญ (เอกสารไม่ระบุ จึงออกแบบให้เข้าลิงก์ก่อน แล้วค่อยยืนยันตัวตน)</li>
+            <li>โหมดสนาม (Field mode) เป็นเชลล์นำทางแยก ทับ bottom nav ปกติ เพื่อลดการตัดสินใจระหว่างสำรวจ</li>
+            <li>คำเชิญเข้ากลุ่มหมดอายุใน 24 ชม. หรือเมื่อปิดการจัดกลุ่ม (ค่าเริ่มต้นที่ปลอดภัยที่สุด)</li>
+            <li>รายชื่อเพื่อนร่วมชั้นแสดงชื่อจริง + เลขที่ ไม่แสดงอีเมล เพื่อความเป็นส่วนตัว</li>
+            <li>แผนที่หลังจบกิจกรรมไม่แสดงเส้นทางการเดินย้อนหลังของนักเรียนรายบุคคล แสดงเฉพาะหมุดพืช</li>
+            <li>ครูหนึ่งคนต่อหนึ่งชั้นเรียนใน MVP (ยังไม่ออกแบบผู้ช่วยสอน)</li>
+            <li>ใช้ Mapbox GL ตาม D-005 — ในเอกสารนี้แผนที่แสดงเป็นภาพแทน (placeholder) พร้อมสเปกพฤติกรรม</li>
+          </ol>
+        </div>
+      </div>
+
+      <div style="background: #16211C; color: #DCE7DF; border-radius: 12px; padding: 22px; margin-top: 20px;">
+        <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600; color: #FFFFFF;">คำถามที่ต้องถามผู้รับผิดชอบผลิตภัณฑ์ (มีผลต่อความปลอดภัย/ความเป็นส่วนตัวเท่านั้น)</h3>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13.5px; line-height: 1.6; color: #AFC2B6;">
+          <div><strong style="color: #FFFFFF;">Q-A</strong> ครูควรเห็นตำแหน่งสดของนักเรียนรายบุคคลแบบระบุชื่อ หรือแสดงเป็น “สมาชิกกลุ่ม 3” เพื่อลดการติดตามตัวบุคคล? ปัจจุบันออกแบบให้ <em>ระบุชื่อได้เฉพาะครูประจำชั้น</em> และหยุดเผยแพร่ตำแหน่งทันทีที่จบเซสชัน</div>
+          <div><strong style="color: #FFFFFF;">Q-B</strong> นักเรียนในชั้นเดียวกันควรเห็นภาพถ่ายและชื่อผู้บันทึกของเพื่อนบนแผนที่ที่จบแล้วหรือไม่? ปัจจุบันออกแบบให้ <em>เห็นภาพและชื่อผู้บันทึก</em> เฉพาะผู้เข้าร่วมเซสชันเดียวกัน (สอดคล้อง D-027)</div>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-top: 56px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid #16211C; padding-bottom: 10px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F6B47;">02</span>
+        <h2 style="font-size: 28px; font-weight: 700; margin: 0;">โครงสร้างข้อมูลและการนำทาง <span style="font-size: 15px; font-weight: 400; color: #7C8B83;">Information architecture</span></h2>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 24px;">
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 22px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <span style="background: #E7F0EA; color: #14472F; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;">นักเรียน</span>
+            <span style="font-size: 13px; color: #7C8B83;">bottom nav 5 ช่อง + field-mode shell</span>
+          </div>
+          <sc-for list="{{ studentIA }}" as="node" hint-placeholder-count="18">
+            <div style="display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px dotted #E6EBE6;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9FADA4; width: 44px; flex: none; padding-top: 2px;">{{ node.id }}</span>
+              <span style="font-size: 14px; color: #16211C; line-height: 1.5;">{{ node.label }}</span>
+              <span style="font-size: 12px; color: #7C8B83; margin-left: auto; text-align: right; flex: none; max-width: 46%;">{{ node.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 22px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <span style="background: #E6EDF9; color: #143A78; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;">ครู</span>
+            <span style="font-size: 13px; color: #7C8B83;">bottom nav 5 ช่อง (มือถือ) / side nav (≥1024px)</span>
+          </div>
+          <sc-for list="{{ teacherIA }}" as="node" hint-placeholder-count="18">
+            <div style="display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px dotted #E6EBE6;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9FADA4; width: 44px; flex: none; padding-top: 2px;">{{ node.id }}</span>
+              <span style="font-size: 14px; color: #16211C; line-height: 1.5;">{{ node.label }}</span>
+              <span style="font-size: 12px; color: #7C8B83; margin-left: auto; text-align: right; flex: none; max-width: 46%;">{{ node.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px;">
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 20px;">
+          <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600;">พื้นที่ร่วมทั้งสองบทบาท</h3>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.8; color: #4E5F56;">
+            <li>เข้าสู่ระบบ / สมัคร / ลืมรหัสผ่าน</li>
+            <li>ศูนย์การแจ้งเตือน (deep link ทุกรายการ)</li>
+            <li>โปรไฟล์ · สิทธิ์ตำแหน่ง/กล้อง · ภาษา</li>
+            <li>แถบออฟไลน์ / กำลังเชื่อมต่อใหม่ (global)</li>
+            <li>หน้าไม่มีสิทธิ์เข้าถึง · หน้าไม่พบ · หน้าผิดพลาด</li>
+          </ul>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 20px;">
+          <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600;">จุดเข้าตามบทบาท</h3>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.8; color: #4E5F56;">
+            <li><strong>ลิงก์/QR เชิญ</strong> → หน้าพรีวิวชั้นเรียน → ยืนยันตัวตน → เข้าร่วม</li>
+            <li><strong>การแจ้งเตือน</strong> → หน้าเป้าหมายโดยตรง (คำเชิญ, คำขอแก้ไข, กลุ่มถึงคิว)</li>
+            <li><strong>กลุ่มถูกเปิดใช้งาน</strong> → แบนเนอร์เต็มความกว้างบนหน้าแรก → โหมดสนาม</li>
+            <li><strong>ครูเปิดเซสชัน</strong> → การ์ด “กำลังดำเนินการ” ปักบนสุดของหน้าแรกครู</li>
+          </ul>
+        </div>
+        <div style="background: #E7F0EA; border: 1px solid #BFD8C8; border-radius: 12px; padding: 20px;">
+          <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600; color: #14472F;">การเปลี่ยนแปลงจากโครงสร้างที่เอกสารเสนอ</h3>
+          <div style="font-size: 13px; line-height: 1.7; color: #2C5641;">
+            <p style="margin: 0 0 8px;"><strong>รวม “ชั้นเรียน” กับ “กลุ่มของฉัน”</strong> เป็นแท็บเดียว — นักเรียนอยู่ได้กลุ่มเดียวต่อชั้น การแยกสองแท็บทำให้เกิดหน้าว่างโดยไม่จำเป็น</p>
+            <p style="margin: 0 0 8px;"><strong>แท็บ “กิจกรรม” เปลี่ยนสภาพตามสถานะ</strong> — รอ / ถึงคิว / กำลังสำรวจ / จบแล้ว ใช้ช่องนำทางเดียวกัน ลดจาก 7 เหลือ 5 ช่อง</p>
+            <p style="margin: 0;"><strong>โหมดสนามเป็นเชลล์แยก</strong> — ทับ bottom nav ด้วยแถบ 3 ปุ่ม (แผนที่ · เพิ่มการสังเกต · รายการของฉัน) ออกได้ด้วยปุ่มออกที่ชัดเจน</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-top: 56px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid #16211C; padding-bottom: 10px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F6B47;">03</span>
+        <h2 style="font-size: 28px; font-weight: 700; margin: 0;">โฟลว์ผู้ใช้ <span style="font-size: 15px; font-weight: 400; color: #7C8B83;">User flows — happy path + สถานะที่ไม่ปกติ</span></h2>
+      </div>
+
+      <div style="display: grid; gap: 16px; margin-top: 24px;">
+        <sc-for list="{{ flows }}" as="flow" hint-placeholder-count="6">
+          <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 20px 22px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: #16211C; color: #FFFFFF; padding: 3px 8px; border-radius: 4px;">{{ flow.id }}</span>
+              <h3 style="font-size: 17px; font-weight: 600; margin: 0;">{{ flow.title }}</h3>
+              <span style="font-size: 12px; color: #7C8B83; margin-left: auto;">{{ flow.screens }}</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; margin-top: 14px;">
+              <sc-for list="{{ flow.steps }}" as="step" hint-placeholder-count="5">
+                <div style="background: #F3F6F2; border: 1px solid #DCE4DD; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #16211C; display: flex; align-items: center; gap: 8px;">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #1F6B47;">{{ step.n }}</span>{{ step.t }}
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top: 14px; display: grid; grid-template-columns: 90px 1fr; gap: 10px; align-items: start;">
+              <span style="font-size: 12px; font-weight: 600; color: #B3261E; padding-top: 3px;">สถานะพิเศษ</span>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <sc-for list="{{ flow.edges }}" as="edge" hint-placeholder-count="4">
+                  <span style="border: 1px dashed #C9A66B; background: #FDF7EC; border-radius: 999px; padding: 4px 11px; font-size: 12.5px; color: #6B4A12;">{{ edge }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="margin-top: 56px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid #16211C; padding-bottom: 10px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F6B47;">04</span>
+        <h2 style="font-size: 28px; font-weight: 700; margin: 0;">รายการหน้าจอ <span style="font-size: 15px; font-weight: 400; color: #7C8B83;">Screen inventory</span></h2>
+      </div>
+      <p style="font-size: 14px; color: #4E5F56; margin: 14px 0 0; max-width: 760px; line-height: 1.65;">รหัส <span style="font-family:'IBM Plex Mono',monospace;">G-</span> = ใช้ร่วมกัน · <span style="font-family:'IBM Plex Mono',monospace;">S-</span> = นักเรียน · <span style="font-family:'IBM Plex Mono',monospace;">T-</span> = ครู · เครื่องหมาย ★ = หน้าจอที่มีแบบ high-fidelity ในไฟล์ประกอบ</p>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px;">
+        <sc-for list="{{ screens }}" as="s" hint-placeholder-count="12">
+          <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 10px; padding: 14px 16px;">
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #1F6B47; font-weight: 500;">{{ s.id }}</span>
+              <span style="font-size: 14.5px; font-weight: 600;">{{ s.name }}</span>
+              <span style="font-size: 11px; color: #B08A2E; margin-left: auto;">{{ s.hifi }}</span>
+            </div>
+            <div style="font-size: 13px; color: #4E5F56; line-height: 1.55; margin-top: 6px;">{{ s.purpose }}</div>
+            <div style="display: grid; grid-template-columns: 62px 1fr; gap: 2px 8px; margin-top: 10px; font-size: 12px; line-height: 1.5;">
+              <span style="color: #9FADA4;">เข้าจาก</span><span style="color: #4E5F56;">{{ s.entry }}</span>
+              <span style="color: #9FADA4;">ปุ่มหลัก</span><span style="color: #16211C; font-weight: 500;">{{ s.primary }}</span>
+              <span style="color: #9FADA4;">รอง</span><span style="color: #4E5F56;">{{ s.secondary }}</span>
+              <span style="color: #9FADA4;">สถานะ</span><span style="color: #4E5F56;">{{ s.states }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="margin-top: 56px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid #16211C; padding-bottom: 10px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F6B47;">06</span>
+        <h2 style="font-size: 28px; font-weight: 700; margin: 0;">ระบบภาพ <span style="font-size: 15px; font-weight: 400; color: #7C8B83;">Visual system</span></h2>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 24px; margin-top: 24px;">
+        <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 28px;">
+          <div>
+            <h3 style="font-size: 15px; margin: 0 0 8px; font-weight: 600;">แนวคิด — “สมุดบันทึกภาคสนาม”</h3>
+            <p style="font-size: 13.5px; line-height: 1.7; color: #4E5F56; margin: 0 0 14px;">พื้นผิวขาวสะอาดเหมือนกระดาษบันทึก บนพื้นหลังเขียวอมเทาอ่อน โครงสร้างนำด้วย <strong>เส้นขอบ 1px</strong> มากกว่าเงา เพื่อให้อ่านได้กลางแดดและเรนเดอร์เร็วบนเครื่อง Android รุ่นกลาง สีเขียวป่าใช้เฉพาะกับ “การกระทำ” และตัวตนของแบรนด์ — <em>ไม่</em> ใช้เขียวเป็นสีสถานะเดียวของทุกอย่าง</p>
+            <h3 style="font-size: 15px; margin: 18px 0 8px; font-weight: 600;">ตัวอักษร</h3>
+            <div style="font-size: 13.5px; line-height: 1.75; color: #4E5F56;">
+              <div><strong style="color:#16211C;">IBM Plex Sans Thai</strong> — UI ทั้งหมด รองรับไทย/อังกฤษในน้ำหนักเดียวกัน</div>
+              <div style="font-family: 'IBM Plex Serif', serif; font-style: italic;"><strong style="color:#16211C; font-style: normal; font-family: 'IBM Plex Sans Thai', sans-serif;">IBM Plex Serif Italic</strong> — ชื่อวิทยาศาสตร์ เช่น Ficus benjamina</div>
+              <div><span style="font-family:'IBM Plex Mono',monospace;">IBM Plex Mono</span> — พิกัด, รหัสชั้นเรียน, เวลา, ค่าความแม่นยำ GPS</div>
+            </div>
+            <div style="margin-top: 14px; border: 1px solid #E6EBE6; border-radius: 8px; overflow: hidden;">
+              <sc-for list="{{ typeScale }}" as="t" hint-placeholder-count="7">
+                <div style="display: flex; align-items: baseline; gap: 12px; padding: 7px 12px; border-bottom: 1px solid #F0F3F0;">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9FADA4; width: 96px; flex: none;">{{ t.token }}</span>
+                  <span style="font-size: 12px; color: #7C8B83; width: 84px; flex: none;">{{ t.spec }}</span>
+                  <span style="font-size: 12.5px; color: #4E5F56;">{{ t.use }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600;">พาเลตหลัก</h3>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+              <sc-for list="{{ palette }}" as="c" hint-placeholder-count="8">
+                <div style="border: 1px solid #E6EBE6; border-radius: 8px; overflow: hidden;">
+                  <div style="height: 46px; background: {{ c.hex }};"></div>
+                  <div style="padding: 6px 8px;">
+                    <div style="font-size: 11.5px; font-weight: 600;">{{ c.name }}</div>
+                    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #7C8B83;">{{ c.hex }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <h3 style="font-size: 15px; margin: 22px 0 10px; font-weight: 600;">โทเคนสถานะการสังเกต — สี + รูปทรง + ไอคอน + ข้อความ</h3>
+            <div style="display: grid; gap: 6px;">
+              <sc-for list="{{ statusTokens }}" as="st" hint-placeholder-count="6">
+                <div style="display: flex; align-items: center; gap: 10px; border: 1px solid #E6EBE6; border-radius: 8px; padding: 8px 10px; background: {{ st.tint }};">
+                  <span style="width: 26px; height: 26px; flex: none; display: grid; place-items: center; background: {{ st.color }}; color: #FFFFFF; font-size: 13px; font-weight: 700; border-radius: {{ st.radius }};">{{ st.glyph }}</span>
+                  <span style="font-size: 13.5px; font-weight: 600; color: {{ st.color }};">{{ st.th }}</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #7C8B83;">{{ st.key }}</span>
+                  <span style="font-size: 11.5px; color: #4E5F56; margin-left: auto; text-align: right;">{{ st.shape }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <h3 style="font-size: 15px; margin: 22px 0 10px; font-weight: 600;">ระยะห่าง · มุมโค้ง · ระดับความสูง</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 12.5px; line-height: 1.7; color: #4E5F56;">
+              <div style="border: 1px solid #E6EBE6; border-radius: 8px; padding: 10px;"><strong style="color:#16211C;">Spacing</strong><br />ฐาน 4px — 4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 56<br />ขอบหน้าจอมือถือ 16px</div>
+              <div style="border: 1px solid #E6EBE6; border-radius: 8px; padding: 10px;"><strong style="color:#16211C;">Radius</strong><br />ชิป 999 · ปุ่ม/ช่องกรอก 10 · การ์ด 12 · บอตทอมชีต 20 (บนเท่านั้น) · รูป 8</div>
+              <div style="border: 1px solid #E6EBE6; border-radius: 8px; padding: 10px;"><strong style="color:#16211C;">Elevation</strong><br />e0 เส้นขอบ 1px · e1 การ์ดลอย 0 1px 2px rgba(22,33,28,.08) · e2 ชีต 0 −4px 20px rgba(22,33,28,.14)</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid #E6EBE6; margin-top: 24px; padding-top: 22px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;">
+          <div>
+            <h3 style="font-size: 14px; margin: 0 0 10px; font-weight: 600;">ลำดับปุ่ม</h3>
+            <div style="display: grid; gap: 8px;">
+              <div style="background: #1F6B47; color: #FFFFFF; border-radius: 10px; padding: 12px; text-align: center; font-size: 14px; font-weight: 600;">ปุ่มหลัก · 48px</div>
+              <div style="background: #FFFFFF; color: #14472F; border: 1.5px solid #1F6B47; border-radius: 10px; padding: 11px; text-align: center; font-size: 14px; font-weight: 600;">ปุ่มรอง</div>
+              <div style="background: #F3F6F2; color: #4E5F56; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px; text-align: center; font-size: 14px;">ปุ่มเงียบ</div>
+              <div style="background: #FFFFFF; color: #B3261E; border: 1.5px solid #E4B4B0; border-radius: 10px; padding: 11px; text-align: center; font-size: 14px; font-weight: 600;">ปุ่มทำลาย</div>
+              <div style="background: #E9EDEA; color: #9FADA4; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px; text-align: center; font-size: 14px;">ปิดใช้งาน + เหตุผลใต้ปุ่มเสมอ</div>
+            </div>
+          </div>
+          <div>
+            <h3 style="font-size: 14px; margin: 0 0 10px; font-weight: 600;">หมุดบนแผนที่</h3>
+            <div style="display: grid; gap: 8px; font-size: 12.5px; color: #4E5F56; line-height: 1.55;">
+              <div style="display: flex; gap: 8px; align-items: center;"><span style="width: 24px; height: 24px; border-radius: 50% 50% 50% 2px; transform: rotate(-45deg); background: #A15C07; flex: none;"></span> หมุดพืช — หยดน้ำ ปลายชี้พิกัดจับภาพ</div>
+              <div style="display: flex; gap: 8px; align-items: center;"><span style="width: 22px; height: 22px; border-radius: 50%; background: #1B4FA0; border: 3px solid #FFFFFF; box-shadow: 0 0 0 1.5px #1B4FA0; flex: none;"></span> นักเรียนที่กำลังสำรวจ — วงกลมมีวงแหวน</div>
+              <div style="display: flex; gap: 8px; align-items: center;"><span style="width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; border: 2px dashed #7C8B83; flex: none;"></span> ตำแหน่งเก่า/สัญญาณอ่อน — เส้นประ + เวลาอัปเดตกำกับ</div>
+              <div style="display: flex; gap: 8px; align-items: center;"><span style="width: 24px; height: 24px; border-radius: 8px; background: #16211C; color: #FFF; font-size: 11px; display: grid; place-items: center; flex: none;">12</span> คลัสเตอร์ — สี่เหลี่ยมมน แสดงจำนวน</div>
+              <div style="display: flex; gap: 8px; align-items: center;"><span style="width: 24px; height: 24px; border: 2px solid #14472F; background: #E7F0EA; flex: none;"></span> จุดตรวจ (checkpoint) — สี่เหลี่ยม</div>
+            </div>
+          </div>
+          <div>
+            <h3 style="font-size: 14px; margin: 0 0 10px; font-weight: 600;">ไอคอน</h3>
+            <p style="font-size: 12.5px; line-height: 1.65; color: #4E5F56; margin: 0;">เส้น (outline) หนา 1.75px ปลายมน ขนาดฐาน 24px (สนาม 28px) มุมมองตรง ไม่ใช้ภาพประกอบการ์ตูน ทุกไอคอนที่สื่อสถานะต้องมีข้อความไทยกำกับเสมอ ห้ามใช้ไอคอนลอยเดี่ยวเป็นปุ่มสำคัญโดยไม่มีป้ายชื่อ</p>
+          </div>
+          <div style="background: #16211C; border-radius: 10px; padding: 16px; color: #DCE7DF;">
+            <h3 style="font-size: 14px; margin: 0 0 10px; font-weight: 600; color: #FFFFFF;">กฎ “โหมดสนาม”</h3>
+            <ul style="margin: 0; padding-left: 16px; font-size: 12.5px; line-height: 1.7; color: #AFC2B6;">
+              <li>ตัวอักษรฐาน +1px, ปุ่มหลัก 56px</li>
+              <li>คอนทราสต์ข้อความ ≥ 7:1</li>
+              <li>ห้ามพื้นหลังไล่เฉดใต้ข้อความ</li>
+              <li>ปุ่มหลักอยู่ในระยะ 25% ล่างเสมอ</li>
+              <li>แถบสถานะ (GPS · ซิงก์ · ออฟไลน์) ปักบนสุดถาวร</li>
+              <li>เคลื่อนไหวสั้น ≤ 180ms และปิดตาม prefers-reduced-motion</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-top: 56px;">
+      <div style="display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid #16211C; padding-bottom: 10px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #1F6B47;">09</span>
+        <h2 style="font-size: 28px; font-weight: 700; margin: 0;">เอกสารส่งต่อ <span style="font-size: 15px; font-weight: 400; color: #7C8B83;">Handoff specification</span></h2>
+      </div>
+
+      <h3 style="font-size: 17px; margin: 26px 0 12px; font-weight: 600;">คลังคอมโพเนนต์ <span style="font-weight: 400; color: #7C8B83; font-size: 13px;">Component inventory</span></h3>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+        <sc-for list="{{ components }}" as="c" hint-placeholder-count="12">
+          <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 10px; padding: 13px 15px;">
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <span style="font-size: 14px; font-weight: 600;">{{ c.name }}</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #9FADA4;">{{ c.key }}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 58px 1fr; gap: 1px 8px; margin-top: 7px; font-size: 12.5px; line-height: 1.5;">
+              <span style="color: #9FADA4;">หน้าที่</span><span style="color: #4E5F56;">{{ c.purpose }}</span>
+              <span style="color: #9FADA4;">แบบย่อย</span><span style="color: #4E5F56;">{{ c.variants }}</span>
+              <span style="color: #9FADA4;">สถานะ</span><span style="color: #4E5F56;">{{ c.states }}</span>
+              <span style="color: #9FADA4;">มือถือ</span><span style="color: #4E5F56;">{{ c.mobile }}</span>
+              <span style="color: #9FADA4;">a11y</span><span style="color: #4E5F56;">{{ c.a11y }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <h3 style="font-size: 17px; margin: 34px 0 12px; font-weight: 600;">ตารางสถานะระบบ <span style="font-weight: 400; color: #7C8B83; font-size: 13px;">Screen-state matrix</span></h3>
+      <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; overflow: hidden;">
+        <div style="display: grid; grid-template-columns: 150px 1fr 1fr 1.1fr; gap: 0; background: #16211C; color: #FFFFFF; font-size: 12px; font-weight: 600;">
+          <div style="padding: 10px 14px;">สถานะ</div><div style="padding: 10px 14px;">เกิดที่ไหน</div><div style="padding: 10px 14px;">รูปแบบที่ใช้</div><div style="padding: 10px 14px;">ข้อความไทยตัวอย่าง</div>
+        </div>
+        <sc-for list="{{ stateMatrix }}" as="row" hint-placeholder-count="14">
+          <div style="display: grid; grid-template-columns: 150px 1fr 1fr 1.1fr; border-bottom: 1px solid #EEF2EE; font-size: 12.5px; line-height: 1.55;">
+            <div style="padding: 9px 14px; font-weight: 600; color: #16211C;">{{ row.state }}</div>
+            <div style="padding: 9px 14px; color: #4E5F56;">{{ row.where }}</div>
+            <div style="padding: 9px 14px; color: #4E5F56;">{{ row.pattern }}</div>
+            <div style="padding: 9px 14px; color: #16211C;">{{ row.copy }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 26px;">
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 20px;">
+          <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600;">กฎการตอบสนองต่อขนาดจอ</h3>
+          <div style="font-size: 13px; line-height: 1.7; color: #4E5F56;">
+            <p style="margin: 0 0 8px;"><strong style="color:#16211C;">360–430px (นักเรียน · ครูในสนาม)</strong> — คอลัมน์เดียว, bottom nav, บอตทอมชีต, ปุ่มหลักเต็มความกว้างติดขอบล่าง, ห้ามตาราง</p>
+            <p style="margin: 0 0 8px;"><strong style="color:#16211C;">600–768px</strong> — เนื้อหาสูงสุด 560px จัดกึ่งกลาง, การ์ดเรียง 2 คอลัมน์ในรายการ, บอตทอมชีตกลายเป็นชีตความกว้าง 480px</p>
+            <p style="margin: 0 0 8px;"><strong style="color:#16211C;">≥1024px (ครู)</strong> — side nav 240px, แผนที่/รายละเอียดแบบแยกซ้าย-ขวา 60/40, คิวตรวจ + แผงพรีวิว, ตารางสมาชิก, บอร์ดจัดกลุ่มแบบคอลัมน์</p>
+            <p style="margin: 0;"><strong style="color:#16211C;">นักเรียนบนจอใหญ่</strong> — ขยายเลย์เอาต์เท่านั้น ไม่เปลี่ยนโฟลว์ธุรกิจ โหมดสนามยังคงเป็นคอลัมน์เดียวกึ่งกลาง กว้างสูงสุด 480px</p>
+          </div>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 20px;">
+          <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600;">การโต้ตอบและการเคลื่อนไหว</h3>
+          <div style="font-size: 13px; line-height: 1.7; color: #4E5F56;">
+            <p style="margin: 0 0 8px;"><strong style="color:#16211C;">ระยะเวลา</strong> — ชีตขึ้น 220ms ease-out · การ์ดเปลี่ยนสถานะ 160ms · toast 180ms · แผนที่ pan/zoom ตามค่าเริ่มต้นของ Mapbox · ทุกอย่างปิดเมื่อ <span style="font-family:'IBM Plex Mono',monospace;">prefers-reduced-motion</span></p>
+            <p style="margin: 0 0 8px;"><strong style="color:#16211C;">ผลตอบสนองทันที</strong> — ปุ่มถ่ายภาพและปุ่มเลือก match/not_match ตอบสนองแบบ optimistic ทันที แล้วซิงก์เบื้องหลัง; การสร้างกลุ่มและการส่ง Observation <em>ไม่</em> ใช้ optimistic เพราะเซิร์ฟเวอร์เป็นผู้ตัดสิน</p>
+            <p style="margin: 0 0 8px;"><strong style="color:#16211C;">การยืนยัน</strong> — การกระทำที่ย้อนกลับไม่ได้ (ลบกลุ่ม, ปฏิเสธ, จบเซสชัน, ย้ายหัวหน้า) ใช้ไดอะล็อกที่สรุป “ใครได้รับผลกระทบ” และต้องแตะปุ่มที่เขียนคำกริยาจริง ไม่ใช่คำว่า “ตกลง”</p>
+            <p style="margin: 0;"><strong style="color:#16211C;">Realtime</strong> — เหตุการณ์เข้ามา → แถบบาง “มีการอัปเดต” ด้านบนรายการ → ผู้ใช้แตะเพื่อรีเฟรช ยกเว้นหน้าจอกลุ่มขณะจัดกลุ่มที่รีเฟรชเองทันที</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 20px;">
+          <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600;">พฤติกรรมแผนที่</h3>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #4E5F56;">
+            <li>หมุดพืชใช้ <strong>พิกัดตอนเริ่มบันทึก</strong> เสมอ ไม่ใช่พิกัดตอนกดส่ง</li>
+            <li>แตะหมุด → บอตทอมชีตระดับ 40% (แผนที่ยังเห็น) → ลากขึ้นเป็น 90% เพื่อดูเต็ม</li>
+            <li>เดสก์ท็อป: แผนที่ซ้าย 60% / รายละเอียดขวา 40% ไม่มีการเปลี่ยนหน้า</li>
+            <li>คลัสเตอร์เมื่อหมุดซ้อนกันในรัศมี 40px แตะเพื่อขยาย</li>
+            <li>ปุ่มควบคุมแผนที่ (ตำแหน่งฉัน, ซูม, เลเยอร์) อยู่ขอบขวาล่าง ระยะนิ้วโป้ง ขนาด 48px</li>
+            <li>ทุกแผนที่มีปุ่มสลับ “มุมมองรายการ” เป็นทางเลือกที่เข้าถึงได้</li>
+            <li>ตำแหน่งเก่ากว่า 30 วินาที → หมุดเส้นประ + ป้าย “อัปเดต 2 นาทีที่แล้ว”</li>
+            <li>หลังจบกิจกรรม ไม่แสดงเส้นทางเดินย้อนหลังรายบุคคล เหลือเฉพาะหมุดพืชและขอบเขต</li>
+          </ul>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 12px; padding: 20px;">
+          <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600;">แนวทางการเขียนภาษาไทย</h3>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #4E5F56;">
+            <li>ปุ่ม = คำกริยาสั้น 1–3 คำ: “ถ่ายภาพ”, “ส่งการสังเกต”, “ขอให้แก้ไข”</li>
+            <li>เรียกผู้ใช้ว่า “คุณ” หรือละประธาน ไม่ใช้ “ท่าน”</li>
+            <li>ข้อผิดพลาดบอก <em>สาเหตุ + ทางออก</em>: “อัปโหลดไม่สำเร็จ เพราะสัญญาณขาด — ระบบจะลองใหม่ให้อัตโนมัติ”</li>
+            <li>ห้ามใช้ศัพท์เทคนิค: ใช้ “สัญญาณตำแหน่งอ่อน” แทน “GPS accuracy ต่ำ”</li>
+            <li>คำเตือนชนิดซ้ำต้องไม่กล่าวโทษ: “เพื่อนบันทึกพืชชนิดนี้แล้ว — คุณบันทึกต้นของคุณต่อได้เลย”</li>
+            <li>AI ใช้คำว่า “ผลวิเคราะห์ชั่วคราว” ทุกครั้ง ห้ามใช้คำว่า “ผลลัพธ์” เดี่ยว ๆ</li>
+            <li>คงศัพท์เดิมทั้งระบบ: ชั้นเรียน · กลุ่ม · หัวหน้ากลุ่ม · กิจกรรม · รอบสำรวจ · การสังเกต · หลักฐานภาพ</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+        <div style="background: #FDF7EC; border: 1px solid #E5C88A; border-radius: 12px; padding: 20px;">
+          <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600; color: #6B3E05;">ทางเลือกที่ยังไม่สรุป (ไม่บล็อกการพัฒนา)</h3>
+          <ol style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #5A3A0C;">
+            <li>ตัวนับความคืบหน้าในหน้าตรวจลักษณะ ควรบังคับตรวจครบทุกลักษณะ หรือให้ข้ามได้พร้อมเหตุผล — ปัจจุบันเลือก <em>ให้ข้ามได้ แต่แสดงจำนวนที่ยังไม่ตรวจก่อนส่ง</em></li>
+            <li>ลำดับคิวกลุ่มควรลากจัดเรียงได้บนมือถือหรือใช้ปุ่มขึ้น/ลง — ปัจจุบันเลือก <em>ปุ่มขึ้น/ลง</em> เพราะแม่นยำกว่าเมื่อสวมถุงมือ/มือเปียก</li>
+            <li>จำนวนภาพที่แสดงในการ์ดรีวิวของครูก่อนเปิดเต็ม — ปัจจุบัน 3 ภาพ + ตัวเลข “+n”</li>
+            <li>รูปแบบการส่งออกรายงาน (CSV / PDF) — ออกแบบเป็นจุดเข้าเดียว ยังไม่กำหนดรูปแบบไฟล์</li>
+          </ol>
+        </div>
+        <div style="background: #14472F; color: #DCE7DF; border-radius: 12px; padding: 20px;">
+          <h3 style="font-size: 15px; margin: 0 0 10px; font-weight: 600; color: #FFFFFF;">ลำดับความสำคัญในการพัฒนา</h3>
+          <ol style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.8; color: #BCD4C4;">
+            <li><strong style="color:#FFFFFF;">P0</strong> โหมดสนาม + สร้าง/ส่งการสังเกต + คิวออฟไลน์ + สถานะ AI ทั้งหมด</li>
+            <li><strong style="color:#FFFFFF;">P0</strong> เข้าชั้นเรียน · สร้าง/เข้ากลุ่ม · คำเชิญ · การแจ้งเตือนในแอป</li>
+            <li><strong style="color:#FFFFFF;">P0</strong> ครู: เปิด/ปิดกลุ่มในเซสชัน + แผนที่สด + คิวตรวจ + รับรอง/ขอแก้ไข</li>
+            <li><strong style="color:#FFFFFF;">P1</strong> จัดการกลุ่มเชิงลึก (ย้าย/เปลี่ยนหัวหน้า/เก็บถาวร) บนเดสก์ท็อป</li>
+            <li><strong style="color:#FFFFFF;">P1</strong> ตัวสร้างกิจกรรม (เส้นทาง/ขอบเขต/จุดตรวจ)</li>
+            <li><strong style="color:#FFFFFF;">P2</strong> แผนที่ผลลัพธ์ + ตัวกรอง + การส่งออกรายงาน</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <div style="margin-top: 48px; padding-top: 20px; border-top: 1px solid #DCE4DD; font-size: 12.5px; color: #7C8B83; display: flex; gap: 18px; flex-wrap: wrap;">
+      <span>ไฟล์ประกอบ →</span>
+      <span>AI Escort — Wireframes (D5)</span>
+      <span>AI Escort — Student Hi-Fi (D7)</span>
+      <span>AI Escort — Teacher Hi-Fi (D7)</span>
+      <span>AI Escort — Prototype (D8)</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const S = (n, t) => ({ n, t });
+    return {
+      studentIA: [
+        { id: "S0", label: "เข้าสู่ระบบ / สมัครสมาชิก", note: "จุดเข้า: ลิงก์เชิญ, QR, รหัส" },
+        { id: "S1", label: "หน้าแรก", note: "แบนเนอร์กิจกรรม + ทางลัด" },
+        { id: "S1.1", label: "— ชั้นเรียนของฉัน", note: "การ์ดชั้นเรียน" },
+        { id: "S1.2", label: "— เข้าร่วมด้วยรหัส", note: "6 ตัวอักษร" },
+        { id: "S2", label: "ชั้นเรียน", note: "แท็บรวมกับกลุ่ม" },
+        { id: "S2.1", label: "— ภาพรวมชั้นเรียน", note: "ครู, สมาชิก, กติกากลุ่ม" },
+        { id: "S2.2", label: "— การจัดกลุ่ม", note: "สล็อตกลุ่ม, สร้างกลุ่ม" },
+        { id: "S2.3", label: "— กลุ่มของฉัน", note: "หัวหน้า/สมาชิก 2 มุมมอง" },
+        { id: "S2.4", label: "— เชิญเพื่อนร่วมชั้น", note: "เฉพาะหัวหน้า" },
+        { id: "S2.5", label: "— คำเชิญที่ได้รับ", note: "รับ / ปฏิเสธ" },
+        { id: "S3", label: "กิจกรรม", note: "เปลี่ยนสภาพตามสถานะ" },
+        { id: "S3.1", label: "— รายละเอียด / รอคิว", note: "เส้นทาง, ลำดับคิว" },
+        { id: "S3.2", label: "— โหมดสนาม (เชลล์)", note: "ทับ nav ปกติ" },
+        { id: "S3.3", label: "  · แผนที่สนาม", note: "ขอบเขต, เส้นทาง, หมุดของฉัน" },
+        { id: "S3.4", label: "  · เพิ่มการสังเกต", note: "ตัวช่วย 4 ขั้น" },
+        { id: "S3.5", label: "  · การสังเกตในรอบนี้", note: "รายการ + สถานะซิงก์" },
+        { id: "S4", label: "การสังเกตของฉัน", note: "ทุกชั้นเรียน" },
+        { id: "S4.1", label: "— รายละเอียด / ประวัติการส่ง", note: "เทียบเวอร์ชัน" },
+        { id: "S4.2", label: "— คำขอแก้ไขจากครู", note: "deep link จากแจ้งเตือน" },
+        { id: "S5", label: "แจ้งเตือน", note: "จุดแดงนับเลข" },
+        { id: "S6", label: "แผนที่ผลลัพธ์ (จบแล้ว)", note: "แผนที่ / รายการ" },
+        { id: "S6.1", label: "— รายละเอียดพืช", note: "บอตทอมชีต" },
+        { id: "S7", label: "โปรไฟล์และสิทธิ์", note: "ตำแหน่ง, กล้อง, ภาษา" }
+      ],
+      teacherIA: [
+        { id: "T0", label: "เข้าสู่ระบบ", note: "" },
+        { id: "T1", label: "หน้าแรก", note: "การ์ดเซสชันที่กำลังดำเนินการปักบนสุด" },
+        { id: "T2", label: "ชั้นเรียน", note: "รายการ + สร้างใหม่" },
+        { id: "T2.1", label: "— สร้าง/แก้ไขชั้นเรียน", note: "กติกากลุ่ม 4 ค่า" },
+        { id: "T2.2", label: "— เชิญนักเรียน", note: "รหัส · ลิงก์ · QR" },
+        { id: "T2.3", label: "— สมาชิกชั้นเรียน", note: "ค้นหา/กรอง/ระงับ" },
+        { id: "T2.4", label: "— จัดการกลุ่ม", note: "บอร์ดกลุ่ม + ยังไม่มีกลุ่ม" },
+        { id: "T2.5", label: "  · ย้ายนักเรียน", note: "ตรวจความจุ + เปลี่ยนหัวหน้า" },
+        { id: "T2.6", label: "  · ลบ / เก็บถาวรกลุ่ม", note: "ยืนยันพร้อมผลกระทบ" },
+        { id: "T3", label: "กิจกรรม", note: "แผนที่ใช้ซ้ำได้" },
+        { id: "T3.1", label: "— ตัวสร้างกิจกรรม", note: "5 ขั้น" },
+        { id: "T3.2", label: "— ตั้งค่ารอบสำรวจ", note: "วันเวลา + ลำดับกลุ่ม" },
+        { id: "T4", label: "รอบสำรวจสด", note: "แผนที่ + แผงควบคุม" },
+        { id: "T4.1", label: "— คิวกลุ่ม", note: "เปิด/พัก/จบทีละกลุ่ม" },
+        { id: "T4.2", label: "— หมุด/สมาชิกสด", note: "ความสดของตำแหน่ง" },
+        { id: "T5", label: "คิวตรวจการสังเกต", note: "ตัวกรองสถานะ" },
+        { id: "T5.1", label: "— รายละเอียดการตรวจ", note: "AI/นักเรียน/ครู 3 ชั้น" },
+        { id: "T5.2", label: "— ขอให้แก้ไข", note: "เลือกหัวข้อ + ข้อความ" },
+        { id: "T5.3", label: "— แก้ไขและรับรอง", note: "เก็บค่าเดิมไว้เสมอ" },
+        { id: "T6", label: "แผนที่ผลลัพธ์", note: "กรองสถานะ/กลุ่ม/ชนิดซ้ำ" },
+        { id: "T6.1", label: "— รายงานและส่งออก", note: "จุดเข้าเดียว" },
+        { id: "T7", label: "แจ้งเตือน", note: "" },
+        { id: "T8", label: "ตั้งค่า", note: "โปรไฟล์ · โรงเรียน" }
+      ],
+      flows: [
+        {
+          id: "S1", title: "เข้าร่วมชั้นเรียน", screens: "G-01 · S-01 · S-02 · S-03",
+          steps: [S(1, "เปิดลิงก์ / สแกน QR / กรอกรหัส"), S(2, "พรีวิวชั้นเรียนและครู"), S(3, "เข้าสู่ระบบหรือสมัคร"), S(4, "ยืนยัน “เข้าร่วมชั้นเรียน”"), S(5, "ถึงหน้าชั้นเรียน + แจ้งเตือนถึงครู")],
+          edges: ["รหัสไม่ถูกต้อง", "คำเชิญหมดอายุ", "คำเชิญถูกปิด", "ใช้ครบจำนวนแล้ว", "เข้าร่วมอยู่แล้ว → ไปหน้าชั้นเรียนเลย", "ออฟไลน์ขณะกดเข้าร่วม"]
+        },
+        {
+          id: "S2", title: "สร้างกลุ่มและเป็นหัวหน้า", screens: "S-04 · S-05 · S-06",
+          steps: [S(1, "เปิดแท็บชั้นเรียน"), S(2, "เห็นสถานะการจัดกลุ่ม + สล็อตคงเหลือ"), S(3, "แตะ “สร้างกลุ่ม”"), S(4, "ตั้งชื่อกลุ่ม"), S(5, "ยืนยัน (ธุรกรรมอะตอมมิก)"), S(6, "เป็นหัวหน้าอัตโนมัติ"), S(7, "ชวนเพื่อน")],
+          edges: ["การจัดกลุ่มปิดอยู่", "ครูปิดสิทธิ์นักเรียนสร้างกลุ่ม", "สล็อตเต็ม → ปุ่มปิดใช้งาน + เหตุผล", "คนอื่นคว้าสล็อตสุดท้ายก่อน (GROUP_LIMIT_REACHED)", "อยู่ในกลุ่มอื่นแล้ว", "เคยสร้างกลุ่มในชั้นนี้แล้ว", "กำลังรีเฟรชข้อมูลกลุ่ม"]
+        },
+        {
+          id: "S3", title: "หัวหน้าเชิญเพื่อนร่วมชั้น", screens: "S-07 · S-08",
+          steps: [S(1, "เปิดกลุ่มของฉัน"), S(2, "แตะ “ชวนเพื่อน”"), S(3, "ค้นหา/เลือกเพื่อนที่เชิญได้"), S(4, "ส่งคำเชิญ (สูงสุดตามที่นั่งว่าง)"), S(5, "ติดตามสถานะรอตอบรับ")],
+          edges: ["เพื่อนอยู่กลุ่มอื่นแล้ว → แสดงแบบจางพร้อมเหตุผล", "ที่นั่งว่างไม่พอกับจำนวนที่เลือก", "ยกเลิกคำเชิญ", "คำเชิญถูกปฏิเสธ", "คำเชิญหมดอายุ", "กลุ่มถูกล็อกระหว่างรอตอบรับ"]
+        },
+        {
+          id: "S4", title: "รับหรือปฏิเสธคำเชิญ", screens: "S-09 · S-10",
+          steps: [S(1, "รับการแจ้งเตือนในแอป"), S(2, "เปิดคำเชิญ"), S(3, "ดูหัวหน้า สมาชิก และที่นั่งคงเหลือ"), S(4, "ตอบรับ หรือ ปฏิเสธ"), S(5, "เข้ากลุ่ม + แจ้งเตือนถึงหัวหน้า")],
+          edges: ["อยู่กลุ่มอื่นแล้ว → บล็อกพร้อมทางออก “ออกจากกลุ่มเดิม” (ถ้ายังไม่ล็อก)", "คำเชิญหมดอายุ", "หัวหน้ายกเลิกคำเชิญ", "กลุ่มเต็มก่อนกดรับ", "ครูย้ายเข้ากลุ่มไปแล้ว"]
+        },
+        {
+          id: "S5", title: "รอและเข้าสู่รอบสำรวจ", screens: "S-11 · S-12 · S-13",
+          steps: [S(1, "เปิดแท็บกิจกรรม"), S(2, "ดูเส้นทาง ขอบเขต และลำดับคิวกลุ่ม"), S(3, "รอครูเปิดใช้งาน"), S(4, "ได้รับแจ้ง “กลุ่มของคุณถึงคิวแล้ว”"), S(5, "เข้าโหมดสนาม"), S(6, "อนุญาตตำแหน่ง")],
+          edges: ["กลุ่มรอคิว (ดูได้ · ส่งไม่ได้)", "กลุ่มถัดไป", "กำลังสำรวจ", "รอบสำรวจถูกพัก", "รอบสำรวจจบแล้ว", "ไม่อนุญาตตำแหน่ง", "สัญญาณตำแหน่งอ่อน", "ออฟไลน์", "กำลังเชื่อมต่อใหม่"]
+        },
+        {
+          id: "S6", title: "สร้างการสังเกตพืช", screens: "S-14 · S-15 · S-16",
+          steps: [S(1, "แตะ “เพิ่มการสังเกต”"), S(2, "ระบบจับพิกัด · ความแม่นยำ · เวลา"), S(3, "ถ่ายภาพทั้งต้น (บังคับ)"), S(4, "เพิ่มภาพหลักฐานได้ถึง 10 ภาพ + ระบุประเภท"), S(5, "บีบอัดและอัปโหลด / เข้าคิวออฟไลน์"), S(6, "ส่งวิเคราะห์ด้วย AI")],
+          edges: ["ไม่ได้รับพิกัด → รอ/ลองใหม่/บันทึกแบบติดธง", "ความแม่นยำต่ำกว่า 20 ม.", "อัปโหลดล้มเหลว → ลองใหม่อัตโนมัติ", "ออฟไลน์ → คิวรอส่ง", "ลบ/แทนที่ภาพ", "ครบ 10 ภาพแล้ว", "ยังไม่มีภาพทั้งต้น → ปุ่มถัดไปปิด"]
+        },
+        {
+          id: "S7", title: "ผลวิเคราะห์ AI (ชั่วคราว)", screens: "S-17 · S-18",
+          steps: [S(1, "เข้าคิววิเคราะห์"), S(2, "กำลังวิเคราะห์ (ออกไปทำอย่างอื่นได้)"), S(3, "ได้ผลชั่วคราว"), S(4, "เลือกผู้สมัครหรือกรอกเอง")],
+          edges: ["ความมั่นใจ < 0.40 → ขอภาพเพิ่ม", "0.40–0.70 → หลายผู้สมัคร + ลักษณะที่ต่างกัน", "> 0.70 → เน้นอันดับหนึ่ง แต่ยังมีป้าย “ชั่วคราว”", "วิเคราะห์ล้มเหลว → ลองใหม่ / กรอกเอง", "หมดเวลา", "ปุ่ม “กรอกเอง” แสดงตลอดทุกสถานะ"]
+        },
+        {
+          id: "S8", title: "นักเรียนตรวจสอบลักษณะ", screens: "S-19 · S-20",
+          steps: [S(1, "ดูผู้สมัครที่เลือก"), S(2, "ตรวจทีละกลุ่มลักษณะ: ใบ · ลำต้น · ดอก · ผล · ทรงต้น"), S(3, "เลือก ตรง / ไม่ตรง / ไม่แน่ใจ / มองไม่เห็น"), S(4, "กรอกค่าที่ถูกต้องเมื่อเลือก “ไม่ตรง”"), S(5, "กรอกชื่อไทยและชื่อวิทยาศาสตร์"), S(6, "เขียนเหตุผลประกอบ")],
+          edges: ["ยังตรวจไม่ครบ → เตือนก่อนส่งพร้อมจำนวนที่เหลือ", "ไม่มีผล AI → เข้าโหมดกรอกเองทั้งหมด", "ชื่อวิทยาศาสตร์ว่าง → บล็อกการส่ง", "ใส่คำว่า “ไม่ทราบ” → ไม่ยอมรับ", "บันทึกร่างอัตโนมัติทุกครั้งที่แตะ"]
+        },
+        {
+          id: "S9", title: "คำเตือนชนิดซ้ำในรอบสำรวจ", screens: "S-21",
+          steps: [S(1, "กดส่งการสังเกต"), S(2, "ระบบพบชนิดเดียวกันในรอบนี้"), S(3, "แสดงคำเตือนแบบไม่กล่าวโทษ + รายการที่เกี่ยวข้อง"), S(4, "นักเรียนรับทราบ"), S(5, "ส่งได้ตามปกติ + ติดป้ายให้ครูเห็น")],
+          edges: ["ดูรายการที่เกี่ยวข้อง (ถ้ามีสิทธิ์)", "อาจเป็นต้นเดียวกัน → แสดงแยกจาก “ชนิดซ้ำ”", "ยกเลิกเพื่อกลับไปแก้ชื่อ", "บันทึกการรับทราบลง event log"]
+        },
+        {
+          id: "S10", title: "แก้ไขตามคำขอของครู", screens: "S-23 · S-24",
+          steps: [S(1, "รับแจ้งเตือน “ครูขอให้แก้ไข”"), S(2, "อ่านหัวข้อที่ต้องแก้ + ข้อความครู"), S(3, "เทียบกับเวอร์ชันที่ส่งไปก่อนหน้า"), S(4, "เพิ่ม/เปลี่ยนภาพ หรือแก้ชื่อ/ลักษณะ"), S(5, "ส่งใหม่ → สร้างเวอร์ชันใหม่")],
+          edges: ["ประวัติเวอร์ชันเดิมยังดูได้เสมอ", "ครบ 10 ภาพแล้ว ต้องลบก่อนเพิ่ม", "รอบสำรวจจบแล้วแต่ยังแก้ได้ตามที่ครูกำหนด", "ส่งใหม่ขณะออฟไลน์ → เข้าคิว"]
+        },
+        {
+          id: "S11", title: "แผนที่ผลลัพธ์ของนักเรียน", screens: "S-25 · S-26",
+          steps: [S(1, "กิจกรรมจบแล้ว"), S(2, "เปิดแผนที่ผลลัพธ์"), S(3, "กรองตามสถานะ/กลุ่ม หรือสลับเป็นรายการ"), S(4, "แตะหมุด"), S(5, "เปิดรายละเอียดพืชในบอตทอมชีต")],
+          edges: ["ยังไม่มีการสังเกตในรอบนี้", "ไม่มีสิทธิ์ดูของรอบอื่น", "โหลดแผนที่ไม่สำเร็จ → เปลี่ยนเป็นรายการอัตโนมัติ", "ภาพยังโหลดไม่เสร็จ → โครงร่าง"]
+        },
+        {
+          id: "T1", title: "สร้างชั้นเรียนและเชิญนักเรียน", screens: "T-02 · T-03",
+          steps: [S(1, "กรอกชื่อ วิชา ปีการศึกษา ภาคเรียน"), S(2, "ตั้งกติกากลุ่ม: ขนาดต่ำสุด/สูงสุด · จำนวนกลุ่มสูงสุด · ให้นักเรียนสร้างกลุ่มได้หรือไม่"), S(3, "เปิด/ปิดการจัดกลุ่ม"), S(4, "สร้างชั้นเรียน"), S(5, "รับรหัส · ลิงก์ · QR"), S(6, "แชร์และติดตามผู้เข้าร่วม")],
+          edges: ["ตั้งจำนวนกลุ่มน้อยกว่าจำนวนนักเรียนหาร → เตือนล่วงหน้า", "ปิด/หมุนรหัสเชิญ", "กำหนดวันหมดอายุและจำนวนครั้งสูงสุด", "รหัสถูกใช้ครบแล้ว"]
+        },
+        {
+          id: "T2", title: "จัดการกลุ่มและย้ายนักเรียน", screens: "T-05 · T-06 · T-07",
+          steps: [S(1, "เปิดบอร์ดกลุ่ม"), S(2, "เห็นความจุ · ความพร้อม · หัวหน้า · นักเรียนที่ยังไม่มีกลุ่ม"), S(3, "เลือกนักเรียน → เลือกกลุ่มปลายทาง"), S(4, "ระบบแสดงผลกระทบ"), S(5, "จัดการหัวหน้าคนใหม่ถ้าจำเป็น"), S(6, "ยืนยัน → ส่งแจ้งเตือนถึงผู้เกี่ยวข้อง")],
+          edges: ["กลุ่มปลายทางเต็ม", "นักเรียนอยู่ในรอบสำรวจที่กำลังทำงาน → บล็อก", "นักเรียนเป็นหัวหน้า → ต้องเลือกคนแทน", "กลุ่มเดิมว่างเปล่า → เลือก ลบ / เก็บถาวร / ปล่อยว่าง", "กลุ่มมีประวัติเซสชัน → เก็บถาวรเท่านั้น", "ลบกลุ่มที่ยังไม่เคยใช้ → คืนสล็อต 1 ช่อง"]
+        },
+        {
+          id: "T3", title: "สร้างกิจกรรมและตั้งรอบสำรวจ", screens: "T-08 · T-09",
+          steps: [S(1, "ข้อมูลกิจกรรม"), S(2, "วาดขอบเขตสำรวจ"), S(3, "วางเส้นทาง"), S(4, "เพิ่มจุดตรวจ"), S(5, "ตั้งวันเวลาและลำดับคิวกลุ่ม"), S(6, "ตรวจสรุปความพร้อม → เปิดรอบสำรวจ")],
+          edges: ["ยังไม่มีขอบเขต → เปิดรอบไม่ได้", "ยังไม่มีกลุ่มพร้อม", "บันทึกร่างกิจกรรม", "ใช้กิจกรรมเดิมซ้ำ", "แก้ขอบเขตหลังเปิดรอบ → เตือนผลกระทบ"]
+        },
+        {
+          id: "T4", title: "ควบคุมรอบสำรวจสด", screens: "T-10",
+          steps: [S(1, "เปิดรอบสำรวจ (สแนปช็อตสมาชิก)"), S(2, "เลือกกลุ่มในคิว"), S(3, "เปิดใช้งานทีละหนึ่งกลุ่ม"), S(4, "ติดตามแผนที่และความสดของตำแหน่ง"), S(5, "พัก / จบกลุ่ม"), S(6, "เปิดกลุ่มถัดไป"), S(7, "จบรอบสำรวจด้วยตนเอง")],
+          edges: ["พยายามเปิดสองกลุ่มพร้อมกัน → บล็อก", "นักเรียนออกนอกขอบเขต → เตือน", "ตำแหน่งค้างเกิน 2 นาที", "นักเรียนออฟไลน์", "พักรอบ → นักเรียนส่งไม่ได้ชั่วคราว", "ยังมีร่างค้าง → เตือนก่อนจบรอบ"]
+        },
+        {
+          id: "T5", title: "ตรวจการสังเกต", screens: "T-11 · T-12 · T-13 · T-14",
+          steps: [S(1, "เปิดคิวตรวจหรือแตะหมุด"), S(2, "ดูภาพ · พิกัด · เวลา · ความแม่นยำ"), S(3, "เทียบสามชั้น: AI → นักเรียน → ครู"), S(4, "ดูป้ายชนิดซ้ำและรายการที่เกี่ยวข้อง"), S(5, "เลือกผลการตรวจ"), S(6, "ยืนยัน")],
+          edges: ["รับรอง", "แก้ไขแล้วรับรอง (เก็บค่าเดิม)", "ขอให้แก้ไข → กลับไปหานักเรียนคนเดิม", "ตรวจสอบไม่ได้", "ปฏิเสธ (ต้องระบุเหตุผล)", "เคยส่งมาแล้วหลายเวอร์ชัน → เทียบได้", "ตรวจหลายรายการต่อกันด้วยปุ่ม “ถัดไป”"]
+        },
+        {
+          id: "T6", title: "แผนที่ผลลัพธ์และรายงาน", screens: "T-15 · T-16",
+          steps: [S(1, "จบรอบสำรวจ"), S(2, "เปิดแผนที่ผลลัพธ์"), S(3, "กรองตามสถานะ / กลุ่ม / นักเรียน / ชนิดซ้ำ"), S(4, "เปิดรายละเอียดพืช"), S(5, "เทียบรายการที่เกี่ยวข้อง"), S(6, "ส่งออกข้อมูลที่ตรวจแล้ว")],
+          edges: ["ยังมีรายการรอตรวจ → แสดงจำนวนค้าง", "ไม่มีการสังเกตในรอบนี้", "หมุดซ้อนกัน → คลัสเตอร์", "สลับมุมมองรายการ"]
+        }
+      ],
+      screens: [
+        { id: "G-01", name: "เข้าสู่ระบบ / สมัคร", purpose: "ยืนยันตัวตนก่อนเข้าชั้นเรียน รองรับการกลับมาที่ลิงก์เชิญเดิม", entry: "ลิงก์เชิญ, เปิดแอป", primary: "เข้าสู่ระบบ", secondary: "สมัคร, ลืมรหัสผ่าน", states: "โหลด · รหัสผิด · ออฟไลน์", hifi: "" },
+        { id: "G-02", name: "ศูนย์การแจ้งเตือน", purpose: "รวมทุกเหตุการณ์ที่ต้องการการตอบสนอง พร้อม deep link", entry: "กระดิ่งทุกหน้า", primary: "เปิดรายการ", secondary: "อ่านทั้งหมด, กรอง", states: "ยังไม่อ่าน · ว่าง · โหลด · เชื่อมต่อใหม่ · จัดกลุ่มตามวัน", hifi: "" },
+        { id: "G-03", name: "โปรไฟล์และสิทธิ์", purpose: "จัดการสิทธิ์ตำแหน่ง/กล้อง/แจ้งเตือน และภาษา", entry: "หน้าแรก", primary: "อนุญาตตำแหน่ง", secondary: "ออกจากระบบ", states: "อนุญาต · ปฏิเสธ · ถูกบล็อกที่ระดับเบราว์เซอร์", hifi: "" },
+        { id: "S-01", name: "พรีวิวคำเชิญชั้นเรียน", purpose: "ให้นักเรียนเห็นว่ากำลังจะเข้าชั้นเรียนอะไร ของครูคนไหน ก่อนตัดสินใจ", entry: "ลิงก์, QR, รหัส", primary: "เข้าร่วมชั้นเรียน", secondary: "ยกเลิก", states: "ถูกต้อง · หมดอายุ · ถูกปิด · ใช้ครบ · เข้าร่วมแล้ว", hifi: "" },
+        { id: "S-02", name: "เข้าร่วมด้วยรหัส", purpose: "กรอกรหัส 6 ตัวเมื่อไม่มีลิงก์", entry: "หน้าแรกนักเรียน", primary: "ตรวจสอบรหัส", secondary: "สแกน QR", states: "ว่าง · กำลังตรวจ · ไม่พบรหัส", hifi: "" },
+        { id: "S-03", name: "หน้าแรกนักเรียน", purpose: "บอกว่า “ตอนนี้ต้องทำอะไร” ในบรรทัดเดียว แล้วค่อยแสดงชั้นเรียน", entry: "เข้าสู่ระบบ, nav", primary: "เข้าโหมดสนาม / ดูกลุ่ม", secondary: "เข้าร่วมชั้นเรียน", states: "ไม่มีชั้นเรียน · มีกิจกรรมรอ · กลุ่มถึงคิว · มีคำขอแก้ไข", hifi: "★" },
+        { id: "S-04", name: "หน้าชั้นเรียน", purpose: "ภาพรวมชั้นเรียน กติกากลุ่ม และสถานะกลุ่มของฉัน", entry: "หน้าแรก, แจ้งเตือน", primary: "สร้างกลุ่ม / เปิดกลุ่มของฉัน", secondary: "ดูสมาชิกชั้นเรียน", states: "จัดกลุ่มเปิด/ปิด · ยังไม่มีกลุ่ม · มีกลุ่มแล้ว · กำลังรีเฟรช", hifi: "★" },
+        { id: "S-05", name: "การจัดกลุ่ม", purpose: "แสดงสล็อตกลุ่มทั้งหมดและกลุ่มที่ยังรับสมาชิก", entry: "หน้าชั้นเรียน", primary: "สร้างกลุ่ม", secondary: "ขอเข้าร่วมกลุ่ม (ผ่านคำเชิญ)", states: "มีสล็อตว่าง · สล็อตเต็ม (ปุ่มปิด+เหตุผล) · สร้างไปแล้ว · แพ้การแย่งสล็อต", hifi: "★" },
+        { id: "S-06", name: "สร้างกลุ่ม", purpose: "ตั้งชื่อกลุ่มและยืนยันการเป็นหัวหน้า", entry: "S-05", primary: "สร้างกลุ่ม", secondary: "ยกเลิก", states: "กำลังส่ง · สำเร็จ · GROUP_LIMIT_REACHED · ชื่อซ้ำ", hifi: "" },
+        { id: "S-07", name: "กลุ่มของฉัน (หัวหน้า)", purpose: "จัดการสมาชิก คำเชิญ และแจ้งครูว่าพร้อม", entry: "S-04", primary: "ชวนเพื่อน", secondary: "เปลี่ยนชื่อ, โอนหัวหน้า, แจ้งว่าพร้อม", states: "กำลังจัดกลุ่ม · ครบขั้นต่ำ · ถูกอนุมัติ · ถูกล็อก · เก็บถาวร", hifi: "★" },
+        { id: "S-08", name: "ชวนเพื่อนร่วมชั้น", purpose: "เลือกเพื่อนที่มีสิทธิ์และส่งคำเชิญพร้อมกันหลายคน", entry: "S-07", primary: "ส่งคำเชิญ (n)", secondary: "ค้นหา, ยกเลิกคำเชิญ", states: "มีสิทธิ์ · อยู่กลุ่มอื่น · รอตอบรับ · ที่นั่งไม่พอ", hifi: "★" },
+        { id: "S-09", name: "คำเชิญที่ได้รับ", purpose: "ดูว่าใครชวน กลุ่มมีใครบ้าง แล้วตัดสินใจ", entry: "แจ้งเตือน", primary: "ตอบรับ", secondary: "ปฏิเสธ, ดูสมาชิก", states: "รอตอบ · หมดอายุ · ถูกยกเลิก · กลุ่มเต็มแล้ว · อยู่กลุ่มอื่นแล้ว", hifi: "★" },
+        { id: "S-10", name: "กลุ่มของฉัน (สมาชิก)", purpose: "ดูกลุ่ม สถานะ และออกจากกลุ่มก่อนถูกล็อก", entry: "S-04", primary: "ดูกิจกรรม", secondary: "ออกจากกลุ่ม", states: "ปกติ · ถูกล็อก · ถูกย้ายโดยครู", hifi: "" },
+        { id: "S-11", name: "รายละเอียดกิจกรรม / รอคิว", purpose: "ให้กลุ่มที่รอเห็นเส้นทางและลำดับคิวโดยยังส่งข้อมูลไม่ได้", entry: "แท็บกิจกรรม", primary: "ดูเส้นทาง", secondary: "ดูคิวกลุ่ม", states: "รอคิว · กลุ่มถัดไป · กำลังสำรวจ · ถูกพัก · จบแล้ว", hifi: "★" },
+        { id: "S-12", name: "โหมดสนาม — แผนที่", purpose: "หน้าจอหลักระหว่างสำรวจ: ขอบเขต เส้นทาง หมุดของฉัน ปุ่มเพิ่มการสังเกต", entry: "S-11 เมื่อกลุ่มถูกเปิด", primary: "เพิ่มการสังเกต", secondary: "ตำแหน่งฉัน, รายการของฉัน, ออกจากโหมดสนาม", states: "GPS ดี/อ่อน/ไม่มี · ออฟไลน์ · กำลังซิงก์ · ออกนอกขอบเขต · รอบถูกพัก", hifi: "★" },
+        { id: "S-13", name: "การสังเกตในรอบนี้", purpose: "รายการงานของฉันในรอบสำรวจพร้อมสถานะซิงก์", entry: "โหมดสนาม", primary: "เปิดรายการ", secondary: "ลองส่งใหม่ทั้งหมด", states: "ว่าง · ร่าง · กำลังอัปโหลด · รอ AI · ส่งแล้ว · ล้มเหลว", hifi: "" },
+        { id: "S-14", name: "เพิ่มการสังเกต — ขั้นที่ 1 ตำแหน่ง", purpose: "จับพิกัด ความแม่นยำ และเวลา ก่อนถ่ายภาพ", entry: "S-12", primary: "ใช้ตำแหน่งนี้", secondary: "รอสัญญาณดีขึ้น, บันทึกแบบติดธง", states: "กำลังหาตำแหน่ง · แม่นยำดี · อ่อน · ไม่ได้รับอนุญาต · หาไม่พบ", hifi: "★" },
+        { id: "S-15", name: "เพิ่มการสังเกต — ขั้นที่ 2 ภาพหลักฐาน", purpose: "ถ่ายภาพทั้งต้น (บังคับ) และภาพประกอบตามประเภท สูงสุด 10 ภาพ", entry: "S-14", primary: "ถ่ายภาพ", secondary: "เลือกจากคลัง, ระบุประเภท, ลบภาพ", states: "0 ภาพ · ครบเงื่อนไข · กำลังบีบอัด · กำลังอัปโหลด · ล้มเหลว · ครบ 10", hifi: "★" },
+        { id: "S-16", name: "คลังภาพหลักฐาน", purpose: "จัดการภาพและประเภทของแต่ละภาพในมุมมองตาราง", entry: "S-15", primary: "เสร็จสิ้น", secondary: "เปลี่ยนประเภท, ตั้งเป็นภาพหลัก, ลบ", states: "อัปโหลดแล้ว · รอคิว · ล้มเหลว · ภาพหลัก", hifi: "★" },
+        { id: "S-17", name: "AI กำลังวิเคราะห์", purpose: "แสดงความคืบหน้าโดยไม่ขังผู้ใช้ไว้", entry: "S-15", primary: "กรอกเอง", secondary: "กลับไปแผนที่, ยกเลิกการวิเคราะห์", states: "เข้าคิว · กำลังวิเคราะห์ · ล้มเหลว · ต้องการภาพเพิ่ม · เสร็จแล้ว", hifi: "★" },
+        { id: "S-18", name: "ผลวิเคราะห์ชั่วคราว", purpose: "แสดงผู้สมัครพร้อมความมั่นใจและลักษณะเด่นที่ต่างกัน", entry: "S-17", primary: "เลือกและตรวจสอบ", secondary: "กรอกเอง, ขอวิเคราะห์ใหม่", states: "มั่นใจสูง · หลายผู้สมัคร · หลักฐานไม่พอ · ล้มเหลว", hifi: "★" },
+        { id: "S-19", name: "ตรวจสอบลักษณะ", purpose: "ให้นักเรียนเทียบทุกลักษณะกับต้นจริงทีละกลุ่ม", entry: "S-18", primary: "ถัดไป / เสร็จสิ้น", secondary: "กรอกค่าที่ถูกต้อง, ข้ามกลุ่ม", states: "ยังไม่ตรวจ · ตรง · ไม่ตรง+ค่าที่แก้ · ไม่แน่ใจ · มองไม่เห็น", hifi: "★" },
+        { id: "S-20", name: "สรุปก่อนส่ง", purpose: "กรอกชื่อไทย/วิทยาศาสตร์ เหตุผลประกอบ และทวนความครบถ้วน", entry: "S-19", primary: "ส่งการสังเกต", secondary: "กลับไปแก้, บันทึกร่าง", states: "ครบ · ขาดชื่อวิทยาศาสตร์ · ยังตรวจไม่ครบ · ออฟไลน์ (เข้าคิว)", hifi: "★" },
+        { id: "S-21", name: "คำเตือนชนิดซ้ำ", purpose: "แจ้งว่ามีชนิดนี้ในรอบแล้ว โดยไม่ทำให้รู้สึกว่าทำผิด", entry: "S-20", primary: "รับทราบและส่ง", secondary: "ดูรายการที่เกี่ยวข้อง, กลับไปแก้ชื่อ", states: "ชนิดซ้ำ · อาจเป็นต้นเดียวกัน · ไม่มีสิทธิ์ดูรายการอื่น", hifi: "★" },
+        { id: "S-22", name: "ส่งสำเร็จ", purpose: "ยืนยันผล บอกขั้นถัดไป และชวนบันทึกต้นต่อไป", entry: "S-20", primary: "บันทึกต้นถัดไป", secondary: "กลับไปแผนที่, ดูรายการของฉัน", states: "ส่งแล้ว · อยู่ในคิวออฟไลน์ · ติดป้ายชนิดซ้ำ", hifi: "★" },
+        { id: "S-23", name: "คำขอแก้ไขจากครู", purpose: "แสดงหัวข้อที่ครูขอให้แก้พร้อมข้อความและเวอร์ชันเดิม", entry: "แจ้งเตือน, S-04", primary: "เริ่มแก้ไข", secondary: "ดูเวอร์ชันที่ส่งไป, ดูความเห็นครูทั้งหมด", states: "รอแก้ไข · กำลังแก้ · ส่งใหม่แล้ว", hifi: "★" },
+        { id: "S-24", name: "แก้ไขและส่งใหม่", purpose: "แก้เฉพาะจุดที่ครูระบุ โดยยังเห็นค่าเดิม", entry: "S-23", primary: "ส่งใหม่", secondary: "เพิ่มภาพ, ยกเลิก", states: "มีการเปลี่ยนแปลง · ไม่มีการเปลี่ยนแปลง (บล็อก) · ครบ 10 ภาพ", hifi: "" },
+        { id: "S-25", name: "แผนที่ผลลัพธ์ (นักเรียน)", purpose: "ดูพืชทั้งหมดที่กลุ่ม/ชั้นเรียนบันทึกหลังจบกิจกรรม", entry: "แท็บกิจกรรม, แจ้งเตือน", primary: "เปิดรายละเอียดพืช", secondary: "กรอง, สลับเป็นรายการ", states: "โหลด · ว่าง · แผนที่ล้มเหลว → รายการ", hifi: "★" },
+        { id: "S-26", name: "รายละเอียดพืช", purpose: "แสดงภาพ ชื่อที่ครูรับรอง ค่าจาก AI/นักเรียน และประวัติ", entry: "หมุดบนแผนที่, รายการ", primary: "ดูภาพทั้งหมด", secondary: "ดูรายการที่เกี่ยวข้อง, รายงานปัญหา", states: "รับรองแล้ว · รอตรวจ · ต้องแก้ไข · ปฏิเสธ · มีป้ายชนิดซ้ำ", hifi: "★" },
+        { id: "T-01", name: "หน้าแรกครู", purpose: "รวมสิ่งที่ต้องลงมือทำวันนี้: รอบสำรวจที่เปิดอยู่ คิวตรวจ กลุ่มที่รออนุมัติ", entry: "เข้าสู่ระบบ", primary: "เปิดรอบสำรวจสด", secondary: "ตรวจการสังเกต, สร้างชั้นเรียน", states: "ไม่มีชั้นเรียน · มีรอบกำลังทำงาน · มีคิวตรวจค้าง", hifi: "★" },
+        { id: "T-02", name: "สร้าง/แก้ไขชั้นเรียน", purpose: "ตั้งข้อมูลชั้นเรียนและกติกาการจัดกลุ่มทั้งหมดในหน้าเดียว", entry: "T-02 รายการชั้นเรียน", primary: "สร้างชั้นเรียน", secondary: "บันทึกร่าง, ยกเลิก", states: "ว่าง · ตรวจสอบไม่ผ่าน · เตือนจำนวนกลุ่มไม่พอ · กำลังบันทึก", hifi: "★" },
+        { id: "T-03", name: "เชิญนักเรียน", purpose: "ให้รหัส ลิงก์ และ QR พร้อมควบคุมวันหมดอายุและจำนวนครั้ง", entry: "T-02, T-04", primary: "แชร์ลิงก์", secondary: "คัดลอกรหัส, แสดง QR เต็มจอ, ปิด/หมุนรหัส", states: "ใช้งานได้ · ปิดอยู่ · หมดอายุ · ใช้ครบ", hifi: "★" },
+        { id: "T-04", name: "ภาพรวมชั้นเรียน", purpose: "สรุปสมาชิก กลุ่ม กิจกรรม และงานที่ค้างของชั้นเรียนนี้", entry: "รายการชั้นเรียน", primary: "จัดการกลุ่ม", secondary: "เชิญนักเรียน, สร้างกิจกรรม, ตั้งค่าชั้นเรียน", states: "ยังไม่มีนักเรียน · จัดกลุ่มเปิดอยู่ · พร้อมเปิดรอบ", hifi: "★" },
+        { id: "T-05", name: "จัดการกลุ่ม", purpose: "บอร์ดกลุ่มทั้งหมด + นักเรียนที่ยังไม่มีกลุ่ม พร้อมการกระทำทั้งชุด", entry: "T-04", primary: "ย้ายนักเรียน", secondary: "สร้างกลุ่ม, เปลี่ยนหัวหน้า, อนุมัติ, ล็อก, ลบ, เก็บถาวร", states: "กำลังจัด · ครบขั้นต่ำ · เต็ม · ถูกล็อก · เก็บถาวร · ว่างเปล่า", hifi: "★" },
+        { id: "T-06", name: "ย้ายนักเรียน", purpose: "เลือกกลุ่มปลายทางพร้อมเห็นผลกระทบก่อนยืนยัน", entry: "T-05", primary: "ยืนยันการย้าย", secondary: "เลือกหัวหน้าคนใหม่, ยกเลิก", states: "ปลายทางเต็ม · นักเรียนเป็นหัวหน้า · อยู่ในรอบที่ทำงานอยู่ (บล็อก) · กลุ่มเดิมจะว่าง", hifi: "★" },
+        { id: "T-07", name: "ลบ / เก็บถาวรกลุ่ม", purpose: "แยกให้ชัดว่ากลุ่มไหนลบได้ กลุ่มไหนต้องเก็บถาวร", entry: "T-05", primary: "เก็บถาวร / ลบกลุ่ม", secondary: "ยกเลิก", states: "ไม่มีประวัติ → ลบได้ · มีประวัติ → เก็บถาวรเท่านั้น · มีคำเชิญค้าง", hifi: "" },
+        { id: "T-08", name: "ตัวสร้างกิจกรรม", purpose: "สร้างแผนกิจกรรม 5 ขั้น: ข้อมูล · ขอบเขต · เส้นทาง · จุดตรวจ · ตรวจทาน", entry: "T-04", primary: "ขั้นถัดไป", secondary: "บันทึกร่าง, ย้อนกลับ", states: "ร่าง · ขาดขอบเขต · พร้อมใช้ · ใช้ซ้ำจากกิจกรรมเดิม", hifi: "★" },
+        { id: "T-09", name: "ตั้งค่ารอบสำรวจ", purpose: "กำหนดวันเวลา เลือกกลุ่มเข้าร่วม และจัดลำดับคิว", entry: "T-08", primary: "เปิดรอบสำรวจ", secondary: "จัดลำดับคิว, บันทึก", states: "พร้อม · ยังไม่มีกลุ่มพร้อม · เตือนสแนปช็อตสมาชิก", hifi: "★" },
+        { id: "T-10", name: "รอบสำรวจสด", purpose: "ควบคุมกลุ่มที่กำลังสำรวจและติดตามแผนที่แบบเรียลไทม์", entry: "T-01, T-09", primary: "เปิดใช้งานกลุ่มถัดไป", secondary: "พัก, จบกลุ่ม, จบรอบ, ดูหมุด", states: "รอ · กำลังสำรวจ · ถูกพัก · ตำแหน่งค้าง · นักเรียนออกนอกขอบเขต · จบแล้ว", hifi: "★" },
+        { id: "T-11", name: "คิวตรวจการสังเกต", purpose: "จัดลำดับงานตรวจพร้อมตัวกรองและตัวบ่งชี้ชนิดซ้ำ", entry: "T-01, T-10", primary: "เปิดรายการแรก", secondary: "กรองตามสถานะ/กลุ่ม, เรียงลำดับ", states: "ว่าง · มีรายการใหม่ · ส่งซ้ำ · โหลด", hifi: "★" },
+        { id: "T-12", name: "รายละเอียดการตรวจ", purpose: "เทียบสามชั้นหลักฐานและตัดสินผล", entry: "T-11, หมุดแผนที่", primary: "รับรอง", secondary: "แก้ไขแล้วรับรอง, ขอให้แก้ไข, ตรวจสอบไม่ได้, ปฏิเสธ", states: "รอตรวจ · ส่งซ้ำ · มีป้ายชนิดซ้ำ · มีประวัติหลายเวอร์ชัน", hifi: "★" },
+        { id: "T-13", name: "ขอให้แก้ไข", purpose: "ระบุหัวข้อที่ต้องแก้และเขียนคำแนะนำที่นักเรียนทำตามได้", entry: "T-12", primary: "ส่งคำขอแก้ไข", secondary: "เลือกหัวข้อสำเร็จรูป, ยกเลิก", states: "ยังไม่เลือกหัวข้อ (บล็อก) · กำลังส่ง · ส่งแล้ว", hifi: "★" },
+        { id: "T-14", name: "แก้ไขและรับรอง", purpose: "ใส่ชื่อ/ลักษณะที่ถูกต้องโดยเก็บค่าของ AI และนักเรียนไว้ครบ", entry: "T-12", primary: "บันทึกและรับรอง", secondary: "คืนค่าเดิม, ยกเลิก", states: "ไม่มีการแก้ไข · แก้ไขบางส่วน · แสดงค่าเดิมคู่กันเสมอ", hifi: "★" },
+        { id: "T-15", name: "แผนที่ผลลัพธ์ (ครู)", purpose: "ดูหมุดทั้งหมดตามสถานะ พร้อมตัวกรองครบชุด", entry: "T-10 เมื่อจบรอบ", primary: "เปิดรายละเอียด", secondary: "กรอง, สลับรายการ, ส่งออก", states: "มีรายการค้างตรวจ · ว่าง · คลัสเตอร์ · โหลด", hifi: "★" },
+        { id: "T-16", name: "รายละเอียดพืชหลังตรวจ", purpose: "แสดงชื่อที่ครูรับรองเป็นความจริงหลัก และประวัติทั้งหมดใต้ลงไป", entry: "T-15", primary: "ดูประวัติการตรวจ", secondary: "เทียบรายการที่เกี่ยวข้อง, ส่งออก", states: "รับรองแล้ว · ตรวจสอบไม่ได้ · ปฏิเสธ · มีต้นที่อาจเป็นต้นเดียวกัน", hifi: "★" }
+      ],
+      typeScale: [
+        { token: "display", spec: "28 / 34 · 700", use: "ชื่อหน้าใหญ่, ตัวเลขสรุป" },
+        { token: "title", spec: "20 / 28 · 600", use: "หัวข้อหน้าจอ, ชื่อกลุ่ม" },
+        { token: "subtitle", spec: "17 / 26 · 600", use: "หัวการ์ด, ชื่อพืช" },
+        { token: "body", spec: "15 / 24 · 400", use: "เนื้อความหลัก (สนาม 16)" },
+        { token: "label", spec: "13 / 18 · 500", use: "ป้ายกำกับฟอร์ม, ชิป" },
+        { token: "caption", spec: "12 / 16 · 400", use: "เวลา, คำอธิบายรอง" },
+        { token: "mono", spec: "12 / 16 · Mono", use: "พิกัด, รหัส, ความแม่นยำ" },
+        { token: "sci", spec: "15 / 22 · Serif italic", use: "ชื่อวิทยาศาสตร์" }
+      ],
+      palette: [
+        { name: "forest", hex: "#1F6B47" }, { name: "forest deep", hex: "#14472F" },
+        { name: "forest tint", hex: "#E7F0EA" }, { name: "ink", hex: "#16211C" },
+        { name: "ink 2", hex: "#4E5F56" }, { name: "line", hex: "#DCE4DD" },
+        { name: "canvas", hex: "#F3F6F2" }, { name: "surface", hex: "#FFFFFF" }
+      ],
+      statusTokens: [
+        { key: "submitted", th: "ส่งแล้ว · รอตรวจ", color: "#A15C07", tint: "#FDF7EC", glyph: "↑", radius: "50%", shape: "วงกลม + ลูกศรขึ้น" },
+        { key: "revision_required", th: "ต้องแก้ไข", color: "#B3261E", tint: "#FCEEEC", glyph: "!", radius: "4px", shape: "สามเหลี่ยม/สี่เหลี่ยม + อัศเจรีย์" },
+        { key: "resubmitted", th: "ส่งใหม่แล้ว", color: "#1B4FA0", tint: "#EDF2FB", glyph: "↻", radius: "50%", shape: "วงกลมวงแหวน + ลูกศรวน" },
+        { key: "verified", th: "ครูรับรองแล้ว", color: "#15803D", tint: "#EAF5EE", glyph: "✓", radius: "8px", shape: "หกเหลี่ยม/มนหนา + เครื่องหมายถูก" },
+        { key: "unable_to_verify", th: "ตรวจสอบไม่ได้", color: "#5B34A8", tint: "#F0EBFB", glyph: "?", radius: "50% 50% 50% 4px", shape: "หยดน้ำ + เครื่องหมายคำถาม" },
+        { key: "rejected", th: "ไม่ผ่าน", color: "#55605A", tint: "#EFF2EF", glyph: "×", radius: "4px", shape: "สี่เหลี่ยมทึบ + กากบาท" }
+      ],
+      components: [
+        { name: "แถบหัวแอป", key: "AppHeader", purpose: "ชื่อหน้า + ย้อนกลับ + กระดิ่ง", variants: "หลัก · ย่อย(มีปุ่มย้อน) · โปร่งใสบนแผนที่", states: "ปกติ · เลื่อนแล้วมีเส้น · มีจุดแจ้งเตือน", mobile: "สูง 56px ปักบน", a11y: "h1 ต่อหน้า, ปุ่มย้อนมี aria-label" },
+        { name: "แถบนำทางล่าง", key: "BottomNav", purpose: "ช่องนำทางหลัก 5 ช่อง", variants: "นักเรียน · ครู · โหมดสนาม (3 ช่อง)", states: "เลือกอยู่ · มีจุดแจ้งเตือน · ปิดใช้งานระหว่างงานเต็มจอ", mobile: "สูง 60px + safe-area", a11y: "role=navigation, ไอคอน+ข้อความเสมอ" },
+        { name: "กระดิ่งและรายการแจ้งเตือน", key: "NotificationBell / Item", purpose: "รวมเหตุการณ์และพาไปหน้าเป้าหมาย", variants: "กระดิ่ง · รายการ · แถวรายการ 8 ชนิด", states: "ยังไม่อ่าน · อ่านแล้ว · ว่าง · โหลด · เชื่อมต่อใหม่ · จัดกลุ่มตามวัน", mobile: "เต็มหน้าจอ ไม่ใช่ดรอปดาวน์", a11y: "aria-live=polite เมื่อมีรายการใหม่, จำนวนอ่านออกเสียงได้" },
+        { name: "การ์ดชั้นเรียน", key: "ClassCard", purpose: "สรุปชั้นเรียนและสถานะกลุ่มของฉัน", variants: "นักเรียน · ครู", states: "ปกติ · จัดกลุ่มเปิด · มีกิจกรรมทำงาน · เก็บถาวร", mobile: "การ์ดเต็มความกว้าง แตะทั้งใบ", a11y: "ทั้งการ์ดเป็นลิงก์เดียว ไม่ซ้อนปุ่ม" },
+        { name: "การ์ดกลุ่ม", key: "GroupCard", purpose: "แสดงกลุ่มพร้อมความจุและหัวหน้า", variants: "ย่อ · เต็ม · แบบเลือกได้ (ปลายทางการย้าย)", states: "กำลังจัด · ครบขั้นต่ำ · เต็ม · ล็อก · เก็บถาวร · ว่างเปล่า", mobile: "แตะเปิดชีตรายละเอียด", a11y: "สถานะเป็นข้อความ ไม่ใช่แค่สีขอบ" },
+        { name: "แถวสมาชิก", key: "MemberRow", purpose: "แสดงนักเรียนหนึ่งคนพร้อมการกระทำ", variants: "อ่านอย่างเดียว · เลือกได้ · มีเมนู", states: "ปกติ · หัวหน้า · รอตอบรับ · ระงับ · ยังไม่มีกลุ่ม", mobile: "สูง 56px, การกระทำอยู่ในชีต", a11y: "ชื่อ+เลขที่อ่านต่อเนื่อง, checkbox มีป้าย" },
+        { name: "ป้ายหัวหน้ากลุ่ม", key: "LeaderBadge", purpose: "ระบุหัวหน้ากลุ่มเพียงคนเดียว", variants: "เล็ก · ใหญ่", states: "หัวหน้าปัจจุบัน · กำลังโอน", mobile: "ชิปข้าง ๆ ชื่อ", a11y: "ข้อความ “หัวหน้ากลุ่ม” ไม่ใช่ไอคอนเดี่ยว" },
+        { name: "ตัวบอกความจุกลุ่ม", key: "CapacityMeter", purpose: "แสดงจำนวนสมาชิก/ขั้นต่ำ/สูงสุดด้วยจุด", variants: "จุด · แถบ · ข้อความย่อ", states: "ต่ำกว่าขั้นต่ำ · พร้อม · เต็ม", mobile: "จุดขนาด 8px + ตัวเลขกำกับ", a11y: "aria-label “3 จาก 5 คน ขั้นต่ำ 3”" },
+        { name: "ป้ายสถานะ", key: "StatusBadge", purpose: "สถานะกลุ่ม/เซสชัน/การสังเกต", variants: "6 สถานะการสังเกต · 5 กลุ่ม · 5 เซสชัน", states: "ทึบ · จาง · มีไอคอน · ขนาดเล็ก/ปกติ", mobile: "สูง 24px อ่านได้กลางแดด", a11y: "สี+รูปทรง+ไอคอน+ข้อความไทย ครบทุกครั้ง" },
+        { name: "สถานะว่าง", key: "EmptyState", purpose: "อธิบายว่าเหตุใดจึงว่างและทำอะไรต่อ", variants: "ยังไม่เริ่ม · กรองแล้วไม่พบ · ไม่มีสิทธิ์", states: "มีปุ่มหลัก · ไม่มีปุ่ม", mobile: "จัดกลางแนวตั้ง ไม่เกิน 2 บรรทัด", a11y: "ไม่ใช้ภาพประกอบสื่อความหมายเดี่ยว" },
+        { name: "สถานะผิดพลาด", key: "ErrorState", purpose: "บอกสาเหตุและปุ่มลองใหม่", variants: "เต็มหน้า · ในการ์ด · ในฟอร์ม", states: "ลองใหม่ได้ · ลองใหม่ไม่ได้ · มีรหัสข้อผิดพลาด", mobile: "ปุ่มลองใหม่อยู่ล่าง", a11y: "role=alert, ข้อความอยู่ใกล้จุดเกิดเหตุ" },
+        { name: "แถบออฟไลน์", key: "OfflineBanner", purpose: "แจ้งว่าตัดการเชื่อมต่อและงานถูกเก็บไว้", variants: "ออฟไลน์ · กำลังเชื่อมต่อใหม่ · เชื่อมต่อแล้ว(หายเอง)", states: "ถาวรจนกว่าจะกลับมา", mobile: "แถบใต้แถบหัว สูง 32px", a11y: "aria-live=assertive ครั้งเดียวตอนเปลี่ยนสถานะ" },
+        { name: "ตัวบอกสถานะซิงก์", key: "SyncIndicator", purpose: "จำนวนงานค้างส่งและปุ่มลองใหม่", variants: "ชิปในแถบสนาม · แถวในรายการ", states: "ซิงก์แล้ว · ค้าง n รายการ · กำลังส่ง · ล้มเหลว", mobile: "แตะเปิดคิวเต็ม", a11y: "ตัวเลขค้างอ่านออกเสียงได้" },
+        { name: "ตัวบอกสถานะตำแหน่ง", key: "LocationIndicator", purpose: "คุณภาพสัญญาณและความแม่นยำเป็นเมตร", variants: "ชิป · การ์ดเต็มในขั้นจับพิกัด", states: "ดี(<10ม.) · พอใช้(10–20ม.) · อ่อน(>20ม.) · ไม่มี · ไม่อนุญาต", mobile: "แสดงตัวเลขเมตรเสมอ", a11y: "ไม่ใช้แถบสัญญาณสีอย่างเดียว" },
+        { name: "ตัวอัปโหลดภาพ", key: "ImageUploader", purpose: "ถ่าย/เลือก/บีบอัด/อัปโหลดภาพ 1–10 ภาพ", variants: "ปุ่มถ่ายใหญ่ · ตารางภาพ · แถวเลื่อนแนวนอน", states: "ว่าง · กำลังบีบอัด · กำลังอัปโหลด(%) · สำเร็จ · ล้มเหลว · ครบ 10", mobile: "ปุ่มถ่าย 72px กลางล่าง", a11y: "แต่ละภาพมี alt จากประเภท + ปุ่มลบมีป้าย" },
+        { name: "ตัวเลือกประเภทภาพ", key: "ImageCategoryPicker", purpose: "ระบุว่าภาพนี้คือส่วนใดของพืช", variants: "ชิปแถวเลื่อน · ชีตเลือก", states: "ยังไม่ระบุ · ระบุแล้ว · ทั้งต้น(บังคับ ≥1)", mobile: "ชิป 40px เลื่อนแนวนอน", a11y: "radiogroup พร้อมป้ายไทย" },
+        { name: "การ์ดสถานะ AI", key: "AIProcessingCard", purpose: "สื่อสารว่ากำลังทำอะไรและออกได้เสมอ", variants: "เข้าคิว · กำลังวิเคราะห์ · ล้มเหลว · ต้องการภาพเพิ่ม", states: "มีตัวนับเวลา · มีปุ่มกรอกเอง · มีปุ่มลองใหม่", mobile: "การ์ดเต็มกว้าง ปุ่มกรอกเองอยู่ล่างสุด", a11y: "ความคืบหน้าอ่านได้, ไม่ใช้สปินเนอร์อย่างเดียว" },
+        { name: "การ์ดผู้สมัครจาก AI", key: "AICandidateCard", purpose: "เสนอชนิดพืชพร้อมความมั่นใจและลักษณะเด่น", variants: "อันดับหนึ่ง · ทางเลือก · ย่อในรีวิวของครู", states: "เลือกอยู่ · ไม่ได้เลือก · ความมั่นใจ 3 ระดับ", mobile: "กรอบเส้นประ + ป้าย AI มุมบน", a11y: "ความมั่นใจเป็นข้อความ เช่น “ค่อนข้างมั่นใจ 0.62”" },
+        { name: "แถวตรวจลักษณะ", key: "TraitRow", purpose: "ให้เลือก 1 ใน 4 ต่อหนึ่งลักษณะ", variants: "ปกติ · มีช่องแก้ค่า · อ่านอย่างเดียว(ฝั่งครู)", states: "ยังไม่ตรวจ · ตรง · ไม่ตรง · ไม่แน่ใจ · มองไม่เห็น", mobile: "ปุ่ม 4 ตัว สูง 44px เรียงเต็มกว้าง", a11y: "radiogroup ต่อหนึ่งลักษณะ, ตัวอักษรย่อ+ไอคอนต่างกัน" },
+        { name: "คำเตือนชนิดซ้ำ", key: "SameSpeciesWarning", purpose: "แจ้งเตือนโดยไม่บล็อกและไม่กล่าวโทษ", variants: "ชีตก่อนส่ง · ชิปในรายการ · ป้ายในหน้าครู", states: "ชนิดซ้ำ · อาจเป็นต้นเดียวกัน · รับทราบแล้ว", mobile: "บอตทอมชีต ปุ่มหลัก “รับทราบและส่ง”", a11y: "ไม่ใช้สีแดง (ไม่ใช่ข้อผิดพลาด) ใช้สีน้ำเงินข้อมูล" },
+        { name: "การ์ดการสังเกต", key: "ObservationCard", purpose: "สรุปหนึ่งการสังเกตในรายการ/คิว", variants: "นักเรียน · ครู(มีชื่อผู้ส่ง) · ย่อในแผนที่", states: "ร่าง · กำลังอัปโหลด · รอ AI · ส่งแล้ว · ทุกสถานะการตรวจ", mobile: "ภาพย่อ 64px ซ้าย ข้อความขวา", a11y: "สถานะเป็นข้อความแรกที่สกรีนรีดเดอร์อ่าน" },
+        { name: "หมุดพืชและคลัสเตอร์", key: "PlantMarker / Cluster", purpose: "แสดงตำแหน่งจับภาพพร้อมสถานะ", variants: "6 สถานะ · ของฉัน/ของคนอื่น · คลัสเตอร์", states: "ปกติ · เลือกอยู่ · จาง(ถูกกรองออก)", mobile: "เป้าแตะ 44px แม้หมุดเล็กกว่า", a11y: "มีมุมมองรายการเทียบเท่าเสมอ" },
+        { name: "ชีตรายละเอียดพืช", key: "PlantDetailSheet", purpose: "เปิดรายละเอียดโดยไม่เสียบริบทแผนที่", variants: "ระดับ 40% · 90% · แผงข้างบนเดสก์ท็อป", states: "โหลด · ครบ · ไม่มีสิทธิ์ดูบางส่วน", mobile: "ลากขึ้น-ลง, ปุ่มปิดชัดเจน", a11y: "focus trap, ปิดด้วย Esc, คืนโฟกัสที่หมุด" },
+        { name: "แผงตรวจของครู", key: "TeacherReviewPanel", purpose: "เทียบสามชั้นหลักฐานและตัดสิน", variants: "มือถือเต็มหน้า · เดสก์ท็อปแผงขวา", states: "รอตรวจ · กำลังบันทึก · ตัดสินแล้ว", mobile: "แถบการกระทำปักล่าง", a11y: "ปุ่มทำลายต้องยืนยันสองขั้น" },
+        { name: "บล็อกความเห็นการแก้ไข", key: "RevisionFeedbackBlock", purpose: "แสดงหัวข้อที่ต้องแก้ + ข้อความครู + เวลา", variants: "ฝั่งนักเรียน · ฝั่งครู(ประวัติ)", states: "ใหม่ · เคยตอบแล้ว · หลายรอบ", mobile: "ไทม์ไลน์แนวตั้ง", a11y: "ลำดับเวลาชัดเจนด้วยข้อความ" },
+        { name: "ไดอะล็อกยืนยัน", key: "ConfirmDialog", purpose: "ยืนยันการกระทำที่ย้อนกลับไม่ได้", variants: "ปกติ · ทำลาย · ต้องพิมพ์ยืนยัน", states: "ปกติ · กำลังทำงาน · ล้มเหลว", mobile: "ชีตล่าง ปุ่มหลักอยู่ล่างสุด", a11y: "ปุ่มเขียนคำกริยาจริง, focus แรกที่ปุ่มปลอดภัย" },
+        { name: "บอตทอมชีต", key: "BottomSheet", purpose: "งานย่อยโดยไม่ออกจากบริบท", variants: "40% · 90% · เต็มจอ", states: "ลากได้ · ล็อกความสูง", mobile: "มี handle 32px, แตะพื้นหลังปิดได้ (ยกเว้นชีตยืนยัน)", a11y: "aria-modal, คืนโฟกัสหลังปิด" },
+        { name: "ข้อความแจ้งผล / ในบรรทัด", key: "Toast / InlineFeedback", purpose: "ยืนยันผลสั้น ๆ หรือแจ้งข้อผิดพลาดของฟิลด์", variants: "สำเร็จ · เตือน · ผิดพลาด · มีปุ่มเลิกทำ", states: "แสดง 4 วินาที · ค้างจนกดปิด(ผิดพลาด)", mobile: "ลอยเหนือแถบล่าง 12px", a11y: "ข้อผิดพลาดของฟอร์มต้องอยู่ในบรรทัด ไม่ใช่ข้อความลอย" },
+        { name: "ตัวบอกขั้นตอน", key: "Stepper", purpose: "บอกว่าอยู่ขั้นไหนของงานหลายขั้น", variants: "จุด 4 ขั้น(นักเรียน) · แถบ 5 ขั้น(ครู)", states: "ทำแล้ว · กำลังทำ · ยังไม่ถึง · ข้ามได้", mobile: "แถบบางใต้แถบหัว", a11y: "ข้อความ “ขั้นที่ 2 จาก 4” ไม่ใช่จุดเปล่า" }
+      ],
+      stateMatrix: [
+        { state: "กำลังโหลด", where: "ทุกรายการและแผนที่", pattern: "โครงร่าง (skeleton) ตามรูปทรงจริง ไม่ใช้สปินเนอร์เต็มจอ", copy: "— (ไม่มีข้อความ)" },
+        { state: "ว่าง", where: "รายการชั้นเรียน/กลุ่ม/การสังเกต/แจ้งเตือน", pattern: "ข้อความอธิบาย + ปุ่มขั้นถัดไป", copy: "ยังไม่มีการสังเกตในรอบนี้ — เริ่มจากต้นแรกได้เลย" },
+        { state: "สำเร็จ", where: "หลังส่ง/บันทึก", pattern: "หน้าจอยืนยัน หรือ toast + สถานะเปลี่ยนในรายการ", copy: "ส่งการสังเกตแล้ว ครูจะตรวจให้เร็ว ๆ นี้" },
+        { state: "เตือน", where: "ชนิดซ้ำ, ออกนอกขอบเขต, กลุ่มยังไม่ครบขั้นต่ำ", pattern: "แถบสีน้ำเงิน/เหลืองอำพัน + ไอคอน ไม่บล็อก", copy: "เพื่อนบันทึกพืชชนิดนี้แล้ว — คุณบันทึกต้นของคุณต่อได้เลย" },
+        { state: "ผิดพลาด", where: "อัปโหลด, ส่ง, โหลดข้อมูล", pattern: "การ์ดแดง + สาเหตุ + ปุ่มลองใหม่", copy: "ส่งไม่สำเร็จ เพราะสัญญาณขาด — ระบบจะลองใหม่ให้อัตโนมัติ" },
+        { state: "ไม่มีสิทธิ์", where: "เปิดลิงก์ชั้นเรียน/รอบสำรวจของคนอื่น", pattern: "หน้าเต็ม + ทางกลับที่ปลอดภัย", copy: "คุณไม่ได้อยู่ในชั้นเรียนนี้" },
+        { state: "ไม่อนุญาตตำแหน่ง", where: "เข้าโหมดสนาม, ขั้นจับพิกัด", pattern: "การ์ดอธิบายเหตุผล + ปุ่มเปิดการตั้งค่า + ทางเลือกบันทึกแบบติดธง", copy: "ต้องใช้ตำแหน่งเพื่อปักหมุดต้นไม้ — เปิดสิทธิ์ตำแหน่งในการตั้งค่า" },
+        { state: "สัญญาณตำแหน่งอ่อน", where: "ขั้นจับพิกัด, แผนที่สนาม", pattern: "ชิปสีเหลืองอำพัน + ตัวเลขเมตร + ปุ่มรอสัญญาณ", copy: "สัญญาณตำแหน่งอ่อน (±38 ม.) — รอสักครู่ให้แม่นขึ้น" },
+        { state: "ออฟไลน์", where: "ทั้งแอป", pattern: "แถบถาวรใต้แถบหัว + คิวงานค้าง", copy: "ออฟไลน์ — งานของคุณถูกเก็บไว้ในเครื่องแล้ว" },
+        { state: "กำลังเชื่อมต่อใหม่", where: "ทั้งแอป, แผนที่สด", pattern: "แถบสีน้ำเงิน + จุดกะพริบ (ปิดตาม reduced-motion)", copy: "กำลังเชื่อมต่อใหม่…" },
+        { state: "มีข้อมูลค้างส่ง", where: "โหมดสนาม, รายการการสังเกต", pattern: "ชิปตัวเลข + แตะเปิดคิว + ปุ่มลองใหม่ทั้งหมด", copy: "ค้างส่ง 2 รายการ" },
+        { state: "กำลังอัปโหลด", where: "ขั้นภาพหลักฐาน", pattern: "แถบความคืบหน้าต่อภาพ + ยกเลิกได้", copy: "กำลังส่งภาพ 3 จาก 5" },
+        { state: "อัปโหลดล้มเหลว", where: "ขั้นภาพหลักฐาน", pattern: "ภาพขึ้นขอบแดง + ปุ่มลองใหม่บนภาพนั้น", copy: "ส่งภาพนี้ไม่สำเร็จ — แตะเพื่อลองใหม่" },
+        { state: "AI เข้าคิว", where: "หลังอัปโหลดครบ", pattern: "การ์ด AI + ปุ่ม “กรอกเอง” เสมอ", copy: "อยู่ในคิววิเคราะห์ — ระหว่างนี้กรอกเองได้" },
+        { state: "AI กำลังวิเคราะห์", where: "การ์ด AI", pattern: "แถบไม่ระบุเปอร์เซ็นต์ + เวลาโดยประมาณ + ออกไปทำอย่างอื่นได้", copy: "กำลังวิเคราะห์ภาพ (ประมาณ 20 วินาที)" },
+        { state: "AI ล้มเหลว", where: "การ์ด AI", pattern: "ไม่ทำลายร่าง + ปุ่มลองใหม่ + ปุ่มกรอกเอง", copy: "วิเคราะห์ไม่สำเร็จ — ร่างของคุณยังอยู่ครบ" },
+        { state: "AI ต้องการหลักฐานเพิ่ม", where: "การ์ด AI (ความมั่นใจ < 0.40)", pattern: "รายการประเภทภาพที่ขาด + ปุ่มถ่ายเพิ่ม", copy: "หลักฐานยังไม่พอ — ลองถ่ายใบด้านล่างและลำต้นเพิ่ม" },
+        { state: "ข้อมูลสดล้าสมัย", where: "แผนที่ครู", pattern: "หมุดเส้นประ + เวลาอัปเดตล่าสุด + แถบสรุปบนสุด", copy: "ตำแหน่งล่าสุด 2 นาทีที่แล้ว" },
+        { state: "คำเชิญหมดอายุ", where: "คำเชิญชั้นเรียน/กลุ่ม", pattern: "หน้าเต็ม + ทางออกที่ทำได้จริง", copy: "คำเชิญนี้หมดอายุแล้ว — ขอรหัสใหม่จากครูหรือหัวหน้ากลุ่ม" },
+        { state: "กลุ่มเต็ม", where: "คำเชิญ, การจัดกลุ่ม", pattern: "การ์ดพร้อมรายการกลุ่มที่ยังว่าง", copy: "กลุ่มนี้เต็มแล้ว — ยังมีอีก 2 กลุ่มที่รับสมาชิกอยู่" },
+        { state: "แพ้การแย่งสล็อตสุดท้าย", where: "สร้างกลุ่ม", pattern: "ชีตอธิบาย + แสดงกลุ่มปัจจุบันทันที ไม่ใช่ข้อผิดพลาดสีแดง", copy: "กลุ่มสุดท้ายเพิ่งถูกสร้างโดยเพื่อนพอดี — เข้าร่วมกลุ่มที่ยังว่างได้เลย" },
+        { state: "รอบสำรวจถูกพัก", where: "โหมดสนาม", pattern: "แผ่นทับครึ่งจอ ปุ่มเพิ่มการสังเกตปิด แต่ร่างยังแก้ได้", copy: "ครูพักรอบสำรวจชั่วคราว — รอสัญญาณจากครู" },
+        { state: "ต้องแก้ไข", where: "รายการการสังเกต, แจ้งเตือน", pattern: "ป้ายแดง + สรุปหัวข้อที่ต้องแก้ + ปุ่มเริ่มแก้ไข", copy: "ครูขอให้แก้ไข 2 หัวข้อ" },
+        { state: "ยังไม่มีการแจ้งเตือน", where: "ศูนย์แจ้งเตือน", pattern: "สถานะว่างแบบเงียบ ไม่มีปุ่ม", copy: "ยังไม่มีการแจ้งเตือน" },
+        { state: "กิจกรรมจบแล้ว", where: "แท็บกิจกรรม", pattern: "การ์ดสรุป + ปุ่มเปิดแผนที่ผลลัพธ์", copy: "กิจกรรมจบแล้ว — ดูแผนที่พรรณไม้ที่บันทึกได้ 18 ต้น" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

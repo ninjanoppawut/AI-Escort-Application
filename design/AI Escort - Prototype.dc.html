@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: #E9EDE9; }
+  a { color: #1F6B47; }
+  a:hover { color: #14472F; }
+</style>
+</helmet>
+<div style="font-family: 'IBM Plex Sans Thai', system-ui, sans-serif; color: #16211C; min-height: 100vh; padding: 32px 40px 60px;">
+
+  <div style="max-width: 1980px; margin: 0 auto 24px;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #6E7C74;">Deliverable 8 · Clickable prototype</div>
+    <h1 style="font-size: 32px; font-weight: 700; margin: 8px 0 6px;">AI Escort — ต้นแบบกดใช้งานได้</h1>
+    <p style="font-size: 14.5px; line-height: 1.6; color: #4E5F56; margin: 0; max-width: 760px;">กดปุ่มในหน้าจอเพื่อเดินตามโฟลว์จริง หรือกดขั้นตอนในรายการด้านซ้ายเพื่อกระโดดไปยังจุดใดก็ได้ · แผงกลางขวาอธิบายกฎธุรกิจและสถานะ · แผงขวาสุดคือฟอร์มจริงของหน้าจอนั้น พร้อมทุกฟิลด์ ข้อความช่วย และกติกาการตรวจสอบ</p>
+  </div>
+
+  <div style="max-width: 1980px; min-width: 1760px; margin: 0 auto; display: grid; grid-template-columns: 270px 420px minmax(330px, 1fr) 476px; gap: 22px; align-items: start;">
+
+    <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 14px; padding: 16px; position: sticky; top: 24px;">
+      <div style="display: flex; gap: 6px; background: #F3F6F2; border-radius: 10px; padding: 4px;">
+        <span style="{{ studentTabStyle }}" onClick="{{ showStudent }}">นักเรียน</span>
+        <span style="{{ teacherTabStyle }}" onClick="{{ showTeacher }}">ครู</span>
+      </div>
+      <div style="font-size: 12px; color: #7C8B83; margin: 16px 0 8px;">{{ flowLabel }}</div>
+      <div style="display: grid; gap: 2px;">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="12">
+          <div style="{{ s.style }}" onClick="{{ s.go }}">
+            <span style="{{ s.numStyle }}">{{ s.num }}</span>
+            <span style="flex: 1; line-height: 1.4;">{{ s.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="border-top: 1px solid #EEF2EE; margin-top: 14px; padding-top: 14px; font-size: 12px; color: #7C8B83; line-height: 1.6;">ต้นแบบนี้แสดงเส้นทางหลักและจุดตัดสินใจสำคัญ ไม่ใช่ทุกสถานะ — สถานะทั้งหมดอยู่ในไฟล์เอกสารออกแบบและโครงร่างหน้าจอ</div>
+    </div>
+
+    <div style="width: 420px;">
+      <div style="width: 390px; height: 812px; margin: 0 auto; background: #F3F6F2; border: 1px solid #C9D3CC; border-radius: 26px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 6px 26px rgba(22,33,28,.1);">
+        <div style="height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: #FFFFFF; flex: none;">
+          <span>{{ clock }}</span><span>▮▮▮ ◗ 78%</span>
+        </div>
+        <div style="height: 54px; background: #FFFFFF; border-bottom: 1px solid #DCE4DD; display: flex; align-items: center; gap: 8px; padding: 0 14px; flex: none;">
+          <span style="width: 40px; height: 40px; margin-left: -8px; display: grid; place-items: center; font-size: 19px; color: #16211C; cursor: pointer;" onClick="{{ goBack }}">←</span>
+          <span style="flex: 1; min-width: 0;">
+            <span style="display: block; font-size: 16.5px; font-weight: 700; line-height: 1.3;">{{ title }}</span>
+            <span style="display: block; font-size: 11.5px; color: #7C8B83;">{{ subtitle }}</span>
+          </span>
+          <span style="position: relative; width: 40px; height: 40px; display: grid; place-items: center; font-size: 18px;">🔔<span style="{{ badgeStyle }}">{{ badge }}</span></span>
+        </div>
+        <div style="flex: 1; padding: 14px; overflow: hidden; display: flex; flex-direction: column; gap: 10px;">
+          <sc-if value="{{ isBoundary }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                <sc-for list="{{ mapTools }}" as="t" hint-placeholder-count="5">
+                  <span style="{{ t.style }}" onClick="{{ t.go }}">{{ t.label }}</span>
+                </sc-for>
+              </div>
+              <div style="position: relative; width: 100%; aspect-ratio: 1; min-height: 280px; flex: none; border: 1px solid #C9D3CC; border-radius: 12px; overflow: hidden; background: #EDF1EA; touch-action: none; cursor: crosshair;" onPointerDown="{{ mapDown }}" onPointerMove="{{ mapMove }}" onPointerUp="{{ mapUp }}">
+                <div style="position: absolute; left: 7%; top: 11%; width: 27%; height: 21%; background: #DBE1D5; border: 1px solid #C8D0C1; border-radius: 3px; display: grid; place-items: center; font-size: 9.5px; color: #87927F;">อาคาร 3</div>
+                <div style="position: absolute; left: 63%; top: 19%; width: 23%; height: 17%; background: #DBE1D5; border: 1px solid #C8D0C1; border-radius: 3px; display: grid; place-items: center; font-size: 9.5px; color: #87927F;">โรงอาหาร</div>
+                <div style="position: absolute; left: 19%; top: 71%; width: 31%; height: 15%; background: #DBE1D5; border: 1px solid #C8D0C1; border-radius: 3px; display: grid; place-items: center; font-size: 9.5px; color: #87927F;">โรงยิม</div>
+                <div style="position: absolute; left: 0; top: 45%; width: 100%; height: 4.5%; background: #E4E8DE;"></div>
+                <div style="position: absolute; left: 53%; top: 0; width: 4.5%; height: 100%; background: #E4E8DE;"></div>
+                <div style="position: absolute; left: 38%; top: 55%; width: 13%; aspect-ratio: 1; background: #CFE0CB; border-radius: 50%;"></div>
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+                  <polygon points="{{ polyPoints }}" style="{{ ringStyle }}"></polygon>
+                  <polygon points="{{ polyPoints }}" style="{{ polyStyle }}"></polygon>
+                </svg>
+                <sc-if value="{{ isRadiusMode }}">
+                  <span style="{{ radiusRingStyle }}"></span>
+                  <span style="{{ radiusStyle }}"></span>
+                  <span style="{{ centerStyle }}">◎</span>
+                </sc-if>
+                <sc-for list="{{ checkpoints }}" as="c" hint-placeholder-count="3">
+                  <span style="{{ c.style }}">{{ c.label }}</span>
+                </sc-for>
+                <sc-for list="{{ vertices }}" as="v" hint-placeholder-count="0">
+                  <span style="{{ v.style }}" onPointerDown="{{ v.grab }}" onClick="{{ v.tap }}">{{ v.n }}</span>
+                </sc-for>
+                <sc-if value="{{ mapHint }}">
+                  <span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(22,33,28,.86); color: #FFFFFF; font-size: 12px; line-height: 1.55; padding: 10px 14px; border-radius: 9px; max-width: 74%; text-align: center; pointer-events: none;">{{ mapHint }}</span>
+                </sc-if>
+                <span style="position: absolute; right: 9px; bottom: 9px; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.9); border-radius: 6px; padding: 4px 7px; font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: #4E5F56; pointer-events: none;"><span style="{{ scaleBarStyle }}"></span>{{ scaleLabel }}</span>
+              </div>
+              <div style="display: flex; gap: 6px; overflow-x: auto; flex: none;">
+                <sc-for list="{{ mapReadout }}" as="r" hint-placeholder-count="3">
+                  <span style="{{ r.style }}">{{ r.t }}</span>
+                </sc-for>
+              </div>
+              <div style="display: grid; gap: 4px; min-height: 52px; align-content: start; flex: none;">
+                <sc-for list="{{ policyLines }}" as="p" hint-placeholder-count="2">
+                  <span style="{{ p.style }}">{{ p.t }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="6">
+            <div style="{{ b.style }}" onClick="{{ b.onClick }}">
+              <span style="{{ b.titleStyle }}">{{ b.title }}</span>
+              <span style="{{ b.subStyle }}">{{ b.sub }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 10px; margin-top: 14px;">
+        <span style="border: 1px solid #DCE4DD; background: #FFFFFF; border-radius: 9px; padding: 9px 16px; font-size: 13px; color: #4E5F56; cursor: pointer;" onClick="{{ goBack }}">← ย้อนกลับ</span>
+        <span style="border: 1px solid #DCE4DD; background: #FFFFFF; border-radius: 9px; padding: 9px 16px; font-size: 13px; color: #4E5F56; cursor: pointer;" onClick="{{ restart }}">↺ เริ่มใหม่</span>
+      </div>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 14px; padding: 20px; position: sticky; top: 24px;">
+      <div style="display: flex; align-items: baseline; gap: 9px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; background: #16211C; color: #FFFFFF; padding: 3px 7px; border-radius: 4px;">{{ screenId }}</span>
+        <span style="font-size: 16px; font-weight: 700;">{{ title }}</span>
+      </div>
+      <div style="font-size: 13.5px; color: #4E5F56; line-height: 1.7; margin-top: 12px;">{{ note }}</div>
+
+      <div style="font-size: 12.5px; font-weight: 700; margin: 20px 0 9px;">กฎที่หน้าจอนี้ต้องรักษา</div>
+      <div style="display: grid; gap: 7px;">
+        <sc-for list="{{ rules }}" as="r" hint-placeholder-count="3">
+          <div style="display: flex; gap: 9px; align-items: start; background: #F3F6F2; border-radius: 9px; padding: 9px 11px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #1F6B47; flex: none; padding-top: 2px;">{{ r.id }}</span>
+            <span style="font-size: 12.5px; color: #4E5F56; line-height: 1.55;">{{ r.t }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-size: 12.5px; font-weight: 700; margin: 20px 0 9px;">สถานะอื่นของหน้าจอนี้</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+        <sc-for list="{{ states }}" as="st" hint-placeholder-count="4">
+          <span style="border: 1px dashed #C9A66B; background: #FDF7EC; border-radius: 999px; padding: 5px 11px; font-size: 12px; color: #6B4A12;">{{ st }}</span>
+        </sc-for>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 14px; padding: 18px; position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow: auto;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 11px;">
+        <span style="font-size: 12.5px; font-weight: 700;">ฟอร์มในหน้าจอนี้</span>
+        <span style="font-size: 11.5px; color: #7C8B83;">{{ formCountLabel }}</span>
+      </div>
+      <sc-if value="{{ noForms }}">
+        <div style="font-size: 12.5px; color: #7C8B83; line-height: 1.65; background: #F3F6F2; border-radius: 10px; padding: 12px 13px;">หน้าจอนี้ไม่รับข้อมูลจากผู้ใช้ — เป็นหน้าดูข้อมูล แผนที่ หรือหน้ายืนยันผล</div>
+      </sc-if>
+      <sc-if value="{{ hasForms }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+          <sc-for list="{{ formTabs }}" as="ft" hint-placeholder-count="2">
+            <span style="{{ ft.style }}" onClick="{{ ft.go }}">{{ ft.label }}</span>
+          </sc-for>
+        </div>
+      </sc-if>
+    <sc-for list="{{ activeForms }}" as="f" hint-placeholder-count="1">
+      <div style="width: 100%; display: inline-block; break-inside: avoid; margin-bottom: 26px; background: #FFFFFF; border: 1px solid #C9D3CC; border-radius: 16px; overflow: hidden;">
+        <div style="padding: 16px 18px 14px; border-bottom: 1px solid #EEF2EE; background: #F7FAF7;">
+          <div style="display: flex; gap: 9px; align-items: baseline;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size: 11px; color: #1F6B47;">{{ f.id }}</span>
+            <span style="font-size: 15px; font-weight: 700;">{{ f.name }}</span>
+          </div>
+          <div style="font-size: 12px; color: #7C8B83; margin-top: 5px;">เข้าจาก {{ f.entry }}</div>
+        </div>
+        <div style="padding: 18px; display: grid; gap: 16px;">
+          <sc-for list="{{ f.fields }}" as="fd" hint-placeholder-count="3">
+            <div style="display: grid; gap: 7px;">
+              <div style="display: flex; align-items: baseline; gap: 6px;">
+                <span style="font-size: 13px; font-weight: 500; color: #16211C;">{{ fd.label }}</span>
+                <sc-if value="{{ fd.req }}"><span style="color: #B3261E; font-size: 13px;">*</span></sc-if>
+                <sc-if value="{{ fd.opt }}"><span style="font-size: 11px; color: #9FADA4;">ไม่บังคับ</span></sc-if>
+                <sc-if value="{{ fd.tag }}"><span style="font-family:'IBM Plex Mono',monospace; font-size: 10px; color: #6E7C74; border: 1px solid #DCE4DD; border-radius: 4px; padding: 1px 5px;">{{ fd.tag }}</span></sc-if>
+              </div>
+              <sc-if value="{{ fd.isInput }}">
+                <div style="height: 46px; border: 1px solid #C9D3CC; border-radius: 10px; display: flex; align-items: center; padding: 0 13px; font-size: 15px; color: #16211C; background: #FFFFFF;">{{ fd.val }}</div>
+              </sc-if>
+              <sc-if value="{{ fd.isGhost }}">
+                <div style="height: 46px; border: 1px solid #C9D3CC; border-radius: 10px; display: flex; align-items: center; padding: 0 13px; font-size: 15px; color: #9FADA4; background: #FFFFFF;">{{ fd.val }}</div>
+              </sc-if>
+              <sc-if value="{{ fd.isArea }}">
+                <div style="min-height: 78px; border: 1px solid #C9D3CC; border-radius: 10px; padding: 11px 13px; font-size: 14px; line-height: 1.6; color: #9FADA4; background: #FFFFFF;">{{ fd.val }}</div>
+              </sc-if>
+              <sc-if value="{{ fd.isSelect }}">
+                <div style="height: 46px; border: 1px solid #C9D3CC; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; padding: 0 13px; font-size: 15px; background: #FFFFFF;"><span>{{ fd.val }}</span><span style="color: #7C8B83;">▾</span></div>
+              </sc-if>
+              <sc-if value="{{ fd.isRO }}">
+                <div style="min-height: 44px; border: 1px solid #E1E7E2; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 13px; font-family:'IBM Plex Mono',monospace; font-size: 13px; color: #4E5F56; background: #F3F6F2;"><span>{{ fd.val }}</span><sc-if value="{{ fd.action }}"><span style="font-family:'IBM Plex Sans Thai',sans-serif; font-size: 12px; font-weight: 600; color: #1F6B47; white-space: nowrap;">{{ fd.action }}</span></sc-if></div>
+              </sc-if>
+              <sc-if value="{{ fd.isCode }}">
+                <div style="display: flex; gap: 8px;">
+                  <sc-for list="{{ fd.cells }}" as="c" hint-placeholder-count="6">
+                    <div style="flex: 1; height: 56px; border: 1px solid #C9D3CC; border-radius: 10px; display: grid; place-items: center; font-family:'IBM Plex Mono',monospace; font-size: 22px; font-weight: 500; background: #FFFFFF;">{{ c.ch }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.isRadio }}">
+                <div style="display: grid; gap: 8px;">
+                  <sc-for list="{{ fd.opts }}" as="o" hint-placeholder-count="3">
+                    <sc-if value="{{ o.sel }}">
+                      <div style="display: flex; gap: 10px; align-items: center; border: 1.5px solid #1F6B47; background: #F1F7F3; border-radius: 10px; padding: 11px 13px; font-size: 14px; font-weight: 600;"><span style="width: 18px; height: 18px; border-radius: 50%; border: 5px solid #1F6B47; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #4E5F56; font-weight: 400;">{{ o.meta }}</span></sc-if></div>
+                    </sc-if>
+                    <sc-if value="{{ o.un }}">
+                      <div style="display: flex; gap: 10px; align-items: center; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px;"><span style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #B6C2BA; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #7C8B83;">{{ o.meta }}</span></sc-if></div>
+                    </sc-if>
+                    <sc-if value="{{ o.off }}">
+                      <div style="display: flex; gap: 10px; align-items: center; border: 1px dashed #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px; color: #9FADA4;"><span style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #DCE4DD; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px;">{{ o.meta }}</span></sc-if></div>
+                    </sc-if>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.isCheck }}">
+                <div style="display: grid; gap: 8px;">
+                  <sc-for list="{{ fd.opts }}" as="o" hint-placeholder-count="3">
+                    <sc-if value="{{ o.sel }}">
+                      <div style="display: flex; gap: 10px; align-items: center; border: 1.5px solid #1F6B47; background: #F1F7F3; border-radius: 10px; padding: 11px 13px; font-size: 14px; font-weight: 600;"><span style="width: 18px; height: 18px; border-radius: 5px; background: #1F6B47; color: #FFFFFF; display: grid; place-items: center; font-size: 12px; flex: none;">✓</span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #4E5F56; font-weight: 400;">{{ o.meta }}</span></sc-if></div>
+                    </sc-if>
+                    <sc-if value="{{ o.un }}">
+                      <div style="display: flex; gap: 10px; align-items: center; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px;"><span style="width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #B6C2BA; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #7C8B83;">{{ o.meta }}</span></sc-if></div>
+                    </sc-if>
+                    <sc-if value="{{ o.off }}">
+                      <div style="display: flex; gap: 10px; align-items: center; border: 1px dashed #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px; color: #9FADA4;"><span style="width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #DCE4DD; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px;">{{ o.meta }}</span></sc-if></div>
+                    </sc-if>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.isChip }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  <sc-for list="{{ fd.opts }}" as="o" hint-placeholder-count="4">
+                    <sc-if value="{{ o.sel }}"><span style="background: #14472F; color: #FFFFFF; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 999px;">{{ o.t }}</span></sc-if>
+                    <sc-if value="{{ o.un }}"><span style="border: 1px solid #C9D3CC; color: #4E5F56; font-size: 13px; padding: 8px 14px; border-radius: 999px;">{{ o.t }}</span></sc-if>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.isToggle }}">
+                <div style="display: grid; gap: 8px;">
+                  <sc-for list="{{ fd.opts }}" as="o" hint-placeholder-count="2">
+                    <sc-if value="{{ o.sel }}">
+                      <div style="display: flex; gap: 12px; align-items: center; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px 13px;"><span style="flex: 1; font-size: 14px;">{{ o.t }}</span><span style="width: 44px; height: 26px; border-radius: 999px; background: #1F6B47; display: flex; align-items: center; justify-content: flex-end; padding: 0 3px; flex: none;"><span style="width: 20px; height: 20px; border-radius: 50%; background: #FFFFFF;"></span></span></div>
+                    </sc-if>
+                    <sc-if value="{{ o.un }}">
+                      <div style="display: flex; gap: 12px; align-items: center; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px 13px;"><span style="flex: 1; font-size: 14px;">{{ o.t }}</span><span style="width: 44px; height: 26px; border-radius: 999px; background: #CBD5CD; display: flex; align-items: center; padding: 0 3px; flex: none;"><span style="width: 20px; height: 20px; border-radius: 50%; background: #FFFFFF;"></span></span></div>
+                    </sc-if>
+                    <sc-if value="{{ o.off }}">
+                      <div style="display: flex; gap: 12px; align-items: center; border: 1px solid #E1E7E2; background: #F7FAF7; border-radius: 10px; padding: 11px 13px;"><span style="flex: 1; font-size: 14px; color: #7C8B83;">{{ o.t }}</span><span style="font-size: 11px; color: #7C8B83; border: 1px solid #DCE4DD; border-radius: 4px; padding: 2px 6px;">ล็อก</span></div>
+                    </sc-if>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.isUpload }}">
+                <div style="display: flex; gap: 10px;">
+                  <div style="width: 88px; height: 88px; border-radius: 10px; background: #DDE6DE; display: grid; place-items: center; font-size: 11px; color: #6E7C74; text-align: center; line-height: 1.4;">ภาพ<br />ทั้งต้น</div>
+                  <div style="flex: 1; height: 88px; border: 1.5px dashed #B6C2BA; border-radius: 10px; display: grid; place-items: center; gap: 3px; font-size: 13px; color: #4E5F56; text-align: center;"><span style="font-size: 20px;">＋</span><span>{{ fd.val }}</span></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.isTrait }}">
+                <div style="border: 1px solid #DCE4DD; border-radius: 10px; overflow: hidden;">
+                  <sc-for list="{{ fd.traits }}" as="tr" hint-placeholder-count="4">
+                    <div style="padding: 11px 13px; border-bottom: 1px solid #EEF2EE; display: grid; gap: 8px;">
+                      <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline;">
+                        <span style="font-size: 13px; font-weight: 600;">{{ tr.name }}</span>
+                        <span style="font-size: 12px; color: #6E7C74; font-family:'IBM Plex Mono',monospace;">{{ tr.ai }}</span>
+                      </div>
+                      <div style="display: flex; gap: 6px;">
+                        <sc-for list="{{ tr.choices }}" as="c" hint-placeholder-count="4">
+                          <sc-if value="{{ c.sel }}"><span style="flex: 1; text-align: center; font-size: 12px; font-weight: 600; padding: 8px 2px; border-radius: 8px; background: #14472F; color: #FFFFFF;">{{ c.t }}</span></sc-if>
+                          <sc-if value="{{ c.un }}"><span style="flex: 1; text-align: center; font-size: 12px; padding: 8px 2px; border-radius: 8px; border: 1px solid #DCE4DD; color: #4E5F56;">{{ c.t }}</span></sc-if>
+                        </sc-for>
+                      </div>
+                      <sc-if value="{{ tr.fix }}">
+                        <div style="height: 40px; border: 1px solid #C9D3CC; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 11px; font-size: 13px; background: #FFFFFF;"><span>{{ tr.fix }}</span><span style="color: #7C8B83;">▾</span></div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.isStep }}">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="width: 44px; height: 44px; border: 1px solid #C9D3CC; border-radius: 10px; display: grid; place-items: center; font-size: 20px; color: #4E5F56;">−</span>
+                  <span style="flex: 1; height: 44px; border: 1px solid #C9D3CC; border-radius: 10px; display: grid; place-items: center; font-family:'IBM Plex Mono',monospace; font-size: 17px; font-weight: 500;">{{ fd.val }}</span>
+                  <span style="width: 44px; height: 44px; border: 1px solid #C9D3CC; border-radius: 10px; display: grid; place-items: center; font-size: 20px; color: #4E5F56;">＋</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.isSlider }}">
+                <div style="display: grid; gap: 8px;">
+                  <div style="height: 6px; border-radius: 999px; background: #DCE4DD; position: relative;"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 45%; background: #1F6B47; border-radius: 999px;"></span><span style="position: absolute; left: 45%; top: 50%; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; background: #FFFFFF; border: 2px solid #1F6B47;"></span></div>
+                  <div style="display: flex; justify-content: space-between; font-family:'IBM Plex Mono',monospace; font-size: 12px; color: #6E7C74;"><span>{{ fd.min }}</span><span style="color: #14472F; font-weight: 500;">{{ fd.val }}</span><span>{{ fd.max }}</span></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.isOrder }}">
+                <div style="border: 1px solid #DCE4DD; border-radius: 10px; overflow: hidden;">
+                  <sc-for list="{{ fd.opts }}" as="o" hint-placeholder-count="3">
+                    <div style="display: flex; gap: 11px; align-items: center; padding: 11px 13px; border-bottom: 1px solid #EEF2EE; font-size: 14px;"><span style="font-family:'IBM Plex Mono',monospace; font-size: 12px; color: #1F6B47; width: 16px;">{{ o.n }}</span><span style="flex: 1;">{{ o.t }}</span><span style="font-size: 12px; color: #7C8B83;">{{ o.meta }}</span><span style="color: #B6C2BA; font-size: 15px;">⋮⋮</span></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ fd.help }}"><div style="font-size: 12px; line-height: 1.55; color: #7C8B83;">{{ fd.help }}</div></sc-if>
+              <sc-if value="{{ fd.err }}"><div style="display: flex; gap: 6px; font-size: 12px; line-height: 1.5; color: #B3261E;"><span style="font-weight: 700;">⚠</span><span>{{ fd.err }}</span></div></sc-if>
+              <sc-if value="{{ fd.warn }}"><div style="display: flex; gap: 6px; font-size: 12px; line-height: 1.5; color: #6B3E05; background: #FDF7EC; border-radius: 8px; padding: 8px 10px;"><span style="font-weight: 700;">!</span><span>{{ fd.warn }}</span></div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding: 0 18px 16px; display: grid; gap: 9px;">
+          <div style="height: 50px; border-radius: 10px; background: #14472F; color: #FFFFFF; display: grid; place-items: center; font-size: 16px; font-weight: 700;">{{ f.primary }}</div>
+          <sc-if value="{{ f.secondary }}"><div style="height: 44px; border-radius: 10px; border: 1px solid #C9D3CC; color: #14472F; display: grid; place-items: center; font-size: 14px; font-weight: 600;">{{ f.secondary }}</div></sc-if>
+        </div>
+        <div style="background: #F7FAF7; border-top: 1px solid #EEF2EE; padding: 13px 18px 15px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #7C8B83; margin-bottom: 7px;">Validation</div>
+          <div style="display: grid; gap: 5px;">
+            <sc-for list="{{ f.rules }}" as="r" hint-placeholder-count="3">
+              <div style="display: flex; gap: 7px; font-size: 12px; line-height: 1.55; color: #4E5F56;"><span style="color: #9FADA4;">·</span><span>{{ r.t }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2020,&quot;height&quot;:1140},&quot;boundaryTool&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;polygon&quot;,&quot;radius&quot;],&quot;default&quot;:&quot;polygon&quot;,&quot;tsType&quot;:&quot;'polygon' | 'radius'&quot;,&quot;section&quot;:&quot;เครื่องมือวาดขอบเขต&quot;},&quot;boundaryColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#14472F&quot;,&quot;#1D4ED8&quot;,&quot;#A1450A&quot;,&quot;#6B2D6B&quot;],&quot;default&quot;:&quot;#14472F&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;เครื่องมือวาดขอบเขต&quot;},&quot;snapToFeatures&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;เครื่องมือวาดขอบเขต&quot;},&quot;showCheckpoints&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;เครื่องมือวาดขอบเขต&quot;},&quot;mapSpanM&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:100,&quot;max&quot;:600,&quot;step&quot;:20,&quot;default&quot;:260,&quot;unit&quot;:&quot;ม.&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;มาตราส่วนและความแม่นยำ&quot;},&quot;showAccuracyRing&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;มาตราส่วนและความแม่นยำ&quot;},&quot;gpsAccuracyM&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:5,&quot;max&quot;:40,&quot;step&quot;:1,&quot;default&quot;:20,&quot;unit&quot;:&quot;ม.&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;มาตราส่วนและความแม่นยำ&quot;},&quot;strictOutOfBounds&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;นโยบายกิจกรรม&quot;},&quot;liveLocation&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;นโยบายกิจกรรม&quot;}}">
+class Component extends DCLogic {
+  state = { flow: "student", i: 0, history: [], formSel: 0, tool: null, pts: [], center: { x: 50, y: 47 }, radiusM: null };
+
+  go(idx) {
+    this.setState((s) => ({ i: idx, history: s.history.concat([s.i]), formSel: 0 }));
+  }
+
+  formsFor(sid) {
+    const MAP = {
+      "S-01": ["G-01a", "G-01b", "G-01c", "S-02", "G-03"],
+      "S-05": ["S-06"],
+      "S-07": ["S-07a", "S-07b"],
+      "S-08": ["S-08"],
+      "S-12": ["S-14"],
+      "S-15": ["S-15", "S-16"],
+      "S-19": ["S-19"],
+      "S-21": ["S-20", "S-21"],
+      "S-23": ["S-24"],
+      "S-26": ["S-26"],
+      "T-02": ["T-02a", "T-02b"],
+      "T-03": ["T-03"],
+      "T-05": ["T-05", "T-07"],
+      "T-06": ["T-06"],
+      "T-08b": ["T-08a", "T-08b", "T-08c"],
+      "T-09": ["T-09"],
+      "T-12": ["T-11", "T-12"],
+      "T-13": ["T-13"],
+      "T-14": ["T-14"],
+      "T-15": ["T-15"]
+    };
+    return MAP[sid] || [];
+  }
+
+  formVals(sid) {
+    if (!this._formIndex) {
+      const all = this.buildForms();
+      this._formIndex = {};
+      [].concat(all.globalForms, all.studentForms, all.teacherForms).forEach((f) => { this._formIndex[f.id] = f; });
+    }
+    const ids = this.formsFor(sid).filter((id) => this._formIndex[id]);
+    if (!ids.length) return { activeForms: [], formTabs: [], hasForms: false, noForms: true, formCountLabel: "" };
+    const sel = Math.min(this.state.formSel || 0, ids.length - 1);
+    const chip = (on) => ({
+      fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", padding: "6px 10px", borderRadius: "999px",
+      cursor: "pointer", background: on ? "#14472F" : "#F3F6F2", color: on ? "#FFFFFF" : "#4E5F56",
+      border: on ? "1px solid #14472F" : "1px solid #DCE4DD"
+    });
+    return {
+      activeForms: [this._formIndex[ids[sel]]],
+      formTabs: ids.map((id, n) => ({ label: id, style: chip(n === sel), go: () => this.setState({ formSel: n }) })),
+      hasForms: true,
+      noForms: false,
+      formCountLabel: ids.length > 1 ? ids.length + " ฟอร์ม" : "1 ฟอร์ม"
+    };
+  }
+
+  buildForms() {
+    const o = (t, sel, meta, off) => ({ t, sel: !!sel, un: !sel && !off, off: !!off, meta: meta || "" });
+    const base = (label, x) => Object.assign({ label, req: false, opt: false, tag: "", help: "", err: "", warn: "" }, x || {});
+    const T = (label, val, x) => base(label, Object.assign({ type: "input", val }, x));
+    const GH = (label, val, x) => base(label, Object.assign({ type: "ghost", val }, x));
+    const SCI = (label, val, x) => base(label, Object.assign({ type: "sci", val }, x));
+    const A = (label, val, x) => base(label, Object.assign({ type: "area", val }, x));
+    const SEL = (label, val, x) => base(label, Object.assign({ type: "select", val }, x));
+    const RO = (label, val, x) => base(label, Object.assign({ type: "ro", val }, x));
+    const CODE = (label, s, x) => base(label, Object.assign({ type: "code", cells: s.split("").map(ch => ({ ch })) }, x));
+    const RAD = (label, opts, x) => base(label, Object.assign({ type: "radio", opts }, x));
+    const CHK = (label, opts, x) => base(label, Object.assign({ type: "check", opts }, x));
+    const CHIP = (label, opts, x) => base(label, Object.assign({ type: "chip", opts }, x));
+    const TOG = (label, opts, x) => base(label, Object.assign({ type: "toggle", opts }, x));
+    const UP = (label, val, x) => base(label, Object.assign({ type: "upload", val }, x));
+    const STEP = (label, val, x) => base(label, Object.assign({ type: "step", val }, x));
+    const SLIDE = (label, min, val, max, x) => base(label, Object.assign({ type: "slider", min, val, max }, x));
+    const ORD = (label, opts, x) => base(label, Object.assign({ type: "order", opts }, x));
+    const TRAIT = (label, traits, x) => base(label, Object.assign({ type: "trait", traits }, x));
+    const ch = (labels, selIdx) => labels.map((t, i) => ({ t, sel: i === selIdx, un: i !== selIdx }));
+    const R = arr => arr.map(t => ({ t }));
+
+    const FOUR = ["ตรง", "ไม่ตรง", "ไม่แน่ใจ", "มองไม่เห็น"];
+
+    const globalForms = [
+      {
+        id: "G-01a", name: "เข้าสู่ระบบ", entry: "เปิดแอป · ลิงก์เชิญ",
+        fields: [
+          T("อีเมลโรงเรียนหรือชื่อผู้ใช้", "nattadanai.s@school.ac.th", { req: true }),
+          T("รหัสผ่าน", "••••••••", { req: true, tag: "password", err: "อีเมลหรือรหัสผ่านไม่ถูกต้อง ลองอีกครั้ง" }),
+          TOG("", [o("จำฉันไว้ในเครื่องนี้", true)])
+        ],
+        primary: "เข้าสู่ระบบ", secondary: "สมัครสมาชิก · ลืมรหัสผ่าน",
+        rules: R(["อีเมลต้องอยู่ในโดเมนที่โรงเรียนอนุญาต", "ผิดเกิน 5 ครั้ง → หน่วงเวลา 60 วินาที ไม่ล็อกบัญชี", "ถ้ามาจากลิงก์เชิญ ระบบพากลับไปหน้าพรีวิวชั้นเรียนหลังเข้าสู่ระบบ"])
+      },
+      {
+        id: "G-01b", name: "สมัครสมาชิก", entry: "G-01a",
+        fields: [
+          RAD("บทบาท", [o("นักเรียน", true), o("ครู", false, "ต้องยืนยันโดยผู้ดูแลโรงเรียน")], { req: true }),
+          T("ชื่อ – นามสกุล", "ณัฐดนัย สุขใจ", { req: true }),
+          T("อีเมลโรงเรียน", "nattadanai.s@school.ac.th", { req: true }),
+          T("เลขประจำตัวนักเรียน", "38412", { req: true, help: "แสดงเฉพาะเมื่อเลือกบทบาทนักเรียน ใช้จับคู่กับรายชื่อชั้นเรียน" }),
+          T("รหัสผ่าน", "••••••••••", { req: true, help: "อย่างน้อย 8 ตัว มีตัวอักษรและตัวเลข" }),
+          T("ยืนยันรหัสผ่าน", "••••••••••", { req: true }),
+          CHK("", [o("ยอมรับข้อตกลงการใช้งานและนโยบายข้อมูลนักเรียน", false)], { req: true })
+        ],
+        primary: "สร้างบัญชี", secondary: "มีบัญชีแล้ว เข้าสู่ระบบ",
+        rules: R(["อีเมลซ้ำ → เสนอปุ่มเข้าสู่ระบบแทน ไม่บอกว่ามีบัญชีอยู่ในข้อความผิดพลาดทั่วไป", "เลขประจำตัวซ้ำในโรงเรียนเดียวกัน → ให้ติดต่อครู", "บัญชีครูอยู่สถานะรอยืนยันจนกว่าผู้ดูแลจะอนุมัติ"])
+      },
+      {
+        id: "G-01c", name: "ลืมรหัสผ่าน", entry: "G-01a",
+        fields: [T("อีเมลโรงเรียน", "อีเมลที่ใช้สมัคร", { req: true, help: "เราจะส่งลิงก์ตั้งรหัสผ่านใหม่ที่ใช้ได้ 30 นาที" })],
+        primary: "ส่งลิงก์ตั้งรหัสผ่านใหม่", secondary: "กลับไปเข้าสู่ระบบ",
+        rules: R(["ตอบข้อความเดียวกันเสมอ ไม่เปิดเผยว่าอีเมลมีอยู่จริงหรือไม่", "ขอซ้ำได้ทุก 60 วินาที"])
+      },
+      {
+        id: "G-03", name: "โปรไฟล์และสิทธิ์", entry: "หน้าแรก",
+        fields: [
+          T("ชื่อที่แสดงในชั้นเรียน", "ณัฐดนัย ส.", { req: true, help: "เพื่อนร่วมชั้นและครูเห็นชื่อนี้" }),
+          SEL("ภาษา", "ไทย"),
+          TOG("สิทธิ์การใช้งานอุปกรณ์", [o("ตำแหน่งที่ตั้ง", true), o("กล้อง", true), o("การแจ้งเตือน", false)], { help: "หากถูกปฏิเสธที่ระดับระบบ ปุ่มจะเปลี่ยนเป็นลิงก์ไปตั้งค่าเครื่อง" }),
+          CHK("แจ้งเตือนฉันเมื่อ", [o("กลุ่มของฉันถึงคิว", true), o("ได้รับคำเชิญกลุ่ม", true), o("ครูขอให้แก้ไข", true), o("ผลตรวจออกแล้ว", false)])
+        ],
+        primary: "บันทึกการเปลี่ยนแปลง", secondary: "ออกจากระบบ",
+        rules: R(["ปิดสิทธิ์ตำแหน่งขณะอยู่ในรอบสำรวจ → เตือนว่าจะบันทึกการสังเกตไม่ได้", "ชื่อที่แสดงเปลี่ยนได้ไม่เกิน 2 ครั้งต่อภาคเรียน"])
+      }
+    ];
+
+    const studentForms = [
+      {
+        id: "S-02", name: "เข้าร่วมด้วยรหัสชั้นเรียน", entry: "หน้าแรกนักเรียน",
+        fields: [CODE("รหัสชั้นเรียน 6 ตัว", "K7M2Q ", { req: true, help: "พิมพ์ใหญ่-เล็กไม่ต่างกัน · รับเฉพาะ A–Z และ 0–9", err: "ไม่พบรหัสนี้ ตรวจกับครูอีกครั้ง" })],
+        primary: "ตรวจสอบรหัส", secondary: "สแกน QR แทน",
+        rules: R(["เติมอัตโนมัติจากคลิปบอร์ดเมื่อวางทั้งชุด", "รหัสหมดอายุ / ถูกปิด / ใช้ครบ → ข้อความต่างกันสามแบบ ไม่รวมเป็น “รหัสไม่ถูกต้อง”", "ถ้าเข้าชั้นเรียนนี้แล้ว พาไปหน้าชั้นเรียนแทนการแจ้งผิดพลาด"])
+      },
+      {
+        id: "S-06", name: "สร้างกลุ่ม", entry: "S-05 การจัดกลุ่ม",
+        fields: [
+          T("ชื่อกลุ่ม", "มะขามป้อม", { req: true, help: "2–40 ตัวอักษร · ห้ามซ้ำกับกลุ่มอื่นในชั้นเรียนนี้" }),
+          T("คำอธิบายสั้น", "สำรวจโซนหลังอาคาร 3", { opt: true }),
+          CHK("", [o("ฉันจะเป็นหัวหน้ากลุ่มและรับผิดชอบการเชิญสมาชิก", true)], { req: true })
+        ],
+        primary: "สร้างกลุ่ม", secondary: "ยกเลิก",
+        rules: R(["ตรวจชื่อซ้ำแบบสด ๆ หลังพิมพ์หยุด 400 มิลลิวินาที", "GROUP_LIMIT_REACHED → กลับไป S-05 พร้อมข้อความ “กลุ่มเต็มแล้วระหว่างที่คุณกรอก” ไม่ใช่ข้อความบั๊ก", "นักเรียนหนึ่งคนมีได้กลุ่มเดียวต่อชั้นเรียน"])
+      },
+      {
+        id: "S-07a", name: "เปลี่ยนชื่อกลุ่ม", entry: "S-07 กลุ่มของฉัน",
+        fields: [T("ชื่อกลุ่มใหม่", "มะขามป้อม", { req: true, warn: "เปลี่ยนได้จนกว่าครูจะล็อกกลุ่ม หลังจากนั้นต้องขอครู" })],
+        primary: "บันทึกชื่อใหม่", secondary: "ยกเลิก",
+        rules: R(["เฉพาะหัวหน้ากลุ่ม", "ปิดใช้เมื่อกลุ่มถูกล็อกหรือเก็บถาวร"])
+      },
+      {
+        id: "S-07b", name: "โอนหัวหน้ากลุ่ม", entry: "S-07 กลุ่มของฉัน",
+        fields: [
+          RAD("เลือกหัวหน้าคนใหม่", [o("ปาลิตา ว.", true, "อยู่ในกลุ่ม 6 วัน"), o("ธนกฤต ม.", false, "อยู่ในกลุ่ม 6 วัน"), o("ศิรประภา ค.", false, "เพิ่งเข้าวันนี้")], { req: true }),
+          T("ข้อความถึงสมาชิก", "ฝากดูแลต่อนะ", { opt: true })
+        ],
+        primary: "โอนสิทธิ์หัวหน้า", secondary: "ยกเลิก",
+        rules: R(["ต้องยืนยันสองขั้น เพราะย้อนกลับเองไม่ได้", "โอนไม่ได้ระหว่างรอบสำรวจที่กำลังทำงาน"])
+      },
+      {
+        id: "S-08", name: "ชวนเพื่อนร่วมชั้น", entry: "S-07 กลุ่มของฉัน",
+        fields: [
+          GH("ค้นหาเพื่อนร่วมชั้น", "พิมพ์ชื่อหรือเลขประจำตัว", { tag: "search" }),
+          CHK("เลือกเพื่อนที่จะชวน", [o("ศิรประภา ค.", true, "ว่าง"), o("ธนกฤต ม.", true, "ว่าง"), o("กันตพงศ์ อ.", false, "อยู่กลุ่มพะยอม", true), o("นภสร ท.", false, "รอตอบคำเชิญ", true)], { req: true, help: "เหลือที่นั่งในกลุ่ม 1 ที่ — เลือกได้อีก 1 คน" }),
+          A("ข้อความแนบไปกับคำเชิญ", "มาทำกลุ่มด้วยกันนะ", { opt: true })
+        ],
+        primary: "ส่งคำเชิญ (2)", secondary: "ดูคำเชิญที่ค้างอยู่",
+        rules: R(["เลือกเกินที่นั่งว่าง → รายการที่เกินถูกปิดพร้อมเหตุผล ไม่ใช่ข้อความรวม", "คำเชิญหมดอายุใน 24 ชั่วโมง", "คนที่อยู่กลุ่มอื่นแล้วแสดงแบบจาง เลือกไม่ได้ พร้อมชื่อกลุ่ม"])
+      },
+      {
+        id: "S-14", name: "เพิ่มการสังเกต · ขั้น 1 ตำแหน่ง", entry: "S-12 โหมดสนาม",
+        fields: [
+          RO("พิกัด", "13.73612, 100.53291", { action: "รีเฟรช" }),
+          RO("ความแม่นยำ", "± 6 ม. · ดี"),
+          RO("เวลาบันทึก", "04 ส.ค. 2569 · 14:32:08"),
+          T("ชื่อจุด / จุดสังเกตใกล้เคียง", "ริมทางเดินหลังโรงอาหาร", { opt: true, help: "ช่วยครูหาต้นเดิมเมื่อพิกัดคลาดเคลื่อน" }),
+          TOG("", [o("บันทึกแบบติดธง (สัญญาณอ่อน)", false)], { help: "ใช้เมื่อ GPS แย่กว่า ± 20 ม. ครูจะเห็นหมุดเป็นเส้นประ" })
+        ],
+        primary: "ใช้ตำแหน่งนี้", secondary: "รอสัญญาณดีขึ้น",
+        rules: R(["ความแม่นยำแย่กว่า ± 20 ม. → ปุ่มหลักเปลี่ยนเป็น “บันทึกแบบติดธง”", "ปฏิเสธสิทธิ์ตำแหน่ง → บล็อกขั้นนี้ พร้อมปุ่มไปตั้งค่า", "อยู่นอกขอบเขตกิจกรรม → เตือนแต่ยังบันทึกได้ ครูเห็นป้าย “นอกขอบเขต”"])
+      },
+      {
+        id: "S-15", name: "เพิ่มการสังเกต · ขั้น 2 ภาพหลักฐาน", entry: "S-14",
+        fields: [
+          UP("ภาพหลักฐาน", "เพิ่มภาพ · 1 จาก 10", { req: true, help: "ภาพทั้งต้นบังคับอย่างน้อย 1 ภาพ · สูงสุด 10 ภาพ" }),
+          SEL("ประเภทของภาพที่เลือก", "ทั้งต้น", { req: true, help: "ตัวเลือก ทั้งต้น · ใบ · ลำต้นและเปลือก · ดอก · ผล · ราก · ถิ่นที่อยู่" }),
+          T("คำบรรยายภาพ", "ใบด้านบน แสงธรรมชาติ", { opt: true }),
+          CHK("", [o("มีวัตถุอ้างอิงขนาดในภาพ (เหรียญ / ไม้บรรทัด)", false)], { help: "ช่วยให้ AI ประเมินขนาดใบและผลได้แม่นขึ้น" })
+        ],
+        primary: "วิเคราะห์ด้วย AI", secondary: "ข้าม AI แล้วกรอกเอง",
+        rules: R(["ยังไม่มีภาพทั้งต้น → ปุ่มหลักกดได้แต่เลื่อนไปที่ตัวอัปโหลดพร้อมข้อความ", "ภาพเกิน 8 MB บีบอัดอัตโนมัติก่อนอัปโหลด", "อัปโหลดล้มเหลว → ภาพขึ้นขอบแดงพร้อมปุ่มลองใหม่ ไม่ลบร่าง"])
+      },
+      {
+        id: "S-16", name: "แก้ประเภทภาพในคลัง", entry: "S-15 คลังภาพหลักฐาน",
+        fields: [
+          CHIP("ประเภทของภาพนี้", [o("ทั้งต้น", false), o("ใบ", true), o("ลำต้นและเปลือก", false), o("ดอก", false), o("ผล", false), o("ราก", false), o("ถิ่นที่อยู่", false)], { req: true }),
+          TOG("", [o("ตั้งเป็นภาพหลักของการสังเกตนี้", false)])
+        ],
+        primary: "บันทึก", secondary: "ลบภาพนี้",
+        rules: R(["ลบภาพทั้งต้นภาพสุดท้ายไม่ได้ ต้องเพิ่มภาพใหม่ก่อน", "เปลี่ยนประเภทหลังส่ง AI แล้ว → เสนอให้วิเคราะห์ใหม่"])
+      },
+      {
+        id: "S-19", name: "ตรวจสอบลักษณะ", entry: "S-18 ผลวิเคราะห์ชั่วคราว",
+        fields: [
+          TRAIT("กลุ่มลักษณะ: ใบ", [
+            { name: "รูปร่างใบ", ai: "AI · รูปไข่", choices: ch(FOUR, 0) },
+            { name: "ขอบใบ", ai: "AI · หยักฟันเลื่อย", choices: ch(FOUR, 1), fix: "ขอบเรียบ" },
+            { name: "การเรียงใบ", ai: "AI · สลับ", choices: ch(FOUR, 2) },
+            { name: "ผิวใบ", ai: "AI · เกลี้ยง", choices: ch(FOUR, 3) }
+          ], { req: true, help: "แต่ละลักษณะต้องเลือก 1 ใน 4 · เลือก “ไม่ตรง” แล้วต้องระบุค่าที่ถูกต้อง" })
+        ],
+        primary: "ถัดไป · ลำต้น (2 จาก 5)", secondary: "ข้ามกลุ่มนี้",
+        rules: R(["ยังตรวจไม่ครบตอนกดส่ง → เตือนพร้อมจำนวนที่เหลือและลิงก์ไปยังกลุ่มแรกที่ค้าง", "“ไม่ตรง” ที่ไม่ระบุค่าที่ถูกต้อง นับว่ายังไม่ตรวจ", "ค่าจาก AI แสดงคู่เสมอและแก้ไม่ได้ เพื่อคงหลักฐานสามชั้น"])
+      },
+      {
+        id: "S-20", name: "สรุปก่อนส่ง", entry: "S-19",
+        fields: [
+          T("ชื่อไทย", "ชบา", { req: true }),
+          SCI("ชื่อวิทยาศาสตร์", "Hibiscus rosa-sinensis", { opt: true, warn: "ไม่ระบุก็ส่งได้ แต่ครูอาจขอให้เพิ่มภายหลัง" }),
+          RO("วงศ์ (จาก AI)", "Malvaceae"),
+          RAD("ความมั่นใจของฉัน", [o("มั่นใจมาก", false), o("ค่อนข้างมั่นใจ", true), o("ไม่แน่ใจ ขอให้ครูช่วยดู", false)], { req: true }),
+          A("เหตุผลประกอบ", "ทำไมถึงคิดว่าเป็นชนิดนี้ อ้างอิงลักษณะที่เห็นจริง", { req: true, help: "อย่างน้อย 20 ตัวอักษร · ข้อความนี้คือสิ่งที่ครูให้คะแนน" }),
+          A("บันทึกภาคสนามเพิ่มเติม", "สภาพแวดล้อม แมลงที่พบ กลิ่น ฯลฯ", { opt: true }),
+          STEP("จำนวนต้นที่พบบริเวณนี้", "3", { opt: true })
+        ],
+        primary: "ส่งการสังเกต", secondary: "บันทึกร่างไว้ก่อน",
+        rules: R(["ออฟไลน์ → ปุ่มเปลี่ยนเป็น “เก็บไว้ส่งเมื่อออนไลน์” พร้อมตำแหน่งในคิว", "ยังตรวจลักษณะไม่ครบ → กล่องเตือนพร้อมปุ่มกลับไปตรวจ ไม่บล็อกถาวร", "ชื่อไทยซ้ำกับที่กลุ่มอื่นส่งในรอบนี้ → ไปหน้า S-21 ก่อนส่งจริง"])
+      },
+      {
+        id: "S-21", name: "ยืนยันเมื่อพบชนิดซ้ำ", entry: "S-20",
+        fields: [
+          RAD("ต้นนี้เทียบกับรายการที่มีอยู่", [o("เป็นคนละต้น ชนิดเดียวกัน", true, "ห่าง 42 ม."), o("อาจเป็นต้นเดียวกัน", false, "ห่าง 42 ม."), o("ขอกลับไปแก้ชื่อ", false)], { req: true }),
+          A("หมายเหตุถึงครู", "อธิบายว่าต่างกันอย่างไร", { opt: true })
+        ],
+        primary: "รับทราบและส่ง", secondary: "ดูรายการที่เกี่ยวข้อง",
+        rules: R(["ชนิดซ้ำไม่ใช่ความผิด ข้อความต้องเป็นกลาง ไม่ใช้สีแดง", "เลือก “อาจเป็นต้นเดียวกัน” → รายการถูกผูกกับต้นเดิมและครูเห็นทั้งคู่", "ไม่มีสิทธิ์ดูรายการกลุ่มอื่น → แสดงเฉพาะระยะห่างและชนิด ไม่แสดงชื่อผู้บันทึก"])
+      },
+      {
+        id: "S-24", name: "แก้ไขและส่งใหม่", entry: "S-23 คำขอแก้ไขจากครู",
+        fields: [
+          CHK("หัวข้อที่ครูขอให้แก้", [o("ภาพหลักฐานไม่ชัด", false, "ยังไม่แก้"), o("เหตุผลประกอบสั้นเกินไป", true, "แก้แล้ว")], { tag: "read-only", help: "ติ๊กอัตโนมัติเมื่อแก้ครบในแต่ละหัวข้อ" }),
+          UP("เพิ่มภาพใบระยะใกล้", "เพิ่มภาพ · 4 จาก 10", { req: true }),
+          A("เหตุผลประกอบ (แก้ไข)", "ขอบใบเรียบไม่หยัก ต่างจากที่ AI เสนอ และดอกมีเกสรยื่นยาว", { req: true, help: "ค่าเดิมที่ส่งไปยังดูได้ที่ปุ่มด้านล่าง" }),
+          A("ข้อความถึงครู", "แนบภาพใบเพิ่ม 2 ภาพแล้วครับ", { opt: true })
+        ],
+        primary: "ส่งใหม่", secondary: "ดูเวอร์ชันที่ส่งไปครั้งก่อน",
+        rules: R(["ไม่มีการเปลี่ยนแปลงใด ๆ → ปุ่มส่งใหม่บล็อกพร้อมเหตุผล", "แก้ได้เฉพาะหัวข้อที่ครูระบุ ช่องอื่นอ่านอย่างเดียว", "ทุกเวอร์ชันถูกเก็บ ครูเทียบย้อนหลังได้"])
+      },
+      {
+        id: "S-26", name: "รายงานปัญหาของรายการ", entry: "S-26 รายละเอียดพืช",
+        fields: [
+          RAD("ประเภทปัญหา", [o("ภาพไม่ตรงกับพืช", false), o("ตำแหน่งผิดพลาด", true), o("ข้อมูลชนิดไม่ถูกต้อง", false), o("เนื้อหาไม่เหมาะสม", false), o("อื่น ๆ", false)], { req: true }),
+          A("รายละเอียด", "อธิบายสิ่งที่พบ", { req: true, help: "อย่างน้อย 10 ตัวอักษร · ครูประจำชั้นเรียนจะเห็นรายงานนี้" })
+        ],
+        primary: "ส่งรายงาน", secondary: "ยกเลิก",
+        rules: R(["ส่งซ้ำรายการเดิมได้ 1 ครั้งต่อ 24 ชั่วโมง", "ผู้บันทึกไม่ได้รับแจ้งว่าใครรายงาน"])
+      }
+    ];
+
+    const teacherForms = [
+      {
+        id: "T-02a", name: "สร้างชั้นเรียน · ข้อมูลชั้นเรียน", entry: "T-01 หน้าแรกครู",
+        fields: [
+          T("ชื่อชั้นเรียน", "ชีววิทยา ม.5/2", { req: true }),
+          T("รหัสวิชา", "ว30245", { opt: true }),
+          SEL("ระดับชั้น", "มัธยมศึกษาปีที่ 5", { req: true }),
+          T("ปีการศึกษา", "2569", { req: true, tag: "number" }),
+          RAD("ภาคเรียน", [o("ที่ 1", true), o("ที่ 2", false), o("ฤดูร้อน", false)], { req: true }),
+          A("คำอธิบายชั้นเรียน", "นักเรียนเห็นข้อความนี้ตอนกดลิงก์เชิญ", { opt: true })
+        ],
+        primary: "ถัดไป · กติกากลุ่ม", secondary: "บันทึกร่าง",
+        rules: R(["ชื่อชั้นเรียนซ้ำในปีการศึกษาเดียวกัน → เตือนแต่ไม่บล็อก", "ปีการศึกษาต้องอยู่ในช่วง ปัจจุบัน −1 ถึง +1"])
+      },
+      {
+        id: "T-02b", name: "สร้างชั้นเรียน · กติกาการจัดกลุ่ม", entry: "T-02a",
+        fields: [
+          STEP("ขนาดกลุ่มต่ำสุด", "3", { req: true }),
+          STEP("ขนาดกลุ่มสูงสุด", "5", { req: true }),
+          STEP("จำนวนกลุ่มสูงสุดในชั้นเรียน", "8", { req: true, warn: "8 กลุ่ม × 5 คน = 40 ที่นั่ง แต่ชั้นเรียนมี 42 คน จะมีนักเรียน 2 คนไม่มีกลุ่ม" }),
+          RAD("ใครสร้างกลุ่มได้", [o("นักเรียนสร้างเองได้", true), o("ครูสร้างให้เท่านั้น", false)], { req: true }),
+          TOG("", [o("ต้องให้ครูอนุมัติกลุ่มก่อนเข้าร่วมกิจกรรม", true), o("ล็อกกลุ่มอัตโนมัติเมื่อถึงกำหนด", true)]),
+          SEL("ปิดรับการจัดกลุ่มวันที่", "12 ส.ค. 2569 · 23:59", { req: true, tag: "datetime" })
+        ],
+        primary: "สร้างชั้นเรียน", secondary: "ย้อนกลับ",
+        rules: R(["ขนาดต่ำสุดต้องไม่เกินขนาดสูงสุด", "ความจุรวมน้อยกว่าจำนวนนักเรียน → เตือนล่วงหน้าพร้อมตัวเลขจริง ไม่บล็อก", "ลดขนาดสูงสุดหลังมีกลุ่มเกินขนาดแล้ว → บล็อกพร้อมรายชื่อกลุ่มที่ขัดกติกา"])
+      },
+      {
+        id: "T-03", name: "เชิญนักเรียน", entry: "T-02 · T-04",
+        fields: [
+          RO("รหัสเข้าร่วม", "K7M2Q4", { action: "หมุนรหัสใหม่" }),
+          RO("ลิงก์เชิญ", "ai-escort.app/j/K7M2Q4", { action: "คัดลอก" }),
+          SEL("วันหมดอายุ", "12 ส.ค. 2569 · 23:59", { req: true, tag: "datetime" }),
+          STEP("จำนวนครั้งที่ใช้ได้สูงสุด", "45", { help: "ใช้ไปแล้ว 38 ครั้ง" }),
+          TOG("", [o("เปิดให้ใช้งานลิงก์และรหัส", true)])
+        ],
+        primary: "แชร์ลิงก์", secondary: "แสดง QR เต็มจอ",
+        rules: R(["หมุนรหัสใหม่ทำให้รหัสเดิมใช้ไม่ได้ทันที ต้องยืนยันสองขั้น", "ปิดลิงก์ไม่กระทบนักเรียนที่เข้าร่วมแล้ว", "จำนวนครั้งต้องไม่น้อยกว่าที่ใช้ไปแล้ว"])
+      },
+      {
+        id: "T-05", name: "สร้างกลุ่มแทนนักเรียน", entry: "T-05 จัดการกลุ่ม",
+        fields: [
+          T("ชื่อกลุ่ม", "กลุ่ม 9 · ประดู่", { req: true }),
+          SEL("หัวหน้ากลุ่ม", "เลือกจากนักเรียนที่ยังไม่มีกลุ่ม", { req: true }),
+          CHK("สมาชิกเริ่มต้น", [o("กันตพงศ์ อ.", true), o("นภสร ท.", true), o("วรินทร พ.", false)], { help: "เลือกได้ 3–5 คนตามกติกาชั้นเรียน" })
+        ],
+        primary: "สร้างกลุ่ม", secondary: "ยกเลิก",
+        rules: R(["ครูสร้างกลุ่มได้แม้เกินจำนวนกลุ่มสูงสุด แต่ต้องยืนยันการเกินโควตา", "นักเรียนที่อยู่กลุ่มอื่นแล้วไม่ปรากฏในรายการ"])
+      },
+      {
+        id: "T-06", name: "ย้ายนักเรียน", entry: "T-05 จัดการกลุ่ม",
+        fields: [
+          RO("นักเรียน", "ปาลิตา ว. · กลุ่มมะขามป้อม"),
+          RAD("กลุ่มปลายทาง", [o("กลุ่มพะยอม", true, "4 / 5"), o("กลุ่มอินทนิล", false, "3 / 5"), o("กลุ่มประดู่", false, "5 / 5 เต็ม", true), o("ไม่มีกลุ่ม (ปล่อยว่าง)", false)], { req: true }),
+          SEL("หัวหน้าคนใหม่ของกลุ่มเดิม", "ธนกฤต ม.", { req: true, help: "จำเป็นเพราะนักเรียนคนนี้เป็นหัวหน้ากลุ่มมะขามป้อม" }),
+          T("เหตุผลการย้าย", "ปรับสมดุลจำนวนสมาชิก", { opt: true, help: "บันทึกในประวัติชั้นเรียน นักเรียนไม่เห็น" })
+        ],
+        primary: "ยืนยันการย้าย", secondary: "ยกเลิก",
+        rules: R(["กลุ่มเดิมจะเหลือ 3 คน = ขั้นต่ำพอดี — แสดงผลกระทบก่อนยืนยันเสมอ", "ย้ายไม่ได้ระหว่างรอบสำรวจที่กลุ่มกำลังทำงาน → บล็อกพร้อมเหตุผล", "การสังเกตที่ส่งไปแล้วยังคงผูกกับกลุ่มเดิมตามสแนปช็อตสมาชิก"])
+      },
+      {
+        id: "T-07", name: "ลบ หรือ เก็บถาวรกลุ่ม", entry: "T-05 จัดการกลุ่ม",
+        fields: [
+          RAD("การกระทำ", [o("เก็บถาวร", true, "ซ่อนจากรายการ เก็บข้อมูลไว้"), o("ลบถาวร", false, "กลุ่มนี้มีการสังเกต 12 รายการ ลบไม่ได้", true)], { req: true }),
+          T("พิมพ์ชื่อกลุ่มเพื่อยืนยัน", "มะขามป้อม", { req: true, err: "ชื่อไม่ตรง ลองอีกครั้ง" })
+        ],
+        primary: "เก็บถาวรกลุ่ม", secondary: "ยกเลิก",
+        rules: R(["กลุ่มที่มีประวัติการสังเกตเก็บถาวรได้อย่างเดียว ลบไม่ได้", "สมาชิกกลับสู่สถานะไม่มีกลุ่มและได้รับแจ้งเตือน", "คำเชิญค้างทั้งหมดถูกยกเลิก"])
+      },
+      {
+        id: "T-08a", name: "ตัวสร้างกิจกรรม · ขั้น 1 ข้อมูล", entry: "T-04 ภาพรวมชั้นเรียน",
+        fields: [
+          T("ชื่อกิจกรรม", "สำรวจพรรณไม้สวนหลังอาคาร 3", { req: true }),
+          A("วัตถุประสงค์การเรียนรู้", "นักเรียนจำแนกพืชดอกจากลักษณะใบและดอกได้", { opt: true, help: "นักเรียนเห็นข้อความนี้ในหน้ารายละเอียดกิจกรรม" }),
+          STEP("เป้าหมายจำนวนชนิดต่อกลุ่ม", "5", { req: true }),
+          STEP("ระยะเวลาต่อกลุ่ม (นาที)", "45", { req: true }),
+          CHK("นับซ้ำอย่างไร", [o("อนุญาตให้กลุ่มอื่นบันทึกชนิดเดียวกันได้", true), o("นับชนิดซ้ำเข้าเป้าหมายของกลุ่ม", false)])
+        ],
+        primary: "ถัดไป · ขอบเขตพื้นที่", secondary: "ใช้ซ้ำจากกิจกรรมเดิม",
+        rules: R(["บันทึกร่างอัตโนมัติทุกขั้น", "เป้าหมาย 1–20 ชนิด · ระยะเวลา 10–180 นาที"])
+      },
+      {
+        id: "T-08b", name: "ตัวสร้างกิจกรรม · ขั้น 2 ขอบเขต", entry: "T-08a",
+        fields: [
+          RAD("วิธีกำหนดขอบเขต", [o("วาดพื้นที่บนแผนที่", false, "4 จุด"), o("รัศมีจากจุดศูนย์กลาง", true)], { req: true }),
+          RO("จุดศูนย์กลาง", "13.73598, 100.53277", { action: "เลือกบนแผนที่" }),
+          SLIDE("รัศมี", "20 ม.", "120 ม.", "500 ม.", { req: true }),
+          TOG("", [o("เตือนนักเรียนเมื่อออกนอกขอบเขต", true), o("ห้ามบันทึกการสังเกตนอกขอบเขต", false)], { help: "แนะนำให้เตือนแต่ไม่ห้าม เพราะ GPS ในที่ร่มคลาดเคลื่อนได้" })
+        ],
+        primary: "ถัดไป · เส้นทาง", secondary: "ย้อนกลับ",
+        rules: R(["ต้องมีขอบเขตก่อนจึงเปิดรอบสำรวจได้", "พื้นที่ที่วาดต้องปิดและไม่ตัดกันเอง", "รัศมีต่ำกว่า 20 ม. เตือนว่าเล็กกว่าความคลาดเคลื่อน GPS ทั่วไป"])
+      },
+      {
+        id: "T-08c", name: "ตัวสร้างกิจกรรม · ขั้น 4 จุดตรวจ", entry: "T-08b",
+        fields: [
+          T("ชื่อจุดตรวจ", "จุดที่ 2 · ซุ้มไม้เลื้อย", { req: true }),
+          RO("พิกัด", "13.73641, 100.53310", { action: "เลือกบนแผนที่" }),
+          A("คำสั่งประจำจุด", "สังเกตชนิดไม้เลื้อยอย่างน้อย 1 ชนิด และถ่ายภาพใบระยะใกล้", { req: true }),
+          TOG("", [o("บังคับถ่ายภาพที่จุดนี้", true), o("บังคับผ่านตามลำดับ", false)])
+        ],
+        primary: "เพิ่มจุดตรวจ", secondary: "ข้ามขั้นนี้",
+        rules: R(["จุดตรวจต้องอยู่ในขอบเขตที่กำหนดไว้ขั้น 2", "จุดตรวจไม่บังคับ กิจกรรมเปิดได้โดยไม่มีจุดตรวจ"])
+      },
+      {
+        id: "T-09", name: "ตั้งค่ารอบสำรวจ", entry: "T-08 ตรวจทาน",
+        fields: [
+          SEL("วันที่และเวลาเริ่ม", "07 ส.ค. 2569 · 09:00", { req: true, tag: "datetime" }),
+          SEL("เวลาสิ้นสุดโดยประมาณ", "07 ส.ค. 2569 · 12:00", { req: true, tag: "datetime" }),
+          CHK("กลุ่มที่เข้าร่วม", [o("มะขามป้อม", true, "5 คน · อนุมัติแล้ว"), o("พะยอม", true, "4 คน · อนุมัติแล้ว"), o("อินทนิล", true, "3 คน · อนุมัติแล้ว"), o("ประดู่", false, "รออนุมัติ", true)], { req: true }),
+          ORD("ลำดับคิว", [{ n: "1", t: "มะขามป้อม", meta: "09:00" }, { n: "2", t: "พะยอม", meta: "09:45" }, { n: "3", t: "อินทนิล", meta: "10:30" }], { help: "ลากเพื่อจัดลำดับ เวลาคำนวณจากระยะเวลาต่อกลุ่ม 45 นาที" }),
+          STEP("จำนวนกลุ่มที่สำรวจพร้อมกัน", "1"),
+          TOG("", [o("เปิดติดตามตำแหน่งสดระหว่างสำรวจ", true), o("แจ้งเตือนนักเรียนเมื่อถึงคิว", true)], { warn: "ตำแหน่งสดมองเห็นได้เฉพาะครูประจำชั้นเรียนนี้ และหยุดบันทึกทันทีที่จบรอบ — ต้องยืนยันนโยบายกับโรงเรียนก่อนเปิดใช้" })
+        ],
+        primary: "เปิดรอบสำรวจ", secondary: "บันทึกไว้ก่อน",
+        rules: R(["ต้องมีอย่างน้อย 1 กลุ่มที่อนุมัติแล้ว", "สมาชิกกลุ่มถูกบันทึกเป็นสแนปช็อต ณ เวลาที่เปิดรอบ — ย้ายนักเรียนภายหลังไม่กระทบรอบนี้", "เวลาสิ้นสุดต้องหลังเวลาเริ่ม และครอบคลุมคิวทั้งหมด"])
+      },
+      {
+        id: "T-11", name: "ตัวกรองคิวตรวจ", entry: "T-11 คิวตรวจการสังเกต",
+        fields: [
+          CHIP("สถานะ", [o("รอตรวจ", true), o("ส่งซ้ำ", true), o("รับรองแล้ว", false), o("ขอให้แก้ไข", false), o("ปฏิเสธ", false)]),
+          SEL("กลุ่ม", "ทุกกลุ่ม"),
+          SEL("รอบสำรวจ", "07 ส.ค. 2569 · สวนหลังอาคาร 3"),
+          RAD("เรียงตาม", [o("ส่งเก่าสุดก่อน", true), o("ส่งใหม่สุดก่อน", false), o("ความมั่นใจ AI ต่ำสุดก่อน", false)]),
+          TOG("", [o("แสดงเฉพาะรายการที่ติดป้ายชนิดซ้ำ", false)])
+        ],
+        primary: "ใช้ตัวกรอง (18 รายการ)", secondary: "ล้างตัวกรองทั้งหมด",
+        rules: R(["ตัวกรองคงอยู่ต่อเมื่อกลับมาหน้าเดิมในเซสชันเดียวกัน", "จำนวนผลลัพธ์อัปเดตสดขณะเลือก"])
+      },
+      {
+        id: "T-12", name: "ตัดสินผลการตรวจ", entry: "T-12 รายละเอียดการตรวจ",
+        fields: [
+          RAD("ผลการตรวจ", [o("รับรอง", true, "ตรงกับที่นักเรียนส่ง"), o("แก้ไขแล้วรับรอง", false, "ไปหน้า T-14"), o("ขอให้แก้ไข", false, "ไปหน้า T-13"), o("ตรวจสอบไม่ได้", false, "หลักฐานไม่พอ"), o("ปฏิเสธ", false, "ไม่ใช่การสังเกตที่ใช้ได้")], { req: true }),
+          A("ความเห็นถึงกลุ่ม", "เหตุผลประกอบชัดเจน ใช้ลักษณะขอบใบได้ถูกต้อง", { opt: true, help: "นักเรียนทั้งกลุ่มเห็นข้อความนี้" }),
+          CHK("", [o("ทำเครื่องหมายเป็นตัวอย่างที่ดีของชั้นเรียน", false)])
+        ],
+        primary: "รับรองการสังเกตนี้", secondary: "ข้ามไปรายการถัดไป",
+        rules: R(["“ตรวจสอบไม่ได้” และ “ปฏิเสธ” ต้องมีความเห็นถึงกลุ่ม", "ชื่อที่ครูรับรองกลายเป็นความจริงหลัก ค่าจาก AI และนักเรียนยังคงแสดงใต้ลงไปเสมอ", "เปลี่ยนผลย้อนหลังได้ แต่บันทึกเป็นเวอร์ชันใหม่ในประวัติ"])
+      },
+      {
+        id: "T-13", name: "ขอให้แก้ไข", entry: "T-12",
+        fields: [
+          CHK("หัวข้อที่ต้องแก้", [o("ภาพหลักฐาน", true, "ไม่ชัด / ไม่ครบมุม"), o("ตำแหน่ง", false), o("ชื่อพืช", false), o("ลักษณะที่ตรวจ", false), o("เหตุผลประกอบ", true, "สั้นเกินไป")], { req: true, err: "เลือกอย่างน้อย 1 หัวข้อก่อนส่ง" }),
+          A("คำแนะนำถึงกลุ่ม", "ถ่ายใบระยะใกล้เพิ่ม 2 ภาพให้เห็นขอบใบ และเขียนเหตุผลว่าทำไมจึงไม่ใช่ชนิดที่ AI เสนอ", { req: true, help: "อย่างน้อย 15 ตัวอักษร · เขียนให้เป็นคำสั่งที่ทำตามได้" }),
+          SEL("กำหนดส่งใหม่", "09 ส.ค. 2569 · 23:59", { opt: true }),
+          TOG("", [o("แจ้งเตือนสมาชิกทุกคนในกลุ่ม", true), o("อนุญาตให้แก้เฉพาะหัวข้อที่เลือก", false)])
+        ],
+        primary: "ส่งคำขอแก้ไข", secondary: "เลือกจากข้อความสำเร็จรูป",
+        rules: R(["ไม่เลือกหัวข้อ → บล็อกการส่งพร้อมข้อความชี้ที่รายการ", "เวอร์ชันที่ส่งมาถูกเก็บไว้ นักเรียนเทียบกับของเดิมได้", "รายการกลับเข้าคิวตรวจอัตโนมัติเมื่อกลุ่มส่งใหม่"])
+      },
+      {
+        id: "T-14", name: "แก้ไขแล้วรับรอง", entry: "T-12",
+        fields: [
+          T("ชื่อไทย (ค่าที่รับรอง)", "พู่ระหง", { req: true, help: "นักเรียนส่งมาว่า “ชบา” · ค่าเดิมยังแสดงคู่กันเสมอ" }),
+          SCI("ชื่อวิทยาศาสตร์ (ค่าที่รับรอง)", "Hibiscus schizopetalus", { opt: true, help: "นักเรียนส่งมาว่า Hibiscus rosa-sinensis" }),
+          TRAIT("ลักษณะที่ครูแก้", [
+            { name: "ขอบใบ", ai: "AI หยัก · นร. เรียบ", choices: ch(["คงค่า AI", "คงค่า นร.", "ค่าใหม่"], 2), fix: "หยักฟันเลื่อยตื้น" },
+            { name: "รูปทรงดอก", ai: "AI แตร · นร. แตร", choices: ch(["คงค่า AI", "คงค่า นร.", "ค่าใหม่"], 2), fix: "กลีบแยกลึก ห้อยลง" }
+          ], { help: "ค่าของ AI และของนักเรียนถูกเก็บไว้ทั้งคู่ ไม่ถูกเขียนทับ" }),
+          A("เหตุผลการแก้ไข", "กลีบดอกแยกเป็นริ้วและก้านเกสรยื่นยาวห้อยลง เป็นลักษณะเฉพาะของพู่ระหง ไม่ใช่ชบาทั่วไป", { req: true, help: "นักเรียนเห็นข้อความนี้ — เป็นส่วนสำคัญของการเรียนรู้" }),
+          TOG("", [o("แสดงค่าเดิมของ AI และนักเรียนให้ทั้งชั้นเรียนเห็น", true, "", true)])
+        ],
+        primary: "บันทึกและรับรอง", secondary: "คืนค่าเดิมทั้งหมด",
+        rules: R(["ไม่มีการเปลี่ยนแปลง → เสนอให้ใช้ปุ่ม “รับรอง” ธรรมดาแทน", "หลักฐานสามชั้น (AI · นักเรียน · ครู) ถูกเก็บครบเสมอ ลบไม่ได้", "เหตุผลการแก้ไขบังคับกรอกทุกครั้งที่มีการเปลี่ยนชื่อ"])
+      },
+      {
+        id: "T-15", name: "ส่งออกข้อมูล", entry: "T-15 แผนที่ผลลัพธ์",
+        fields: [
+          RAD("ขอบเขตข้อมูล", [o("รอบสำรวจนี้", true, "48 รายการ"), o("ทั้งชั้นเรียน", false, "212 รายการ"), o("ตามตัวกรองปัจจุบัน", false, "18 รายการ")], { req: true }),
+          CHK("สถานะที่รวมในไฟล์", [o("รับรองแล้ว", true), o("รอตรวจ", false), o("ขอให้แก้ไข", false), o("ปฏิเสธ", false)], { req: true }),
+          RAD("รูปแบบไฟล์", [o("CSV", true, "ตาราง"), o("GeoJSON", false, "แผนที่"), o("PDF", false, "รายงานพร้อมภาพ")], { req: true }),
+          TOG("", [o("รวมไฟล์ภาพต้นฉบับ", false), o("รวมชื่อนักเรียนผู้บันทึก", true)], { warn: "ไฟล์ที่มีชื่อนักเรียนถือเป็นข้อมูลส่วนบุคคล ใช้ภายในโรงเรียนเท่านั้น" })
+        ],
+        primary: "ส่งออก 48 รายการ", secondary: "ยกเลิก",
+        rules: R(["ไม่เลือกสถานะใดเลย → บล็อกพร้อมข้อความ", "เกิน 200 รายการหรือรวมภาพ → ส่งลิงก์ดาวน์โหลดทางอีเมลแทนการดาวน์โหลดทันที", "การส่งออกทุกครั้งถูกบันทึกในประวัติชั้นเรียน"])
+      }
+    ];
+
+    const norm = list => list.map(f => Object.assign({}, f, {
+      fields: (f.fields || []).map(fd => Object.assign({}, fd, {
+        isInput: fd.type === "input",
+        isGhost: fd.type === "ghost",
+        isSci: fd.type === "sci",
+        isArea: fd.type === "area",
+        isSelect: fd.type === "select",
+        isRO: fd.type === "ro",
+        isCode: fd.type === "code",
+        isRadio: fd.type === "radio",
+        isCheck: fd.type === "check",
+        isChip: fd.type === "chip",
+        isToggle: fd.type === "toggle",
+        isUpload: fd.type === "upload",
+        isTrait: fd.type === "trait",
+        isStep: fd.type === "step",
+        isSlider: fd.type === "slider",
+        isOrder: fd.type === "order"
+      }))
+    }));
+
+    return { globalForms: norm(globalForms), studentForms: norm(studentForms), teacherForms: norm(teacherForms) };
+  }
+
+  mapVals(on) {
+    const p = this.props || {};
+    const span = p.mapSpanM ?? 260;
+    const accM = p.gpsAccuracyM ?? 20;
+    const color = p.boundaryColor ?? "#14472F";
+    const snap = p.snapToFeatures ?? false;
+    const wantChecks = p.showCheckpoints ?? true;
+    const tool = this.state.tool || (p.boundaryTool ?? "polygon");
+    const aspect = 1;
+    const pts = this.state.pts;
+    const radiusM = this.state.radiusM ?? 120;
+    const isRadius = tool === "radius";
+
+    if (!on) return { isBoundary: false, vertices: [], checkpoints: [], mapTools: [], mapReadout: [], policyLines: [], polyPoints: "", isRadiusMode: false, mapHint: "" };
+
+    const toM = (q) => ({ x: q.x / 100 * span, y: q.y / 100 * span * aspect });
+    const shoelace = (list) => {
+      let a = 0;
+      for (let n = 0; n < list.length; n++) {
+        const u = toM(list[n]), v = toM(list[(n + 1) % list.length]);
+        a += u.x * v.y - v.x * u.y;
+      }
+      return Math.abs(a) / 2;
+    };
+    const segHit = (a, b, c, d) => {
+      const s = (u, v, w) => Math.sign((v.x - u.x) * (w.y - u.y) - (v.y - u.y) * (w.x - u.x));
+      return s(a, b, c) !== s(a, b, d) && s(c, d, a) !== s(c, d, b);
+    };
+    const crosses = () => {
+      const n = pts.length;
+      if (n < 4) return false;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        if (i === j || (i + 1) % n === j || (j + 1) % n === i) continue;
+        if (segHit(pts[i], pts[(i + 1) % n], pts[j], pts[(j + 1) % n])) return true;
+      }
+      return false;
+    };
+    const inPoly = (q) => {
+      let hit = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        if ((pts[i].y > q.y) !== (pts[j].y > q.y) &&
+            q.x < (pts[j].x - pts[i].x) * (q.y - pts[i].y) / (pts[j].y - pts[i].y) + pts[i].x) hit = !hit;
+      }
+      return hit;
+    };
+    const inCircle = (q) => {
+      const c = this.state.center, dx = (q.x - c.x) / 100 * span, dy = (q.y - c.y) / 100 * span * aspect;
+      return Math.sqrt(dx * dx + dy * dy) <= radiusM;
+    };
+    const inside = isRadius ? inCircle : inPoly;
+    const num = (v) => Math.round(v).toLocaleString("en-US");
+
+    const CHECKS = [{ x: 26, y: 38, label: "1" }, { x: 61, y: 58, label: "2" }, { x: 44, y: 80, label: "3" }];
+    const bad = isRadius ? false : crosses();
+    const enough = isRadius ? true : pts.length >= 3;
+    const area = isRadius ? Math.PI * radiusM * radiusM : (enough ? shoelace(pts) : 0);
+    const checksIn = CHECKS.filter((c) => (enough && !bad) && inside(c)).length;
+
+    const chip = (label, active, go, danger) => ({
+      label,
+      style: {
+        fontSize: "11.5px", fontWeight: active ? 600 : 400, padding: "7px 10px", borderRadius: "8px",
+        cursor: "pointer", whiteSpace: "nowrap",
+        background: active ? "#14472F" : "#FFFFFF",
+        color: active ? "#FFFFFF" : (danger ? "#8E1D17" : "#4E5F56"),
+        border: "1px solid " + (active ? "#14472F" : "#DCE4DD")
+      },
+      go
+    });
+    const setTool = (t) => () => this.setState({ tool: t });
+    const mapTools = [
+      chip("▱ วาดรูปหลายเหลี่ยม", tool === "polygon", setTool("polygon")),
+      chip("◎ รัศมี", isRadius, setTool("radius")),
+      chip("⌫ ลบจุด", tool === "erase", setTool("erase"))
+    ];
+    if (isRadius) {
+      mapTools.push(chip("− 20 ม.", false, () => this.setState({ radiusM: Math.max(20, radiusM - 20) })));
+      mapTools.push(chip("＋ 20 ม.", false, () => this.setState({ radiusM: Math.min(500, radiusM + 20) })));
+    } else {
+      mapTools.push(chip("↺ ย้อนจุด", false, () => this.setState((s) => ({ pts: s.pts.slice(0, -1) }))));
+      mapTools.push(chip("ล้าง", false, () => this.setState({ pts: [] }), true));
+    }
+
+    const pill = (t, kind) => {
+      const c = { ok: ["#E7F0EA", "#10662F"], err: ["#FBEAE8", "#8E1D17"], warn: ["#FDF7EC", "#6B3E05"], mute: ["#F3F6F2", "#4E5F56"] }[kind || "mute"];
+      return { t, style: { background: c[0], color: c[1], fontSize: "11.5px", padding: "6px 10px", borderRadius: "999px", whiteSpace: "nowrap" } };
+    };
+    const mapReadout = [];
+    if (isRadius) {
+      mapReadout.push(pill("รัศมี " + radiusM + " ม.", "mute"));
+      mapReadout.push(pill("พื้นที่ ≈ " + num(area) + " ตร.ม.", "mute"));
+      mapReadout.push(radiusM < accM
+        ? pill("รัศมีเล็กกว่าความคลาดเคลื่อน GPS (±" + accM + " ม.)", "err")
+        : pill("รูปปิดสมบูรณ์", "ok"));
+    } else {
+      mapReadout.push(pill(pts.length + " จุด", "mute"));
+      if (!enough) mapReadout.push(pill("ต้องมีอย่างน้อย 3 จุด", "warn"));
+      else if (bad) mapReadout.push(pill("รูปตัดกันเอง — แก้ก่อนไปขั้นถัดไป", "err"));
+      else {
+        mapReadout.push(pill("พื้นที่ ≈ " + num(area) + " ตร.ม.", "mute"));
+        mapReadout.push(pill("รูปปิดสมบูรณ์", "ok"));
+      }
+    }
+    if (wantChecks) mapReadout.push(pill("จุดตรวจในขอบเขต " + checksIn + " / 3", checksIn === 3 ? "ok" : "warn"));
+
+    const line = (t, kind) => ({ t, style: { fontSize: "11.5px", lineHeight: 1.5, color: kind === "warn" ? "#6B3E05" : "#7C8B83" } });
+    const policyLines = [
+      (p.strictOutOfBounds ?? false)
+        ? line("นอกขอบเขต: ห้ามบันทึกการสังเกต — เสี่ยงบล็อกนักเรียนเมื่อ GPS คลาดในที่ร่ม", "warn")
+        : line("นอกขอบเขต: เตือนแต่ยังบันทึกได้ ครูเห็นป้าย “นอกขอบเขต” ในหน้าตรวจ"),
+      (p.liveLocation ?? true)
+        ? line("ติดตามตำแหน่งสด: เปิด — เห็นได้เฉพาะครูประจำชั้นเรียนนี้ และหยุดบันทึกเมื่อจบรอบ", "warn")
+        : line("ติดตามตำแหน่งสด: ปิด — ครูเห็นเฉพาะหมุดของการสังเกตที่ส่งแล้ว")
+    ];
+
+    const ANCHORS = [{ x: 7, y: 11 }, { x: 34, y: 11 }, { x: 7, y: 32 }, { x: 34, y: 32 }, { x: 63, y: 19 }, { x: 86, y: 19 }, { x: 63, y: 36 }, { x: 86, y: 36 }, { x: 19, y: 71 }, { x: 50, y: 71 }, { x: 19, y: 86 }, { x: 50, y: 86 }, { x: 55, y: 47 }, { x: 55, y: 20 }, { x: 55, y: 75 }];
+    this._snapPoint = (q) => {
+      if (!snap) return q;
+      let best = null, d = 1e9;
+      ANCHORS.forEach((a) => { const t = Math.hypot(a.x - q.x, a.y - q.y); if (t < d) { d = t; best = a; } });
+      return d <= 5 ? { x: best.x, y: best.y } : q;
+    };
+
+    const at = (e) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      return { x: Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100)), y: Math.max(0, Math.min(100, (e.clientY - r.top) / r.height * 100)) };
+    };
+    const rPct = radiusM / span * 100;
+    const accPct = accM / span * 100;
+
+    return {
+      isBoundary: true,
+      isRadiusMode: isRadius,
+      mapTools, mapReadout, policyLines,
+      polyPoints: (!isRadius && pts.length > 1) ? pts.map((q) => q.x + "," + q.y).join(" ") : "",
+      polyStyle: { fill: color + "26", stroke: color, strokeWidth: 0.7, strokeLinejoin: "round" },
+      ringStyle: (p.showAccuracyRing ?? true) && !isRadius && pts.length > 2
+        ? { fill: "none", stroke: color + "1F", strokeWidth: accPct * 2, strokeLinejoin: "round" }
+        : { display: "none" },
+      radiusStyle: { position: "absolute", left: this.state.center.x + "%", top: this.state.center.y + "%", width: rPct * 2 + "%", aspectRatio: "1", transform: "translate(-50%, -50%)", borderRadius: "50%", background: color + "26", border: "1.5px solid " + color, pointerEvents: "none", boxSizing: "border-box" },
+      radiusRingStyle: (p.showAccuracyRing ?? true)
+        ? { position: "absolute", left: this.state.center.x + "%", top: this.state.center.y + "%", width: (rPct + accPct) * 2 + "%", aspectRatio: "1", transform: "translate(-50%, -50%)", borderRadius: "50%", background: color + "12", pointerEvents: "none" }
+        : { display: "none" },
+      centerStyle: { position: "absolute", left: this.state.center.x + "%", top: this.state.center.y + "%", transform: "translate(-50%, -50%)", fontSize: "14px", color: color, pointerEvents: "none" },
+      vertices: isRadius ? [] : pts.map((q, n) => ({
+        n: String(n + 1),
+        style: {
+          position: "absolute", left: q.x + "%", top: q.y + "%", transform: "translate(-50%, -50%)",
+          width: "22px", height: "22px", borderRadius: "50%", display: "grid", placeItems: "center",
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 500,
+          background: "#FFFFFF", color: color, border: "2px solid " + color,
+          cursor: tool === "erase" ? "not-allowed" : "grab", boxSizing: "border-box"
+        },
+        grab: (e) => { if (tool !== "erase") { e.stopPropagation(); this._drag = n; } },
+        tap: (e) => { if (tool === "erase") { e.stopPropagation(); this.setState((s) => ({ pts: s.pts.filter((_, k) => k !== n) })); } }
+      })),
+      checkpoints: wantChecks ? CHECKS.map((c) => {
+        const ok = (enough && !bad) && inside(c);
+        return {
+          label: c.label,
+          style: {
+            position: "absolute", left: c.x + "%", top: c.y + "%", transform: "translate(-50%, -50%)",
+            width: "20px", height: "20px", borderRadius: "5px", display: "grid", placeItems: "center",
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", pointerEvents: "none", boxSizing: "border-box",
+            background: ok ? "#FFFFFF" : "#FBEAE8", color: ok ? "#4E5F56" : "#8E1D17",
+            border: "1.5px dashed " + (ok ? "#9FADA4" : "#C9736B")
+          }
+        };
+      }) : [],
+      mapHint: isRadius
+        ? (this.state.radiusM === null ? "แตะบนแผนที่เพื่อวางจุดศูนย์กลาง แล้วปรับรัศมีด้วยปุ่มด้านบน" : "")
+        : (pts.length === 0 ? "แตะบนแผนที่เพื่อวางจุดมุมแรก · ลากจุดเพื่อย้าย · อย่างน้อย 3 จุด" : ""),
+      scaleLabel: Math.round(span / 4) + " ม.",
+      scaleBarStyle: { display: "inline-block", width: "26px", height: "3px", background: "#4E5F56" },
+      mapDown: (e) => {
+        const q = this._snapPoint(at(e));
+        if (tool === "radius") this.setState({ center: q, radiusM: radiusM });
+        else if (tool === "polygon") this.setState((s) => ({ pts: s.pts.concat([q]) }));
+      },
+      mapMove: (e) => {
+        if (this._drag == null) return;
+        const q = this._snapPoint(at(e)), k = this._drag;
+        this.setState((s) => ({ pts: s.pts.map((v, n) => (n === k ? q : v)) }));
+      },
+      mapUp: () => { this._drag = null; }
+    };
+  }
+
+  screens() {
+    const S = (id, title, subtitle, clock, badge, blocks, note, rules, states) =>
+      ({ id, title, subtitle, clock, badge, blocks, note, rules, states });
+
+    if (this.state.flow === "student") {
+      return [
+        S("S-01", "คำเชิญเข้าชั้นเรียน", "เปิดจากลิงก์ของครู", "08:12", 0,
+          [["h", "ชีววิทยา ม.5/2", "อ.สุดา ใจดี · โรงเรียนสาธิตบางแสน"],
+           ["card", "สมาชิก 32 คน", "การจัดกลุ่มเปิดอยู่ · กลุ่มละ 3–5 คน · สูงสุด 8 กลุ่ม"],
+           ["card", "สิ่งที่คุณจะทำ", "สำรวจพรรณไม้ในโรงเรียน บันทึกภาพ และระบุชนิดพืชร่วมกับ AI"],
+           ["gap"],
+           ["btn", "เข้าร่วมชั้นเรียน", "", 1],
+           ["btn2", "ยกเลิก", "", 0]],
+          "จุดเข้าแรกของนักเรียน เปิดได้จากลิงก์ QR หรือรหัส 6 ตัว การตรวจสอบคำเชิญเกิดที่เซิร์ฟเวอร์เท่านั้น เบราว์เซอร์เลือกบทบาทหรือชั้นเรียนเองไม่ได้",
+          [["D-031", "เข้าร่วมผ่านรหัส/ลิงก์/QR ไม่ใช้อีเมล"], ["D-030", "สมาชิกภาพในฐานข้อมูลคือแหล่งอ้างอิงสิทธิ์"]],
+          ["รหัสไม่ถูกต้อง", "หมดอายุ", "ถูกปิด", "ใช้ครบจำนวน", "เข้าร่วมอยู่แล้ว"]),
+
+        S("S-05", "กลุ่มในชั้นเรียน", "เหลือ 2 กลุ่มจาก 8", "08:14", 1,
+          [["strip", "🔄 อัปเดตล่าสุด 2 วินาทีที่แล้ว", ""],
+           ["card", "กลุ่มพะยอม · 5/5", "หัวหน้า: ปวีณา · เต็มแล้ว"],
+           ["card", "กลุ่มจามจุรี · 3/5", "หัวหน้า: กิตติพงศ์ · ว่าง 2 ที่"],
+           ["gap"],
+           ["btn", "＋ สร้างกลุ่มของฉัน", "คุณสร้างได้ 1 กลุ่มต่อหนึ่งชั้นเรียน", 2],
+           ["note", "ถ้าสล็อตสุดท้ายถูกคนอื่นใช้ไปก่อน ปุ่มนี้จะถูกปิดพร้อมเหตุผล ไม่ใช่หายไปเฉย ๆ", ""]],
+          "หน้าจอนี้ต้องรีเฟรชจากฐานข้อมูลทันทีเมื่อได้รับสัญญาณ Realtime ไม่ใช้การ poll ทุก 5 วินาทีเป็นกลไกหลัก",
+          [["D-035", "ครบจำนวนกลุ่มแล้ว ปุ่มถูกปิดพร้อมคำอธิบาย"], ["D-036", "การสร้างกลุ่มเป็นธุรกรรมอะตอมมิก หนึ่งคนสำเร็จเท่านั้น"], ["D-041", "รีเฟรชเมื่อกลับมาที่แอป เชื่อมต่อใหม่ หรือมีสัญญาณ"]],
+          ["สล็อตเต็ม", "แพ้การแย่งสล็อต", "จัดกลุ่มปิด", "อยู่กลุ่มอื่นแล้ว", "เคยสร้างกลุ่มแล้ว"]),
+
+        S("S-07", "กลุ่มมะขามป้อม", "คุณเป็นหัวหน้ากลุ่ม · 1/5 คน", "08:15", 1,
+          [["ok", "สร้างกลุ่มสำเร็จ", "คุณเป็นหัวหน้ากลุ่มโดยอัตโนมัติ"],
+           ["row", "ณัฐดนัย ศรีสุข · เลขที่ 12", "★ หัวหน้ากลุ่ม (คุณ)"],
+           ["card", "ต้องการอีกอย่างน้อย 2 คน", "กลุ่มต้องมีสมาชิก 3–5 คนจึงจะพร้อมสำรวจ"],
+           ["gap"],
+           ["btn", "＋ ชวนเพื่อนร่วมชั้น", "", 3],
+           ["btn2", "ไปหน้ากิจกรรม", "", 4]],
+          "ผู้สร้างกลุ่มเป็นหัวหน้าคนแรกและคนเดียว หัวหน้าเชิญเพื่อนได้แต่บังคับเพิ่มไม่ได้ ต้องรอการตอบรับเสมอ",
+          [["D-034", "ผู้สร้างกลุ่มเป็นหัวหน้าโดยอัตโนมัติ"], ["D-040", "หนึ่งกลุ่มมีหัวหน้าที่ใช้งานอยู่คนเดียว"], ["D-039", "เพื่อนต้องยินยอมด้วยการตอบรับคำเชิญ"]],
+          ["ครบขั้นต่ำ", "ถูกอนุมัติ", "ถูกล็อก", "เก็บถาวร"]),
+
+        S("S-08", "ชวนเพื่อนร่วมชั้น", "ว่าง 4 ที่", "08:16", 1,
+          [["row", "☑ ภูริณัฐ แก้วดี · เลขที่ 15", "ยังไม่มีกลุ่ม"],
+           ["row", "☑ ชนกันต์ พูลสุข · เลขที่ 8", "ยังไม่มีกลุ่ม"],
+           ["rowOff", "⊘ ปวีณา จันทร์ฉาย · เลขที่ 3", "อยู่กลุ่มพะยอมแล้ว — เชิญไม่ได้"],
+           ["gap"],
+           ["btn", "ส่งคำเชิญ (2 คน)", "เพื่อนต้องกดตอบรับเอง", 4]],
+          "แสดงเฉพาะเพื่อนที่มีสิทธิ์: อยู่ในชั้นเรียนเดียวกัน ยังไม่มีกลุ่ม และยังไม่ตอบรับคำเชิญอื่น เลือกได้ไม่เกินจำนวนที่นั่งว่าง",
+          [["D-037", "หนึ่งคนอยู่ได้กลุ่มเดียวต่อหนึ่งชั้นเรียน"], ["D-032", "ส่งเป็นการแจ้งเตือนในแอปที่เก็บถาวรในฐานข้อมูล"]],
+          ["ที่นั่งไม่พอ", "ยกเลิกคำเชิญ", "ถูกปฏิเสธ", "หมดอายุ", "กลุ่มถูกล็อกระหว่างรอ"]),
+
+        S("S-11", "สำรวจพรรณไม้สวนหลังอาคาร 3", "กลุ่มของคุณอยู่คิวที่ 3", "13:41", 2,
+          [["map", "แผนที่: ขอบเขต + เส้นทาง (ดูอย่างเดียว)", ""],
+           ["warn", "กลุ่มของคุณยังไม่ถึงคิว", "ดูเส้นทางได้ แต่ยังส่งตำแหน่งหรือบันทึกการสังเกตไม่ได้"],
+           ["row", "2. กลุ่มพะยอม", "กำลังสำรวจอยู่ตอนนี้"],
+           ["row", "3. กลุ่มมะขามป้อม (ของคุณ)", "รอคิว"],
+           ["gap"],
+           ["btn", "ครูเปิดกลุ่มของคุณแล้ว → เข้าโหมดสนาม", "", 5]],
+          "ความแตกต่างระหว่าง รอคิว / ถัดไป / กำลังสำรวจ / ถูกพัก / จบแล้ว ต้องเห็นได้ทันทีโดยไม่ต้องอ่านคำอธิบาย",
+          [["D-003", "หนึ่งรอบสำรวจมีกลุ่มที่ทำงานอยู่ได้ทีละกลุ่มเดียว"], ["D-004", "กลุ่มที่รอดูข้อมูลได้ แต่ส่งตำแหน่งและการสังเกตไม่ได้"]],
+          ["ถูกพัก", "จบแล้ว", "ไม่อนุญาตตำแหน่ง", "ออฟไลน์"]),
+
+        S("S-12", "โหมดสนาม", "กลุ่มมะขามป้อม · กำลังสำรวจ", "14:32", 0,
+          [["strip", "📍 แม่นยำ ±6 ม.  ·  ☁ ซิงก์แล้ว  ·  ⏱ เหลือ 24 นาที", ""],
+           ["map", "แผนที่สนาม: ขอบเขต · เส้นทาง · หมุดของฉัน 3 · เพื่อน 4 คน", ""],
+           ["gap"],
+           ["btnBig", "＋ เพิ่มการสังเกต", "", 6],
+           ["note", "ปุ่มหลักสูง 56px อยู่ครึ่งล่างเสมอ แถบสถานะ GPS/ซิงก์ปักบนตลอดเวลา", ""]],
+          "เชลล์นำทางแยกจากแอปปกติ เหลือเพียง 3 ปลายทาง: แผนที่ · รายการของฉัน · สถานะกลุ่ม เพื่อลดการตัดสินใจระหว่างเดินสำรวจ",
+          [["D-019", "หมุดพืชใช้พิกัดตอนเริ่มบันทึก"], ["D-026", "ร่างไม่ปรากฏบนแผนที่ของครู"]],
+          ["สัญญาณอ่อน", "ออฟไลน์", "รอบถูกพัก", "ออกนอกขอบเขต", "มีงานค้างส่ง"]),
+
+        S("S-15", "ภาพหลักฐาน", "ขั้นที่ 2 จาก 4", "14:35", 0,
+          [["img", "ภาพทั้งต้น · อัปโหลดแล้ว", "★ ภาพหลัก"],
+           ["grid4", "ใบ ✓ · ใบด้านล่าง 62% · ลำต้น ✕ ลองใหม่ · ＋", ""],
+           ["card", "4 จาก 10 ภาพ", "✓ มีภาพทั้งต้นแล้ว — ผ่านเงื่อนไขขั้นต่ำ"],
+           ["gap"],
+           ["btn", "ถัดไป: ให้ AI ช่วยดู", "", 7],
+           ["btn2", "📷 ถ่ายเพิ่ม", "", 6]],
+          "ต้องมีภาพทั้งต้นอย่างน้อย 1 ภาพจึงจะไปต่อได้ ภาพถูกย่อและบีบอัดในเครื่องก่อนส่ง ภาพที่ส่งไม่สำเร็จมีปุ่มลองใหม่บนภาพนั้นเอง",
+          [["D-021", "1–10 ภาพ · ด้านยาวสูงสุด 2048px · ไม่เกิน 5MB ต่อภาพ"], ["D-012", "อัปโหลดล้มเหลวไม่ทำลายร่าง"]],
+          ["ยังไม่มีภาพทั้งต้น", "กำลังบีบอัด", "อัปโหลดล้มเหลว", "ออฟไลน์เข้าคิว", "ครบ 10 ภาพ"]),
+
+        S("S-18", "ผลวิเคราะห์ชั่วคราว", "AI ไม่ค่อยแน่ใจ · 3 ตัวเลือก", "14:37", 0,
+          [["ai", "① ชบา — Hibiscus rosa-sinensis", "ค่อนข้างมั่นใจ 0.62 · ใบขอบหยัก ดอกกลีบซ้อน เกสรยื่นยาว"],
+           ["ai", "② พู่ระหง — Hibiscus schizopetalus", "อาจเป็นไปได้ 0.24 · กลีบดอกแฉกลึกและห้อยลง"],
+           ["gap"],
+           ["btn", "เลือก ① แล้วตรวจลักษณะ", "", 8],
+           ["btn2", "✎ ไม่ตรงสักอัน — กรอกเอง", "", 8]],
+          "ผลจาก AI อยู่ในกรอบเส้นประและมีป้าย AI เสมอ ปุ่ม “กรอกเอง” ต้องมีอยู่ทุกสถานะ นักเรียนต้องไม่ถูกขังให้รอ",
+          [["D-008", "ผล AI เป็นข้อเสนอชั่วคราว ไม่กลายเป็นผลรับรองเอง"], ["D-009", "ต่ำกว่า 0.40 ขอภาพเพิ่ม · 0.40–0.70 แสดงหลายตัวเลือก"], ["D-012", "ล้มเหลวแล้วยังกรอกเองได้"]],
+          ["เข้าคิว", "กำลังวิเคราะห์", "หลักฐานไม่พอ", "ล้มเหลว", "มั่นใจสูง"]),
+
+        S("S-19", "ตรวจลักษณะ · ชบา", "ลักษณะใบ · กลุ่มที่ 2 จาก 5", "14:39", 0,
+          [["strip", "ตรวจแล้ว 4 จาก 11 ลักษณะ", ""],
+           ["trait", "รูปใบ — AI ว่า: รูปไข่ ปลายแหลม", "✓ ตรง  |  ✕ ไม่ตรง  |  ? ไม่แน่ใจ  |  ◌ มองไม่เห็น"],
+           ["traitOn", "ขอบใบ — AI ว่า: หยักฟันเลื่อย", "เลือก ✕ ไม่ตรง → กรอก “ขอบใบเรียบช่วงโคน หยักเฉพาะปลายใบ”"],
+           ["gap"],
+           ["btn", "ถัดไป: ลักษณะลำต้น", "", 9]],
+          "แบ่งเป็น 5 กลุ่มลักษณะ ไม่ใช่ฟอร์มเดียวยาว การเลือก “ไม่ตรง” จะเปิดช่องให้กรอกค่าที่ถูกต้องทันที",
+          [["D-014", "ทุกลักษณะเลือกได้ 4 แบบ: ตรง / ไม่ตรง / ไม่แน่ใจ / มองไม่เห็น"], ["D-015", "ค่าจาก AI และค่าที่นักเรียนแก้เก็บแยกกัน ไม่ทับกัน"]],
+          ["ยังตรวจไม่ครบ", "ไม่มีผล AI (กรอกเองทั้งหมด)", "บันทึกร่างอัตโนมัติ"]),
+
+        S("S-21", "สรุปก่อนส่ง", "พบชนิดซ้ำในรอบสำรวจ", "14:44", 0,
+          [["card", "ชบา · Hibiscus rosa-sinensis", "ตรง 7 · แก้ไข 2 · ไม่แน่ใจ 1 · มองไม่เห็น 1 · 5 ภาพ"],
+           ["info", "เพื่อนบันทึกพืชชนิดนี้แล้ว 2 รายการ", "คุณบันทึกต้นของคุณต่อได้เลย — นี่คือการสังเกตรายบุคคล ไม่ใช่ข้อผิดพลาด"],
+           ["row", "ชบา · ธนกฤต วงศ์ใหญ่", "ห่างจากคุณ 8 ม. · อาจเป็นต้นเดียวกัน"],
+           ["gap"],
+           ["btn", "รับทราบและส่ง", "", 10],
+           ["btn2", "กลับไปแก้ชื่อพืช", "", 9]],
+          "คำเตือนใช้สีน้ำเงินข้อมูล ไม่ใช้สีแดง เพราะไม่ใช่ความผิดพลาด และไม่บล็อกการส่ง ระบบบันทึกการรับทราบไว้เป็นหลักฐาน",
+          [["D-022", "เตือนแต่ยังส่งได้ พร้อมติดป้ายให้ครูเห็น"], ["D-023", "ชนิดซ้ำกับต้นเดียวกันเป็นคนละเรื่อง"], ["D-025", "ระบบไม่รวมหรือลบข้อมูลอัตโนมัติ"]],
+          ["ไม่มีสิทธิ์ดูรายการอื่น", "อาจเป็นต้นเดียวกัน", "ยกเลิกเพื่อกลับไปแก้"]),
+
+        S("S-22", "ส่งการสังเกตแล้ว", "รอครูตรวจ", "14:45", 0,
+          [["ok", "ส่งสำเร็จ", "ครูจะตรวจให้เร็ว ๆ นี้ คุณจะได้รับแจ้งเตือนเมื่อมีผล"],
+           ["card", "ชบา · Hibiscus rosa-sinensis", "↑ ส่งแล้ว รอตรวจ · ติดป้ายชนิดซ้ำ · 14:32 น. ±6 ม."],
+           ["gap"],
+           ["btnBig", "＋ บันทึกต้นถัดไป", "", 6],
+           ["btn2", "ครูส่งคำขอแก้ไขมา →", "", 11]],
+          "หน้าจอยืนยันบอกสถานะถัดไปที่จะเกิดขึ้นเสมอ และเชิญให้บันทึกต้นถัดไปทันที เพราะเวลาในสนามมีจำกัด",
+          [["D-026", "เฉพาะรายการที่ส่งแล้วจึงปรากฏบนแผนที่ครู"]],
+          ["อยู่ในคิวออฟไลน์", "ติดป้ายชนิดซ้ำ", "ไม่มีพิกัด (ติดธงให้ครู)"]),
+
+        S("S-23", "ต้นชบา · ต้องแก้ไข", "ครูขอให้แก้ไข 2 หัวข้อ", "17:12", 1,
+          [["err", "ครูขอให้แก้ไข 2 หัวข้อ", "ภาพหลักฐาน · ชื่อวิทยาศาสตร์"],
+           ["card", "ความเห็นจาก อ.สุดา ใจดี", "ภาพใบด้านล่างยังไม่ชัดพอที่จะดูขนใบ และชื่อวิทยาศาสตร์สะกดตกตัว s ท้ายคำนะคะ"],
+           ["card", "สิ่งที่คุณส่งไปครั้งที่ 1", "ชบา · Hibiscus rosa-sinensi · 5 ภาพ · ตรวจลักษณะ 9/11"],
+           ["gap"],
+           ["btn", "เริ่มแก้ไข แล้วส่งใหม่", "", 12]],
+          "การแก้ไขเกิดในการสังเกตเดิม ไม่สร้างรายการใหม่ ประวัติทุกเวอร์ชันและความเห็นครูยังดูได้เสมอ",
+          [["D-016", "แก้ในรายการเดิม แล้วสร้างเวอร์ชันการส่งใหม่ที่แก้ไม่ได้"], ["D-015", "ค่าเดิมทุกชั้นถูกเก็บไว้"]],
+          ["กำลังแก้ไข", "ส่งใหม่แล้ว", "ครบ 10 ภาพต้องลบก่อนเพิ่ม", "ออฟไลน์เข้าคิว"]),
+
+        S("S-25", "พรรณไม้ที่สำรวจได้", "กิจกรรมจบแล้ว · 18 ต้น", "18:02", 0,
+          [["map", "หมุด 18 จุดตามสถานะ · ไม่แสดงเส้นทางเดินย้อนหลัง", ""],
+           ["chips", "ทั้งหมด 18 · ✓ รับรอง 12 · ↑ รอตรวจ 4 · ! แก้ไข 2", ""],
+           ["sheet", "ชบา · Hibiscus rosa-sinensis L.", "✓ ครูรับรองแล้ว · ณัฐดนัย · กลุ่มมะขามป้อม · 14:32"],
+           ["gap"],
+           ["btn", "ดูรายละเอียดพืช", "", 13],
+           ["btn2", "↺ เริ่มโฟลว์ใหม่", "", 0]],
+          "แผนที่ผลลัพธ์ต้องมีมุมมองรายการเทียบเท่าเสมอ และไม่เปิดเผยเส้นทางการเดินย้อนหลังของนักเรียนรายบุคคล",
+          [["D-027", "ผู้เข้าร่วมและครูดูแผนที่ผลลัพธ์ได้หลังจบกิจกรรม"], ["Q-B", "ขอบเขตความเป็นส่วนตัวของภาพและชื่อผู้บันทึกยังรอการยืนยัน"]],
+          ["ยังไม่มีการสังเกต", "แผนที่โหลดไม่สำเร็จ → รายการ", "กำลังโหลดภาพ"]),
+
+        S("S-26", "ชบา", "รายละเอียดพืช", "18:03", 0,
+          [["img", "แกลเลอรี 1 / 5", ""],
+           ["ok", "ชื่อที่ครูรับรองแล้ว", "ชบา · Hibiscus rosa-sinensis L. — อ.สุดา ใจดี 16:20 น."],
+           ["ai", "AI เสนอ (ชั่วคราว · เก็บไว้ครบ)", "ชบา 0.62 · พู่ระหง 0.24 · ชบาหนู 0.09"],
+           ["card", "นักเรียนตรวจแล้ว", "ตรง 7 · แก้ไข 2 · ไม่แน่ใจ 1 · มองไม่เห็น 1"],
+           ["gap"],
+           ["btn2", "↺ เริ่มโฟลว์นักเรียนใหม่", "", 0]],
+          "ลำดับการอ่านคือ ครูรับรอง → นักเรียน → AI เสมอ ให้ความจริงที่ผ่านการตรวจอยู่บนสุด และ AI อยู่ล่างสุดในกรอบเส้นประ",
+          [["D-017", "ครูแก้ไขได้โดยยังเก็บค่าเดิมของ AI และนักเรียน"], ["D-015", "หลักฐานสามชั้นแยกจากกันถาวร"]],
+          ["รอตรวจ", "ต้องแก้ไข", "ตรวจสอบไม่ได้", "ไม่ผ่าน", "มีรายการที่เกี่ยวข้อง"])
+      ];
+    }
+
+    return [
+      S("T-02", "สร้างชั้นเรียน", "ตั้งกติกาการจัดกลุ่ม", "10:14", 0,
+        [["card", "ชีววิทยา ม.5/2", "ชีววิทยา · ปีการศึกษา 2569 · ภาคเรียนที่ 1"],
+         ["card", "ขนาดกลุ่ม 3–5 คน", "จำนวนกลุ่มสูงสุด 8 กลุ่ม"],
+         ["card", "ให้นักเรียนสร้างกลุ่มเองได้ · เปิดรับการจัดกลุ่ม", "ผู้สร้างกลุ่มจะเป็นหัวหน้าโดยอัตโนมัติ"],
+         ["ok", "8 กลุ่ม × 5 คน = 40 ที่นั่ง", "เพียงพอสำหรับนักเรียน 32 คน"],
+         ["gap"],
+         ["btn", "สร้างชั้นเรียน", "", 1]],
+        "กติกากลุ่มทั้งสี่ค่าอยู่ในหน้าเดียว และระบบเตือนล่วงหน้าถ้าจำนวนที่นั่งรวมไม่พอกับจำนวนนักเรียนในชั้น",
+        [["D-033", "ครูกำหนดขนาดกลุ่ม จำนวนกลุ่ม และการเปิด/ปิดการจัดกลุ่ม"]],
+        ["ที่นั่งไม่พอ", "บันทึกร่าง", "แก้ไขภายหลัง"]),
+
+      S("T-03", "เชิญนักเรียน", "รหัส · ลิงก์ · QR", "10:22", 0,
+        [["hero", "K7R29M", "รหัสเข้าชั้นเรียน — อ่านได้จากหลังห้อง"],
+         ["img", "QR code · แตะเพื่อแสดงเต็มจอสำหรับฉายขึ้นจอ", ""],
+         ["row", "หมดอายุ 12 ส.ค. 16:00 น.", "ใช้ไปแล้ว 32 จาก 40 ครั้ง · ใช้งานได้"],
+         ["gap"],
+         ["btn", "นักเรียนเข้าร่วมแล้ว 32 คน → จัดการกลุ่ม", "", 2]],
+        "ในห้องเรียนจริง ครูมักฉาย QR ขึ้นจอโปรเจกเตอร์ ปุ่มแสดงเต็มจอจึงเป็นการกระทำหลัก ไม่ใช่ตัวเลือกซ่อนในเมนู",
+        [["D-031", "คำเชิญด้วยรหัส ลิงก์ หรือ QR ไม่ต้องใช้อีเมล"]],
+        ["ปิดรหัส", "หมุนรหัสใหม่", "หมดอายุ", "ใช้ครบจำนวน"]),
+
+      S("T-05", "จัดการกลุ่ม", "6 กลุ่ม · 3 คนยังไม่มีกลุ่ม", "10:41", 2,
+        [["warn", "นักเรียนยังไม่มีกลุ่ม 3 คน", "ชนกันต์ · สุพิชญา · วรินทร"],
+         ["card", "กลุ่มมะขามป้อม · 4/5 · รออนุมัติ", "หัวหน้า: ณัฐดนัย · ครบขั้นต่ำแล้ว"],
+         ["cardLock", "กลุ่มพะยอม · 5/5 · 🔒 กำลังสำรวจ", "แก้ไขสมาชิกไม่ได้ระหว่างรอบที่ทำงานอยู่"],
+         ["gap"],
+         ["btn", "ย้ายนักเรียนเข้ากลุ่ม", "", 3],
+         ["btn2", "อนุมัติกลุ่มมะขามป้อม", "", 5]],
+        "บอร์ดกลุ่มรวมทุกการกระทำไว้ที่เดียว การกระทำที่ทำไม่ได้จะถูกปิดพร้อมเหตุผล ไม่ซ่อนหาย",
+        [["D-045", "ห้ามแก้สมาชิกของกลุ่มที่อยู่ในรอบสำรวจที่ทำงานอยู่"], ["D-044", "กลุ่มที่มีประวัติเซสชันต้องเก็บถาวร ไม่ลบถาวร"]],
+        ["ว่างเปล่า → ลบได้", "มีประวัติ → เก็บถาวร", "ถูกล็อก", "ยังไม่ครบขั้นต่ำ"]),
+
+      S("T-06", "ย้ายนักเรียน", "ณัฐดนัย ศรีสุข · หัวหน้ากลุ่ม", "10:48", 2,
+        [["row", "◉ กลุ่มจามจุรี · 2/5", "ว่าง 3 ที่"],
+         ["rowOff", "⊘ กลุ่มพะยอม · 5/5", "เต็มแล้ว — เลือกไม่ได้"],
+         ["err", "ต้องเลือกหัวหน้าคนใหม่ก่อน", "กลุ่มมะขามป้อมยังมีสมาชิกอีก 3 คน จึงต้องมีหัวหน้าเสมอ"],
+         ["row", "◉ ปิยะพร ทองแท้ · เลขที่ 4", "หัวหน้าคนใหม่ของกลุ่มมะขามป้อม"],
+         ["gap"],
+         ["btn", "ยืนยันการย้ายและเปลี่ยนหัวหน้า", "แจ้งเตือนถึงนักเรียน 5 คน", 4]],
+        "การย้ายมีผลกับรอบสำรวจครั้งถัดไปเท่านั้น และไม่เขียนทับประวัติการเข้าร่วมของรอบที่ผ่านมา",
+        [["D-042", "การย้ายหัวหน้าออกต้องเลือกผู้สืบทอดในการกระทำเดียวกัน"], ["D-043", "รายชื่อผู้เข้าร่วมถูกบันทึกไว้ตอนเปิดรอบ"]],
+        ["ปลายทางเต็ม", "อยู่ในรอบที่ทำงานอยู่", "กลุ่มเดิมจะว่างเปล่า"]),
+
+      S("T-08b", "ขอบเขตพื้นที่สำรวจ", "ตัวสร้างกิจกรรม · ขั้นที่ 2 จาก 4", "11:06", 0,
+        [["btn", "ถัดไป · เส้นทางและจุดตรวจ", "", 5]],
+        "ขอบเขตคือสัญญาระหว่างครูกับนักเรียนว่าพื้นที่สำรวจอยู่ที่ไหน ครูวาดเองบนแผนที่ได้ หรือกำหนดเป็นรัศมีจากจุดศูนย์กลางเมื่อพื้นที่เป็นวงกว้าง — ทั้งสองวิธีให้ผลเป็นรูปปิดหนึ่งรูปเท่านั้น",
+        [["D-011", "กิจกรรมต้องมีขอบเขตก่อนจึงเปิดรอบสำรวจได้"], ["D-012", "รูปที่วาดต้องปิดและไม่ตัดกันเอง"], ["Q-B", "ขอบเขตควรมองเห็นได้ตลอดในโหมดสนามหรือเฉพาะเมื่อออกนอกพื้นที่"]],
+        ["ยังไม่ได้วาด", "รูปตัดกันเอง (บล็อก)", "รัศมีเล็กกว่าความคลาดเคลื่อน GPS", "จุดตรวจอยู่นอกขอบเขต"]),
+
+      S("T-09", "ตั้งค่ารอบสำรวจ", "จัดลำดับคิวกลุ่ม", "12:52", 1,
+        [["row", "1. กลุ่มจามจุรี · 3 คน", "▲ ▼"],
+         ["row", "2. กลุ่มพะยอม · 5 คน", "▲ ▼"],
+         ["row", "3. กลุ่มมะขามป้อม · 4 คน", "▲ ▼"],
+         ["warn", "เมื่อเปิดรอบ ระบบจะบันทึกรายชื่อสมาชิกไว้", "การย้ายกลุ่มหลังจากนี้มีผลกับรอบถัดไปเท่านั้น"],
+         ["gap"],
+         ["btn", "เปิดรอบสำรวจ", "✓ ขอบเขต ✓ เส้นทาง ✓ จุดตรวจ ✓ 3 กลุ่มพร้อม", 6]],
+        "ใช้ปุ่มขึ้น/ลงแทนการลากจัดเรียง เพราะแม่นยำกว่าเมื่อใช้กลางแดดหรือมือเปียก",
+        [["D-002", "กิจกรรมคือแผนที่ใช้ซ้ำได้ รอบสำรวจคือการลงมือจริงหนึ่งครั้ง"], ["D-043", "เปิดรอบ = บันทึกสแนปช็อตสมาชิก"]],
+        ["ยังไม่มีกลุ่มพร้อม", "ยังไม่มีขอบเขต", "บันทึกไว้ก่อน"]),
+
+      S("T-10", "รอบสำรวจสด", "กลุ่มพะยอม กำลังสำรวจ", "13:41", 3,
+        [["strip", "🟢 เชื่อมต่ออยู่ · อัปเดต 3 วินาทีที่แล้ว", ""],
+         ["map", "นักเรียน 5 จุด · หมุดพืชที่ส่งแล้ว 6 จุด · ขอบเขต", ""],
+         ["err", "ธีรภัทร ออกนอกขอบเขตสำรวจ", "40 วินาทีที่แล้ว · แตะเพื่อดูตำแหน่ง"],
+         ["gap"],
+         ["btn", "ตรวจการสังเกตที่ส่งเข้ามา (7)", "", 7],
+         ["btn2", "▶ เปิดกลุ่มถัดไป (มะขามป้อม)", "เปิดได้ทีละกลุ่มเท่านั้น", 7]],
+        "ครูต้องรู้ตลอดว่ากลุ่มไหนทำงานอยู่ และเห็นความสดของตำแหน่งเป็นตัวเลขเวลา ไม่ใช่แค่สีของหมุด",
+        [["D-003", "เปิดได้ทีละกลุ่มเดียว บังคับที่ระดับฐานข้อมูล"], ["D-006", "ตำแหน่งสดใช้ Broadcast ส่วนข้อมูลถาวรอยู่ในฐานข้อมูล"]],
+        ["ตำแหน่งค้างเกิน 2 นาที", "นักเรียนออฟไลน์", "พักรอบ", "ยังมีร่างค้างก่อนจบรอบ"]),
+
+      S("T-12", "ตรวจ · ชบา", "รายการที่ 1 จาก 7", "15:22", 3,
+        [["grid4", "ภาพ 5 ภาพ · แตะเพื่อขยาย", ""],
+         ["card", "① นักเรียนสรุปว่า", "ชบา · Hibiscus rosa-sinensi · “ใบขอบหยักฟันเลื่อย ดอกเดี่ยวสีแดง...”"],
+         ["ai", "② AI เสนอ (ชั่วคราว)", "ชบา 0.62 · พู่ระหง 0.24 · ชบาหนู 0.09"],
+         ["card", "③ การตรวจลักษณะของนักเรียน", "ตรง 7 · ไม่ตรง 2 (มีค่าที่แก้) · ไม่แน่ใจ 1 · มองไม่เห็น 1"],
+         ["info", "ป้าย: ชนิดซ้ำในรอบนี้", "อีก 2 รายการ · 1 รายการอาจเป็นต้นเดียวกัน (ห่าง 8 ม.)"],
+         ["gap"],
+         ["btn2", "↩ ขอให้แก้ไข", "", 8],
+         ["btn", "✎ แก้ไขแล้วรับรอง", "", 9]],
+        "ลำดับการอ่านของครูคือ นักเรียนคิดอะไร → AI เสนออะไร → ตรวจอย่างไร ทั้งสามชั้นเก็บแยกกันและไม่เขียนทับกัน",
+        [["D-008", "AI ไม่เคยกลายเป็นผลรับรองโดยอัตโนมัติ"], ["D-017", "ครูตรวจสอบด้วยตนเองทุกรายการ"], ["D-022", "ป้ายชนิดซ้ำแสดงในหน้าตรวจ"]],
+        ["ส่งซ้ำ", "ไม่มีพิกัด", "AI ล้มเหลว", "มีหลายเวอร์ชัน"]),
+
+      S("T-13", "ขอให้แก้ไข", "ชบา · ณัฐดนัย ศรีสุข", "16:02", 3,
+        [["row", "☑ ภาพหลักฐาน", "ภาพไม่ชัด หรือต้องการมุมเพิ่ม"],
+         ["row", "☑ ชื่อวิทยาศาสตร์", "สะกดไม่ถูกต้อง"],
+         ["card", "คำแนะนำถึงนักเรียน", "ภาพใบด้านล่างยังไม่ชัดพอที่จะดูขนใบ และชื่อวิทยาศาสตร์สะกดตกตัว s ท้ายคำนะคะ"],
+         ["gap"],
+         ["btn", "ส่งคำขอแก้ไข", "การสังเกตนี้จะกลับไปหาณัฐดนัยพร้อมแจ้งเตือน", 9]],
+        "หัวข้อสำเร็จรูปช่วยให้ครูเขียนเร็วและนักเรียนเห็นเป็นเช็กลิสต์ที่ทำตามได้ ต้องเลือกอย่างน้อยหนึ่งหัวข้อจึงส่งได้",
+        [["D-016", "คำขอแก้ไขส่งการสังเกตเดิมกลับไปหาเจ้าของ"]],
+        ["ยังไม่เลือกหัวข้อ (บล็อก)", "กำลังส่ง", "ส่งแล้ว"]),
+
+      S("T-14", "แก้ไขและรับรอง", "เก็บค่าเดิมไว้ครบ", "16:18", 3,
+        [["card", "ชื่อวิทยาศาสตร์ (ครู)", "Hibiscus rosa-sinensis L."],
+         ["note", "นักเรียนกรอก: Hibiscus rosa-sinensi · AI เสนอ: Hibiscus rosa-sinensis", ""],
+         ["card", "ลักษณะที่แก้ไข — ขอบใบ", "ครูยืนยัน: หยักฟันเลื่อยตลอดขอบใบ"],
+         ["ok", "ค่าเดิมไม่ถูกลบ", "ค่าจาก AI และค่าที่นักเรียนกรอกยังถูกเก็บไว้ครบและแสดงในรายละเอียดพืชเสมอ"],
+         ["gap"],
+         ["btn", "บันทึกและรับรอง", "", 10]],
+        "ทุกช่องแสดงค่าเดิมใต้ช่องกรอก เพื่อให้ครูเห็นเสมอว่ากำลังเปลี่ยนอะไรจากอะไร",
+        [["D-017", "ครูแก้ชื่อและลักษณะได้โดยรักษาค่าก่อนหน้าไว้"], ["D-015", "หลักฐานสี่ชั้นเก็บแยกและไม่ถูกเขียนทับ"]],
+        ["ไม่มีการแก้ไข", "แก้ไขบางส่วน", "คืนค่าที่นักเรียนกรอก"]),
+
+      S("T-15", "ผลการสำรวจ", "18 การสังเกต · จบรอบแล้ว", "17:40", 0,
+        [["warn", "ยังมี 4 รายการรอตรวจ", "ส่งออกได้แต่ข้อมูลจะยังไม่สมบูรณ์"],
+         ["map", "หมุด 18 จุดตามสถานะ + คลัสเตอร์", ""],
+         ["chips", "✓ รับรอง 12 · ↑ รอตรวจ 4 · ! แก้ไข 1 · ? ตรวจไม่ได้ 1", ""],
+         ["gap"],
+         ["btn", "เปิดรายละเอียดพืชที่รับรองแล้ว", "", 11],
+         ["btn2", "↺ เริ่มโฟลว์ครูใหม่", "", 0]],
+        "การจบรอบเป็นการตัดสินใจของครูเสมอ ไม่มีสูตรอัตโนมัติ และระบบเตือนงานค้างก่อนส่งออกข้อมูล",
+        [["D-018", "ครูเป็นผู้ตัดสินว่ารอบสำรวจจบเมื่อใด"], ["D-027", "หลังจบ ครูและผู้เข้าร่วมดูแผนที่ผลลัพธ์ได้"]],
+        ["ยังไม่มีการสังเกต", "คลัสเตอร์", "มุมมองรายการ", "ส่งออกข้อมูล"]),
+
+      S("T-16", "ชบา", "รายละเอียดพืชหลังตรวจ", "17:46", 0,
+        [["ok", "ชื่อที่ครูรับรอง (ความจริงหลัก)", "ชบา · Hibiscus rosa-sinensis L. — อ.สุดา ใจดี 16:20 น."],
+         ["card", "ประวัติการตรวจ", "รับรอง 16:20 ← ส่งใหม่ 16:12 ← ขอให้แก้ไข 16:04 ← ส่งครั้งแรก 14:32"],
+         ["ai", "AI · ชั่วคราว (เก็บไว้ครบ)", "ชบา 0.62 · พู่ระหง 0.24 · schema plant-analysis-v1"],
+         ["info", "อาจเป็นต้นเดียวกัน 1 รายการ", "ธนกฤต บันทึกห่าง 8 ม. เวลา 14:10 น. — ต้องให้คนยืนยัน"],
+         ["gap"],
+         ["btn2", "↺ เริ่มโฟลว์ครูใหม่", "", 0]],
+        "ประวัติเป็นไทม์ไลน์ที่อ่านจากใหม่ไปเก่า ทุกเวอร์ชันการส่งและความเห็นครูยังเปิดดูได้ทั้งหมด",
+        [["D-024", "การชี้ว่าเป็นต้นเดียวกันใช้หลายสัญญาณ ระยะห่างอย่างเดียวไม่พอ"], ["D-025", "ต้องให้คนยืนยัน ระบบไม่รวมให้เอง"]],
+        ["ตรวจสอบไม่ได้", "ไม่ผ่าน", "มีรายการที่เกี่ยวข้อง"])
+    ];
+  }
+
+  renderVals() {
+    const list = this.screens();
+    const i = Math.min(this.state.i, list.length - 1);
+    const cur = list[i];
+    const isStudent = this.state.flow === "student";
+
+    const tab = (on) => ({
+      flex: 1, textAlign: "center", padding: "9px 0", borderRadius: "8px", fontSize: "13.5px",
+      fontWeight: on ? 700 : 500, background: on ? "#FFFFFF" : "transparent",
+      color: on ? "#14472F" : "#7C8B83", cursor: "pointer",
+      boxShadow: on ? "0 1px 2px rgba(22,33,28,.08)" : "none"
+    });
+
+    const K = {
+      h: { background: "#FFFFFF", border: "1px solid #DCE4DD", borderRadius: "12px", padding: "16px" },
+      hero: { background: "#14472F", color: "#FFFFFF", borderRadius: "12px", padding: "18px", textAlign: "center" },
+      card: { background: "#FFFFFF", border: "1px solid #DCE4DD", borderRadius: "12px", padding: "13px 14px" },
+      cardLock: { background: "#F3F6F2", border: "1px solid #DCE4DD", borderRadius: "12px", padding: "13px 14px", opacity: 0.85 },
+      ai: { background: "#FFFFFF", border: "1.5px dashed #A8B4AC", borderRadius: "12px", padding: "13px 14px" },
+      ok: { background: "#EAF5EE", border: "1px solid #A9D3BB", borderRadius: "12px", padding: "13px 14px" },
+      warn: { background: "#FDF7EC", border: "1px solid #E5C88A", borderRadius: "12px", padding: "13px 14px" },
+      err: { background: "#FCEEEC", border: "1px solid #E8BFBB", borderRadius: "12px", padding: "13px 14px" },
+      info: { background: "#EDF2FB", border: "1px solid #C7D6EE", borderRadius: "12px", padding: "13px 14px" },
+      row: { background: "#FFFFFF", border: "1px solid #DCE4DD", borderRadius: "10px", padding: "11px 13px" },
+      rowOff: { background: "#F3F6F2", border: "1px solid #E4EAE5", borderRadius: "10px", padding: "11px 13px", opacity: 0.6 },
+      trait: { background: "#FFFFFF", border: "1px solid #DCE4DD", borderRadius: "12px", padding: "12px 13px" },
+      traitOn: { background: "#FFFFFF", border: "1.5px solid #B3261E", borderRadius: "12px", padding: "12px 13px" },
+      strip: { background: "#EFF2EF", borderRadius: "9px", padding: "8px 12px" },
+      note: { borderLeft: "3px solid #C9A66B", background: "#FDF7EC", borderRadius: "0 8px 8px 0", padding: "9px 11px" },
+      chips: { background: "#FFFFFF", border: "1px solid #DCE4DD", borderRadius: "999px", padding: "9px 14px", textAlign: "center" },
+      sheet: { background: "#FFFFFF", border: "1px solid #DCE4DD", borderRadius: "14px", padding: "14px", boxShadow: "0 -2px 10px rgba(22,33,28,.06)" },
+      img: { height: "132px", borderRadius: "10px", background: "repeating-linear-gradient(45deg,#E7EBE8 0 8px,#DCE2DD 8px 16px)", border: "1px solid #DCE4DD", display: "grid", placeItems: "center", textAlign: "center", padding: "8px" },
+      grid4: { height: "84px", borderRadius: "10px", background: "repeating-linear-gradient(45deg,#E7EBE8 0 7px,#DCE2DD 7px 14px)", border: "1px solid #DCE4DD", display: "grid", placeItems: "center", textAlign: "center", padding: "8px" },
+      map: { flex: "1 1 auto", minHeight: "150px", borderRadius: "12px", border: "1px solid #C9D3CC", background: "#E4EBE3", backgroundImage: "repeating-linear-gradient(0deg, rgba(120,140,125,.16) 0 1px, transparent 1px 30px), repeating-linear-gradient(90deg, rgba(120,140,125,.16) 0 1px, transparent 1px 30px)", display: "grid", placeItems: "center", textAlign: "center", padding: "12px" },
+      gap: { flex: "1 1 auto", minHeight: "4px" },
+      btn: { background: "#1F6B47", color: "#FFFFFF", borderRadius: "11px", padding: "15px 14px", textAlign: "center", cursor: "pointer" },
+      btnBig: { background: "#1F6B47", color: "#FFFFFF", borderRadius: "12px", padding: "18px 14px", textAlign: "center", cursor: "pointer" },
+      btn2: { background: "#FFFFFF", color: "#14472F", border: "1.5px solid #1F6B47", borderRadius: "11px", padding: "14px", textAlign: "center", cursor: "pointer" }
+    };
+
+    const titleStyleFor = (k) => {
+      if (k === "hero") return { display: "block", fontFamily: "'IBM Plex Mono', monospace", fontSize: "32px", fontWeight: 500, letterSpacing: "0.1em" };
+      if (k === "h") return { display: "block", fontSize: "19px", fontWeight: 700, lineHeight: 1.35 };
+      if (k === "btn" || k === "btnBig") return { display: "block", fontSize: k === "btnBig" ? "17px" : "15.5px", fontWeight: 700 };
+      if (k === "btn2") return { display: "block", fontSize: "14.5px", fontWeight: 600 };
+      if (k === "strip" || k === "note") return { display: "block", fontSize: "12px", color: "#4E5F56", lineHeight: 1.55 };
+      if (k === "img" || k === "grid4" || k === "map") return { display: "block", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10.5px", color: "#6E7C74", lineHeight: 1.5 };
+      if (k === "chips") return { display: "block", fontSize: "12px", color: "#4E5F56" };
+      if (k === "gap") return { display: "none" };
+      return { display: "block", fontSize: "14.5px", fontWeight: 600, lineHeight: 1.4 };
+    };
+    const subStyleFor = (k) => {
+      if (k === "hero") return { display: "block", fontSize: "12px", color: "#BCD4C4", marginTop: "6px" };
+      if (k === "btn" || k === "btnBig") return { display: "block", fontSize: "11.5px", color: "rgba(255,255,255,.8)", marginTop: "4px" };
+      if (k === "btn2") return { display: "block", fontSize: "11.5px", color: "#7C8B83", marginTop: "3px" };
+      if (k === "ok") return { display: "block", fontSize: "12.5px", color: "#10662F", lineHeight: 1.6, marginTop: "4px" };
+      if (k === "warn") return { display: "block", fontSize: "12.5px", color: "#6B3E05", lineHeight: 1.6, marginTop: "4px" };
+      if (k === "err") return { display: "block", fontSize: "12.5px", color: "#8E1D17", lineHeight: 1.6, marginTop: "4px" };
+      if (k === "info") return { display: "block", fontSize: "12.5px", color: "#143A78", lineHeight: 1.6, marginTop: "4px" };
+      if (k === "gap" || k === "strip" || k === "note") return { display: "none" };
+      return { display: "block", fontSize: "12.5px", color: "#7C8B83", lineHeight: 1.55, marginTop: "4px" };
+    };
+    const okTitle = { ok: "#10662F", warn: "#6B3E05", err: "#8E1D17", info: "#143A78" };
+
+    const blocks = cur.blocks.map((b) => {
+      const k = b[0];
+      const st = Object.assign({ boxSizing: "border-box" }, K[k] || K.card);
+      const ts = Object.assign({}, titleStyleFor(k));
+      if (okTitle[k]) ts.color = okTitle[k];
+      return {
+        style: st,
+        title: b[1] || "",
+        sub: b[2] || "",
+        titleStyle: ts,
+        subStyle: subStyleFor(k),
+        onClick: b.length > 3 ? () => this.go(b[3]) : undefined
+      };
+    });
+
+    const steps = list.map((s, idx) => ({
+      label: s.title,
+      num: idx + 1,
+      style: {
+        display: "flex", gap: "9px", alignItems: "start", padding: "8px 9px", borderRadius: "8px",
+        fontSize: "13px", cursor: "pointer",
+        background: idx === i ? "#E7F0EA" : "transparent",
+        color: idx === i ? "#14472F" : "#4E5F56",
+        fontWeight: idx === i ? 600 : 400
+      },
+      numStyle: {
+        fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", flex: "none", width: "18px",
+        height: "18px", borderRadius: "50%", display: "grid", placeItems: "center", marginTop: "1px",
+        background: idx === i ? "#1F6B47" : "#EFF2EF", color: idx === i ? "#FFFFFF" : "#7C8B83"
+      },
+      go: () => this.go(idx)
+    }));
+
+    return Object.assign(this.formVals(cur.id), this.mapVals(cur.id === "T-08b"), {
+      steps,
+      blocks,
+      clock: cur.clock,
+      title: cur.title,
+      subtitle: cur.subtitle,
+      screenId: cur.id,
+      note: cur.note,
+      rules: cur.rules.map((r) => ({ id: r[0], t: r[1] })),
+      states: cur.states,
+      badge: cur.badge > 0 ? String(cur.badge) : "",
+      badgeStyle: cur.badge > 0
+        ? { position: "absolute", top: "4px", right: "2px", background: "#B3261E", color: "#FFFFFF", fontSize: "9.5px", fontWeight: 600, minWidth: "16px", height: "16px", borderRadius: "999px", display: "grid", placeItems: "center", padding: "0 4px" }
+        : { display: "none" },
+      flowLabel: isStudent ? "โฟลว์นักเรียน · 14 ขั้นตอน" : "โฟลว์ครู · 12 ขั้นตอน",
+      studentTabStyle: tab(isStudent),
+      teacherTabStyle: tab(!isStudent),
+      showStudent: () => this.setState({ flow: "student", i: 0, history: [], formSel: 0 }),
+      showTeacher: () => this.setState({ flow: "teacher", i: 0, history: [], formSel: 0 }),
+      goBack: () => this.setState((s) => s.history.length
+        ? { i: s.history[s.history.length - 1], history: s.history.slice(0, -1) }
+        : { i: Math.max(0, s.i - 1) }),
+      restart: () => this.setState({ i: 0, history: [], formSel: 0 })
+    });
+  }
+}
+</script>
+</body>
+</html>
