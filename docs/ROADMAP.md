@@ -63,7 +63,8 @@ Evidence:
   reported no issues; responsive smoke passed at 360 px, 390 px, and 1440 px.
 - Migration: not applicable; Phase 0 introduces no application schema.
 - Advisors: local security/performance advisors reported no issues.
-- PR/commit: pending.
+- Commit: `3419dd0` (`Implement app foundation and verified authentication`),
+  pushed directly to `origin/main` on 2026-08-05; no PR was requested.
 - Remaining risk: the hosted project is linked, healthy, empty before Phase 1,
   and uses modern publishable/secret keys with legacy keys disabled. Production
   custom SMTP, allowlisted deployment redirects, and hosted CI still require
@@ -114,7 +115,8 @@ Evidence to date:
   from persistent local E2E fixtures.
 - Security check: no forbidden secret identifiers were found in `.next/static`;
   only a local Supabase publishable key was used by Playwright.
-- PR/commit: pending; the user has not authorized commit or push.
+- Commit: `3419dd0` (`Implement app foundation and verified authentication`),
+  pushed directly to `origin/main` on 2026-08-05; no PR was requested.
 - Remaining risk: hosted custom SMTP, deployed redirect allowlists, CAPTCHA/rate
   policy, staging email delivery, and hosted CI still need environment-owner
   configuration/verification.
@@ -148,7 +150,8 @@ Evidence to date:
   have RLS enabled; the Auth profile-sync trigger and fixed-empty-search-path
   private functions exist; hosted schema types match local types after ignoring
   hosted PostgREST-version metadata.
-- PR/commit: pending.
+- Commit: `3419dd0` (`Implement app foundation and verified authentication`),
+  pushed directly to `origin/main` on 2026-08-05; no PR was requested.
 - Remaining risk: trusted provisioning operations, server contracts, and
   production SMTP/redirect verification remain.
 
