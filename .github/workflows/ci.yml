@@ -24,6 +24,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Use pinned npm
+        run: npm install --global npm@11.12.0
       - run: npm ci
       - run: npm run format:check
       - run: npm run lint
@@ -41,6 +43,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Use pinned npm
+        run: npm install --global npm@11.12.0
       - run: npm ci
       - run: npx supabase start
       - run: npx supabase db reset --local
@@ -62,6 +66,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Use pinned npm
+        run: npm install --global npm@11.12.0
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test --project=student-mobile-chromium --project=teacher-desktop-chromium
