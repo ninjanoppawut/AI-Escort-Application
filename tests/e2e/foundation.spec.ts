@@ -30,6 +30,7 @@ test("returns a correlated liveness envelope", async ({ request }) => {
 test("reports ready when validated service configuration is present", async ({
   request,
 }) => {
+  const expectedEnvironment = process.env.NEXT_PUBLIC_APP_ENV ?? "local";
   const response = await request.get("/api/health/ready");
   const body = await response.json();
 
@@ -37,7 +38,7 @@ test("reports ready when validated service configuration is present", async ({
   expect(body).toMatchObject({
     data: {
       status: "ready",
-      environment: "local",
+      environment: expectedEnvironment,
     },
     error: null,
   });

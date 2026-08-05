@@ -69,5 +69,36 @@ jobs:
       - name: Use pinned npm
         run: npm install --global npm@11.12.0
       - run: npm ci
+      - name: Start local Supabase and export browser-safe configuration
+        shell: bash
+        run: |
+          npx supabase start
+          npx supabase db reset --local
+
+          status_file="$RUNNER_TEMP/supabase.env"
+          npx supabase status -o env > "$status_file"
+
+          read_env() {
+            local line
+            line="$(grep -m1 "^${1}=" "$status_file")"
+            printf '%s' "${line#*=}" | tr -d '"'
+          }
+
+          api_url="$(read_env API_URL)"
+          publishable_key="$(read_env PUBLISHABLE_KEY)"
+          mailpit_url="$(read_env MAILPIT_URL)"
+
+          if [[ -z "$api_url" || -z "$publishable_key" || -z "$mailpit_url" ]]; then
+            echo "Local Supabase browser configuration is incomplete." >&2
+            exit 1
+          fi
+
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$api_url"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$publishable_key"
+            echo "MAILPIT_URL=$mailpit_url"
+          } >> "$GITHUB_ENV"
+
+          rm -f "$status_file"
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test --project=student-mobile-chromium --project=teacher-desktop-chromium
