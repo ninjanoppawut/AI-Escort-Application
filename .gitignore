@@ -7,3 +7,21 @@
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# Next.js and package artifacts
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Local environment and secrets (the example remains committed)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/

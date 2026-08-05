@@ -8,6 +8,16 @@ AI assists observation; it does not replace student judgment or teacher verifica
 
 ## 2. MVP user roles
 
+### Authentication and account provisioning
+
+- Every account uses a real email address and password.
+- Email confirmation is required before protected application access.
+- Password recovery is delivered to the verified email address.
+- New verified accounts begin with student capability and may join a class only through a valid class invitation.
+- Teacher capability is granted only through a trusted platform-admin teacher invitation/approval; the browser cannot self-assign it.
+- Platform admin is a separate operational role and never appears in `class_members`.
+- The only ordinary account/class roles are `teacher` and `student`.
+
 ### Student
 
 - Join a class using an invite code, invitation link, or QR code.
@@ -71,8 +81,13 @@ The leader may not:
 
 ### Admin
 
-- Manage global accounts, schools, system configuration, AI usage, and restricted audit data.
-- Admin access must not bypass school/class scoping in normal UI flows without explicit privileged operations.
+- View and search all teacher/student accounts, schools, classes, sessions, and high-level workflow status.
+- View append-only audit events and redacted operational errors correlated by request/trace ID.
+- Inspect queue depth, AI job status/latency/failure categories, upload errors, Realtime connection health, and failure rates by product flow.
+- Create schools and issue/revoke teacher invitations as trusted provisioning operations.
+- Acknowledge or annotate operational incidents without rewriting source audit events.
+- Admin access must not become a normal class membership or silently expose private images, precise live-location payloads, secrets, or unrestricted student content.
+- Any exceptional sensitive-content access is a separate audited break-glass operation and is out of the normal MVP admin-console flow.
 
 ## 3. Primary domain structure
 
@@ -98,6 +113,8 @@ School
 ```
 
 An activity is a reusable learning plan. A session is one real execution of that activity.
+
+Platform-admin operational access sits above the school hierarchy for provisioning and diagnostics. It is authorized independently from school/class membership and uses redacted operational read models by default.
 
 ## 4. Class creation and invitation flow
 
@@ -241,7 +258,7 @@ When a session is opened, current group membership is copied into session partic
 
 ## 8. In-app notifications
 
-The MVP uses in-app notifications; email is not required.
+The MVP uses in-app product notifications; it does not send those notifications by email. Verified account email is still required for authentication, security, teacher provisioning, and recovery.
 
 Notifications are durable PostgreSQL rows and are delivered immediately while the app is open using private Realtime channels. Users can reopen the app and still see unread notifications.
 
@@ -475,7 +492,7 @@ Each event has relational identifiers and a flexible `payload jsonb`. The final 
 ## 19. MVP acceptance scenarios
 
 1. Teacher creates a class and configures group size, maximum groups, and group formation.
-2. Students join using an in-app class invite flow without email.
+2. Students authenticate with verified email and join using an in-app code/link/QR class invite rather than an email-delivered class invitation.
 3. The first eligible students atomically create the available groups and become their single leaders.
 4. When the maximum group count is reached, classmates receive Realtime updates and the Create Group control becomes disabled with an explanation.
 5. Two students racing for the final group slot produce one success and one `GROUP_LIMIT_REACHED` response.
@@ -498,3 +515,6 @@ Each event has relational identifiers and a flexible `payload jsonb`. The final 
 22. Teacher manually completes the session.
 23. Teacher and participating students open the completed map and plant details.
 24. A failed Gemini request leaves the draft intact and allows manual entry/retry.
+25. A student signs up with email/password, confirms email, resumes the class invitation, and cannot enter protected routes before confirmation.
+26. A platform-admin teacher invitation grants teacher capability only to the matching verified email; a student cannot self-promote.
+27. A platform admin identifies a failing product flow from redacted correlated logs/metrics without receiving secrets, private image URLs, or precise live-location payloads.

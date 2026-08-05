@@ -35,7 +35,7 @@ Teacher creates class and group settings
 
 ## Core decisions
 
-- Class invitations use code, link, or QR; email is not required for the MVP.
+- Every account uses verified email/password authentication; class invitations themselves use code, link, or QR rather than email delivery.
 - In-app notifications are durable PostgreSQL rows with private Realtime update signals.
 - Teacher configures group size, maximum group count, student group creation, and formation open/closed state.
 - The student who successfully creates a group becomes its sole leader.
@@ -74,11 +74,34 @@ Teacher creates class and group settings
 3. [Database design](docs/DATABASE_DESIGN.md)
 4. [API and realtime contracts](docs/API_AND_REALTIME.md)
 5. [Plant survey plugin](docs/PLANT_SURVEY_PLUGIN.md)
-6. [Implementation plan](docs/IMPLEMENTATION_PLAN.md)
-7. [Decisions and open questions](docs/DECISIONS_AND_QUESTIONS.md)
-8. [Thai consolidated specification](docs/สรุประบบ_AI_ESCORT_ภาษาไทย.md)
-9. [AI coding-agent instructions](AGENTS.md)
+6. [Build roadmap and verification checklist](docs/ROADMAP.md)
+7. [Requirements traceability matrix](docs/TRACEABILITY_MATRIX.md)
+8. [Authentication, identity, and tenancy](docs/AUTH_IDENTITY_AND_TENANCY.md)
+9. [UI contracts](docs/UI_CONTRACTS.md)
+10. [Non-functional requirements](docs/NON_FUNCTIONAL_REQUIREMENTS.md)
+11. [Test strategy](docs/TEST_STRATEGY.md)
+12. [Environments and operations](docs/ENVIRONMENTS_AND_OPERATIONS.md)
+13. [Privacy, retention, and research](docs/PRIVACY_RETENTION_AND_RESEARCH.md)
+14. [AI evaluation](docs/AI_EVALUATION.md)
+15. [Research event dictionary](docs/RESEARCH_EVENT_DICTIONARY.md)
+16. [Module specifications](docs/modules/README.md)
+17. [Decisions and open questions](docs/DECISIONS_AND_QUESTIONS.md)
+18. [Thai consolidated specification](docs/สรุประบบ_AI_ESCORT_ภาษาไทย.md)
+19. [AI coding-agent instructions](AGENTS.md)
 
 ## Status
 
-The repository contains the locked MVP product and engineering specification. The exact Gemini normalized JSON schema will be finalized during the AI integration phase, but it must be versioned, validated, and compatible with the fields described in the documentation.
+The repository now contains the locally verified Phase 0 Next.js foundation:
+strict TypeScript, Tailwind/shadcn configuration, Supabase browser/server
+boundaries, local Supabase/PostgreSQL/Auth/Mailpit configuration, stable API and
+event contracts, observability/redaction conventions, Vitest, Playwright, and
+CI workflows. The dedicated hosted project is authenticated, linked, healthy,
+and configured with its modern browser-safe publishable key; legacy API keys
+are disabled. The Phase 1 identity/provisioning foundation migration is
+verified locally and deployed to the hosted development database. P1-01 Auth is
+implemented and locally verified with Supabase Auth, PKCE, SSR claim validation,
+Thai-first responsive UI, and Mailpit end-to-end coverage. It remains unchecked
+until PR/commit, hosted CI, custom SMTP, and deployed redirect evidence exist;
+trusted provisioning and the broader Phase 1 slice remain in progress.
+
+The exact Gemini normalized JSON schema will be finalized during the AI integration phase, but it must be versioned, validated, and compatible with the fields described in the documentation.

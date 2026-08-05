@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f3f6f2;
+  --foreground: #16211c;
+  --card: #ffffff;
+  --card-foreground: #16211c;
+  --primary: #1f6b47;
+  --primary-foreground: #f7fbf8;
+  --secondary: #e7f0ea;
+  --secondary-foreground: #14472f;
+  --muted: #e9eeea;
+  --muted-foreground: #5e6d64;
+  --border: #dce4dd;
+  --ring: #1f6b47;
+  --success: #26734d;
+  --forest: #14472f;
+  --mint: #a8cdb6;
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-forest: var(--forest);
+  --color-mint: var(--mint);
+  --font-sans:
+    "IBM Plex Sans Thai", "Noto Sans Thai", "Leelawadee UI", system-ui,
+    sans-serif;
+  --font-serif: "IBM Plex Serif", Georgia, serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #bfd8c8;
+  color: #14472f;
+}

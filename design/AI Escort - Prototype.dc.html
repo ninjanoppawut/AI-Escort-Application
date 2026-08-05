@@ -31,7 +31,7 @@
         <span style="{{ studentTabStyle }}" onClick="{{ showStudent }}">นักเรียน</span>
         <span style="{{ teacherTabStyle }}" onClick="{{ showTeacher }}">ครู</span>
       </div>
-      <div style="font-size: 12px; color: #7C8B83; margin: 16px 0 8px;">{{ flowLabel }}</div>
+      <div style="font-size: 12px; color: #5E6D64; margin: 16px 0 8px;">{{ flowLabel }}</div>
       <div style="display: grid; gap: 2px;">
         <sc-for list="{{ steps }}" as="s" hint-placeholder-count="12">
           <div style="{{ s.style }}" onClick="{{ s.go }}">
@@ -40,7 +40,7 @@
           </div>
         </sc-for>
       </div>
-      <div style="border-top: 1px solid #EEF2EE; margin-top: 14px; padding-top: 14px; font-size: 12px; color: #7C8B83; line-height: 1.6;">ต้นแบบนี้แสดงเส้นทางหลักและจุดตัดสินใจสำคัญ ไม่ใช่ทุกสถานะ — สถานะทั้งหมดอยู่ในไฟล์เอกสารออกแบบและโครงร่างหน้าจอ</div>
+      <div style="border-top: 1px solid #EEF2EE; margin-top: 14px; padding-top: 14px; font-size: 12px; color: #5E6D64; line-height: 1.6;">ต้นแบบนี้แสดงเส้นทางหลักและจุดตัดสินใจสำคัญ ไม่ใช่ทุกสถานะ — สถานะทั้งหมดอยู่ในไฟล์เอกสารออกแบบและโครงร่างหน้าจอ</div>
     </div>
 
     <div style="width: 420px;">
@@ -52,7 +52,7 @@
           <span style="width: 40px; height: 40px; margin-left: -8px; display: grid; place-items: center; font-size: 19px; color: #16211C; cursor: pointer;" onClick="{{ goBack }}">←</span>
           <span style="flex: 1; min-width: 0;">
             <span style="display: block; font-size: 16.5px; font-weight: 700; line-height: 1.3;">{{ title }}</span>
-            <span style="display: block; font-size: 11.5px; color: #7C8B83;">{{ subtitle }}</span>
+            <span style="display: block; font-size: 12px; color: #5E6D64;">{{ subtitle }}</span>
           </span>
           <span style="position: relative; width: 40px; height: 40px; display: grid; place-items: center; font-size: 18px;">🔔<span style="{{ badgeStyle }}">{{ badge }}</span></span>
         </div>
@@ -144,10 +144,10 @@
     <div style="background: #FFFFFF; border: 1px solid #DCE4DD; border-radius: 14px; padding: 18px; position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow: auto;">
       <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 11px;">
         <span style="font-size: 12.5px; font-weight: 700;">ฟอร์มในหน้าจอนี้</span>
-        <span style="font-size: 11.5px; color: #7C8B83;">{{ formCountLabel }}</span>
+        <span style="font-size: 12px; color: #5E6D64;">{{ formCountLabel }}</span>
       </div>
       <sc-if value="{{ noForms }}">
-        <div style="font-size: 12.5px; color: #7C8B83; line-height: 1.65; background: #F3F6F2; border-radius: 10px; padding: 12px 13px;">หน้าจอนี้ไม่รับข้อมูลจากผู้ใช้ — เป็นหน้าดูข้อมูล แผนที่ หรือหน้ายืนยันผล</div>
+        <div style="font-size: 12.5px; color: #5E6D64; line-height: 1.65; background: #F3F6F2; border-radius: 10px; padding: 12px 13px;">หน้าจอนี้ไม่รับข้อมูลจากผู้ใช้ — เป็นหน้าดูข้อมูล แผนที่ หรือหน้ายืนยันผล</div>
       </sc-if>
       <sc-if value="{{ hasForms }}">
         <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
@@ -163,7 +163,7 @@
             <span style="font-family:'IBM Plex Mono',monospace; font-size: 11px; color: #1F6B47;">{{ f.id }}</span>
             <span style="font-size: 15px; font-weight: 700;">{{ f.name }}</span>
           </div>
-          <div style="font-size: 12px; color: #7C8B83; margin-top: 5px;">เข้าจาก {{ f.entry }}</div>
+          <div style="font-size: 12px; color: #5E6D64; margin-top: 5px;">เข้าจาก {{ f.entry }}</div>
         </div>
         <div style="padding: 18px; display: grid; gap: 16px;">
           <sc-for list="{{ f.fields }}" as="fd" hint-placeholder-count="3">
@@ -184,7 +184,7 @@
                 <div style="min-height: 78px; border: 1px solid #C9D3CC; border-radius: 10px; padding: 11px 13px; font-size: 14px; line-height: 1.6; color: #9FADA4; background: #FFFFFF;">{{ fd.val }}</div>
               </sc-if>
               <sc-if value="{{ fd.isSelect }}">
-                <div style="height: 46px; border: 1px solid #C9D3CC; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; padding: 0 13px; font-size: 15px; background: #FFFFFF;"><span>{{ fd.val }}</span><span style="color: #7C8B83;">▾</span></div>
+                <div style="height: 46px; border: 1px solid #C9D3CC; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; padding: 0 13px; font-size: 15px; background: #FFFFFF;"><span>{{ fd.val }}</span><span style="color: #5E6D64;">▾</span></div>
               </sc-if>
               <sc-if value="{{ fd.isRO }}">
                 <div style="min-height: 44px; border: 1px solid #E1E7E2; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 13px; font-family:'IBM Plex Mono',monospace; font-size: 13px; color: #4E5F56; background: #F3F6F2;"><span>{{ fd.val }}</span><sc-if value="{{ fd.action }}"><span style="font-family:'IBM Plex Sans Thai',sans-serif; font-size: 12px; font-weight: 600; color: #1F6B47; white-space: nowrap;">{{ fd.action }}</span></sc-if></div>
@@ -203,7 +203,7 @@
                       <div style="display: flex; gap: 10px; align-items: center; border: 1.5px solid #1F6B47; background: #F1F7F3; border-radius: 10px; padding: 11px 13px; font-size: 14px; font-weight: 600;"><span style="width: 18px; height: 18px; border-radius: 50%; border: 5px solid #1F6B47; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #4E5F56; font-weight: 400;">{{ o.meta }}</span></sc-if></div>
                     </sc-if>
                     <sc-if value="{{ o.un }}">
-                      <div style="display: flex; gap: 10px; align-items: center; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px;"><span style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #B6C2BA; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #7C8B83;">{{ o.meta }}</span></sc-if></div>
+                      <div style="display: flex; gap: 10px; align-items: center; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px;"><span style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #B6C2BA; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #5E6D64;">{{ o.meta }}</span></sc-if></div>
                     </sc-if>
                     <sc-if value="{{ o.off }}">
                       <div style="display: flex; gap: 10px; align-items: center; border: 1px dashed #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px; color: #9FADA4;"><span style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #DCE4DD; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px;">{{ o.meta }}</span></sc-if></div>
@@ -218,7 +218,7 @@
                       <div style="display: flex; gap: 10px; align-items: center; border: 1.5px solid #1F6B47; background: #F1F7F3; border-radius: 10px; padding: 11px 13px; font-size: 14px; font-weight: 600;"><span style="width: 18px; height: 18px; border-radius: 5px; background: #1F6B47; color: #FFFFFF; display: grid; place-items: center; font-size: 12px; flex: none;">✓</span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #4E5F56; font-weight: 400;">{{ o.meta }}</span></sc-if></div>
                     </sc-if>
                     <sc-if value="{{ o.un }}">
-                      <div style="display: flex; gap: 10px; align-items: center; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px;"><span style="width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #B6C2BA; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #7C8B83;">{{ o.meta }}</span></sc-if></div>
+                      <div style="display: flex; gap: 10px; align-items: center; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px;"><span style="width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #B6C2BA; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px; color: #5E6D64;">{{ o.meta }}</span></sc-if></div>
                     </sc-if>
                     <sc-if value="{{ o.off }}">
                       <div style="display: flex; gap: 10px; align-items: center; border: 1px dashed #DCE4DD; border-radius: 10px; padding: 11px 13px; font-size: 14px; color: #9FADA4;"><span style="width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #DCE4DD; flex: none;"></span><span style="flex: 1;">{{ o.t }}</span><sc-if value="{{ o.meta }}"><span style="font-size: 12px;">{{ o.meta }}</span></sc-if></div>
@@ -244,7 +244,7 @@
                       <div style="display: flex; gap: 12px; align-items: center; border: 1px solid #DCE4DD; border-radius: 10px; padding: 11px 13px;"><span style="flex: 1; font-size: 14px;">{{ o.t }}</span><span style="width: 44px; height: 26px; border-radius: 999px; background: #CBD5CD; display: flex; align-items: center; padding: 0 3px; flex: none;"><span style="width: 20px; height: 20px; border-radius: 50%; background: #FFFFFF;"></span></span></div>
                     </sc-if>
                     <sc-if value="{{ o.off }}">
-                      <div style="display: flex; gap: 12px; align-items: center; border: 1px solid #E1E7E2; background: #F7FAF7; border-radius: 10px; padding: 11px 13px;"><span style="flex: 1; font-size: 14px; color: #7C8B83;">{{ o.t }}</span><span style="font-size: 11px; color: #7C8B83; border: 1px solid #DCE4DD; border-radius: 4px; padding: 2px 6px;">ล็อก</span></div>
+                      <div style="display: flex; gap: 12px; align-items: center; border: 1px solid #E1E7E2; background: #F7FAF7; border-radius: 10px; padding: 11px 13px;"><span style="flex: 1; font-size: 14px; color: #5E6D64;">{{ o.t }}</span><span style="font-size: 12px; color: #5E6D64; border: 1px solid #DCE4DD; border-radius: 4px; padding: 2px 6px;">ล็อก</span></div>
                     </sc-if>
                   </sc-for>
                 </div>
@@ -270,7 +270,7 @@
                         </sc-for>
                       </div>
                       <sc-if value="{{ tr.fix }}">
-                        <div style="height: 40px; border: 1px solid #C9D3CC; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 11px; font-size: 13px; background: #FFFFFF;"><span>{{ tr.fix }}</span><span style="color: #7C8B83;">▾</span></div>
+                        <div style="height: 40px; border: 1px solid #C9D3CC; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 11px; font-size: 13px; background: #FFFFFF;"><span>{{ tr.fix }}</span><span style="color: #5E6D64;">▾</span></div>
                       </sc-if>
                     </div>
                   </sc-for>
@@ -292,11 +292,11 @@
               <sc-if value="{{ fd.isOrder }}">
                 <div style="border: 1px solid #DCE4DD; border-radius: 10px; overflow: hidden;">
                   <sc-for list="{{ fd.opts }}" as="o" hint-placeholder-count="3">
-                    <div style="display: flex; gap: 11px; align-items: center; padding: 11px 13px; border-bottom: 1px solid #EEF2EE; font-size: 14px;"><span style="font-family:'IBM Plex Mono',monospace; font-size: 12px; color: #1F6B47; width: 16px;">{{ o.n }}</span><span style="flex: 1;">{{ o.t }}</span><span style="font-size: 12px; color: #7C8B83;">{{ o.meta }}</span><span style="color: #B6C2BA; font-size: 15px;">⋮⋮</span></div>
+                    <div style="display: flex; gap: 11px; align-items: center; padding: 11px 13px; border-bottom: 1px solid #EEF2EE; font-size: 14px;"><span style="font-family:'IBM Plex Mono',monospace; font-size: 12px; color: #1F6B47; width: 16px;">{{ o.n }}</span><span style="flex: 1;">{{ o.t }}</span><span style="font-size: 12px; color: #5E6D64;">{{ o.meta }}</span><span style="color: #B6C2BA; font-size: 15px;">⋮⋮</span></div>
                   </sc-for>
                 </div>
               </sc-if>
-              <sc-if value="{{ fd.help }}"><div style="font-size: 12px; line-height: 1.55; color: #7C8B83;">{{ fd.help }}</div></sc-if>
+              <sc-if value="{{ fd.help }}"><div style="font-size: 12px; line-height: 1.55; color: #5E6D64;">{{ fd.help }}</div></sc-if>
               <sc-if value="{{ fd.err }}"><div style="display: flex; gap: 6px; font-size: 12px; line-height: 1.5; color: #B3261E;"><span style="font-weight: 700;">⚠</span><span>{{ fd.err }}</span></div></sc-if>
               <sc-if value="{{ fd.warn }}"><div style="display: flex; gap: 6px; font-size: 12px; line-height: 1.5; color: #6B3E05; background: #FDF7EC; border-radius: 8px; padding: 8px 10px;"><span style="font-weight: 700;">!</span><span>{{ fd.warn }}</span></div></sc-if>
             </div>
@@ -307,7 +307,7 @@
           <sc-if value="{{ f.secondary }}"><div style="height: 44px; border-radius: 10px; border: 1px solid #C9D3CC; color: #14472F; display: grid; place-items: center; font-size: 14px; font-weight: 600;">{{ f.secondary }}</div></sc-if>
         </div>
         <div style="background: #F7FAF7; border-top: 1px solid #EEF2EE; padding: 13px 18px 15px;">
-          <div style="font-family:'IBM Plex Mono',monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #7C8B83; margin-bottom: 7px;">Validation</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #5E6D64; margin-bottom: 7px;">Validation</div>
           <div style="display: grid; gap: 5px;">
             <sc-for list="{{ f.rules }}" as="r" hint-placeholder-count="3">
               <div style="display: flex; gap: 7px; font-size: 12px; line-height: 1.55; color: #4E5F56;"><span style="color: #9FADA4;">·</span><span>{{ r.t }}</span></div>
@@ -399,7 +399,7 @@ class Component extends DCLogic {
     const ch = (labels, selIdx) => labels.map((t, i) => ({ t, sel: i === selIdx, un: i !== selIdx }));
     const R = arr => arr.map(t => ({ t }));
 
-    const FOUR = ["ตรง", "ไม่ตรง", "ไม่แน่ใจ", "มองไม่เห็น"];
+    const FOUR = ["ตรง", "ไม่ตรง", "ไม่แน่ใจ", "ไม่เห็น"];
 
     const globalForms = [
       {
@@ -535,16 +535,16 @@ class Component extends DCLogic {
       {
         id: "S-20", name: "สรุปก่อนส่ง", entry: "S-19",
         fields: [
-          T("ชื่อไทย", "ชบา", { req: true }),
-          SCI("ชื่อวิทยาศาสตร์", "Hibiscus rosa-sinensis", { opt: true, warn: "ไม่ระบุก็ส่งได้ แต่ครูอาจขอให้เพิ่มภายหลัง" }),
+          T("ชื่อไทย / ชื่อสามัญ", "ชบา", { req: true, err: "ใส่ชื่อไทยหรือชื่อที่คนแถวนี้เรียกต้นนี้ก่อนส่ง" }),
+          SCI("ชื่อวิทยาศาสตร์", "Hibiscus rosa-sinensis", { req: true, help: "รูปแบบ Genus species · พิมพ์เอียงให้อัตโนมัติ · ถ้ายังไม่รู้ ใช้ค่าที่ AI เสนอแล้วแก้ทีหลังได้", err: "ต้องมีชื่อวิทยาศาสตร์ก่อนส่ง — เลือกจากรายการที่ AI เสนอ หรือถามครู (D-013)" }),
           RO("วงศ์ (จาก AI)", "Malvaceae"),
-          RAD("ความมั่นใจของฉัน", [o("มั่นใจมาก", false), o("ค่อนข้างมั่นใจ", true), o("ไม่แน่ใจ ขอให้ครูช่วยดู", false)], { req: true }),
-          A("เหตุผลประกอบ", "ทำไมถึงคิดว่าเป็นชนิดนี้ อ้างอิงลักษณะที่เห็นจริง", { req: true, help: "อย่างน้อย 20 ตัวอักษร · ข้อความนี้คือสิ่งที่ครูให้คะแนน" }),
+          RO("สรุปการตรวจลักษณะ", "ตรง 7 · ไม่ตรง 2 (แก้ไขแล้ว) · ไม่แน่ใจ 1 · ไม่เห็น 1 — แตะเพื่อกลับไปแก้"),
+          A("เหตุผลประกอบ", "ทำไมถึงคิดว่าเป็นชนิดนี้ อ้างอิงลักษณะที่เห็นจริง", { req: true, help: "อย่างน้อย 20 ตัวอักษร · ข้อความนี้คือสิ่งที่ครูให้คะแนน", err: "เขียนอย่างน้อย 20 ตัวอักษร บอกลักษณะที่คุณเห็นจริงบนต้นนี้" }),
           A("บันทึกภาคสนามเพิ่มเติม", "สภาพแวดล้อม แมลงที่พบ กลิ่น ฯลฯ", { opt: true }),
           STEP("จำนวนต้นที่พบบริเวณนี้", "3", { opt: true })
         ],
         primary: "ส่งการสังเกต", secondary: "บันทึกร่างไว้ก่อน",
-        rules: R(["ออฟไลน์ → ปุ่มเปลี่ยนเป็น “เก็บไว้ส่งเมื่อออนไลน์” พร้อมตำแหน่งในคิว", "ยังตรวจลักษณะไม่ครบ → กล่องเตือนพร้อมปุ่มกลับไปตรวจ ไม่บล็อกถาวร", "ชื่อไทยซ้ำกับที่กลุ่มอื่นส่งในรอบนี้ → ไปหน้า S-21 ก่อนส่งจริง"])
+        rules: R(["ชื่อวิทยาศาสตร์เป็นฟิลด์บังคับตาม D-013 — ว่าง = ส่งไม่ได้", "คำที่แปลว่า “ไม่รู้” ถือว่ายังไม่ได้กรอก: ไม่ทราบ · ไม่รู้ · ไม่แน่ใจ · unknown · n/a · - · ? → ขึ้นข้อความ “คำว่า ‘ไม่ทราบ’ ใช้เป็นชื่อวิทยาศาสตร์ไม่ได้ — เลือกจากรายการที่ AI เสนอ หรือถามครูแล้วค่อยส่ง” พร้อมปุ่ม “ดูตัวเลือกจาก AI” และ “บันทึกร่างไว้ก่อน”", "ข้อความผิดพลาดอยู่ใต้ช่องนั้นโดยตรง ไม่ใช่ toast ลอย · โฟกัสเลื่อนไปที่ช่องแรกที่ผิด", "ปุ่มส่งไม่ถูกปิดใช้งาน — กดได้เสมอแล้วชี้ที่ผิดให้เห็น", "ออฟไลน์ → ปุ่มเปลี่ยนเป็น “เก็บไว้ส่งเมื่อออนไลน์” พร้อมตำแหน่งในคิว", "ยังตรวจลักษณะไม่ครบ → กล่องเตือนพร้อมปุ่มกลับไปตรวจ ไม่บล็อกถาวร", "ชื่อไทยซ้ำกับที่กลุ่มอื่นส่งในรอบนี้ → ไปหน้า S-21 ก่อนส่งจริง", "บันทึกร่างอัตโนมัติทุกครั้งที่ออกจากช่อง"])
       },
       {
         id: "S-21", name: "ยืนยันเมื่อพบชนิดซ้ำ", entry: "S-20",
@@ -691,7 +691,19 @@ class Component extends DCLogic {
           TOG("", [o("เปิดติดตามตำแหน่งสดระหว่างสำรวจ", true), o("แจ้งเตือนนักเรียนเมื่อถึงคิว", true)], { warn: "ตำแหน่งสดมองเห็นได้เฉพาะครูประจำชั้นเรียนนี้ และหยุดบันทึกทันทีที่จบรอบ — ต้องยืนยันนโยบายกับโรงเรียนก่อนเปิดใช้" })
         ],
         primary: "เปิดรอบสำรวจ", secondary: "บันทึกไว้ก่อน",
-        rules: R(["ต้องมีอย่างน้อย 1 กลุ่มที่อนุมัติแล้ว", "สมาชิกกลุ่มถูกบันทึกเป็นสแนปช็อต ณ เวลาที่เปิดรอบ — ย้ายนักเรียนภายหลังไม่กระทบรอบนี้", "เวลาสิ้นสุดต้องหลังเวลาเริ่ม และครอบคลุมคิวทั้งหมด"])
+        rules: R(["ต้องมีอย่างน้อย 1 กลุ่มที่อนุมัติแล้ว", "สมาชิกกลุ่มถูกบันทึกเป็นสแนปช็อต ณ เวลาที่เปิดรอบ — ย้ายนักเรียนภายหลังไม่กระทบรอบนี้", "เวลาสิ้นสุดต้องหลังเวลาเริ่ม และครอบคลุมคิวทั้งหมด", "“เปิดรอบสำรวจ” ไม่ทำงานทันที — ขึ้นชีตยืนยันพร้อมสรุปผลกระทบ (T-09c): จำนวนกลุ่ม/คนที่จะเข้าโหมดสนาม · การล็อกสแนปช็อตสมาชิก · จำนวนนักเรียนที่ยังไม่มีกลุ่มและจะเข้าร่วมไม่ได้ · การเปิดทีละกลุ่มและการจบรอบด้วยมือ", "ชีตยืนยันมีทางออกที่ทำได้จริง “ไปจัดกลุ่มก่อน” เมื่อยังมีนักเรียนไม่มีกลุ่ม ไม่ใช่แค่ ยืนยัน/ยกเลิก"])
+      },
+      {
+        id: "T-10", name: "จบการสำรวจของกลุ่ม (ยืนยัน)", entry: "T-10 รอบสำรวจสด → “จบกลุ่มนี้”",
+        fields: [
+          RO("กลุ่มที่จะจบ", "พะยอม · 5 คนกำลังสำรวจ"),
+          RO("ร่างที่ยังไม่ส่ง", "2 รายการ — จะส่งไม่ได้อีก ยังอยู่ในเครื่องนักเรียน"),
+          RO("รายการที่ส่งแล้ว", "6 รายการ — ยังอยู่ในคิวตรวจตามปกติ"),
+          RO("ตำแหน่งสด", "หยุดอัปเดตทันทีที่ยืนยัน"),
+          RO("รอบสำรวจ", "ยังไม่จบ — กลุ่มถัดไปยังเปิดได้ตามคิว")
+        ],
+        primary: "จบกลุ่มพะยอม", secondary: "ยกเลิก",
+        rules: R(["“จบกลุ่มนี้” ย้อนกลับไม่ได้ — เปิดกลุ่มเดิมซ้ำในรอบเดียวกันไม่ได้ ต้องยืนยันผ่านชีตนี้เสมอ ห้ามทำงานทันทีจากการแตะครั้งเดียว", "ชีตต้องสรุปผลกระทบเป็นตัวเลขจริงของกลุ่มนั้น ไม่ใช่ข้อความทั่วไปว่า “คุณแน่ใจหรือไม่”", "ต้องเสนอทางเลือกที่กลับได้ก่อนเสมอ: “⏸ พัก” กลับมาสำรวจต่อได้และร่างยังส่งได้", "ปุ่มยืนยันใช้สไตล์ปุ่มทำลาย (ขอบแดง) และไม่ใช่ปุ่มที่โฟกัสเป็นอันดับแรก", "นักเรียนในกลุ่มได้รับแจ้งเตือนพร้อมเหตุผลว่ารอบของกลุ่มจบแล้ว"])
       },
       {
         id: "T-11", name: "ตัวกรองคิวตรวจ", entry: "T-11 คิวตรวจการสังเกต",
@@ -713,7 +725,7 @@ class Component extends DCLogic {
           CHK("", [o("ทำเครื่องหมายเป็นตัวอย่างที่ดีของชั้นเรียน", false)])
         ],
         primary: "รับรองการสังเกตนี้", secondary: "ข้ามไปรายการถัดไป",
-        rules: R(["“ตรวจสอบไม่ได้” และ “ปฏิเสธ” ต้องมีความเห็นถึงกลุ่ม", "ชื่อที่ครูรับรองกลายเป็นความจริงหลัก ค่าจาก AI และนักเรียนยังคงแสดงใต้ลงไปเสมอ", "เปลี่ยนผลย้อนหลังได้ แต่บันทึกเป็นเวอร์ชันใหม่ในประวัติ"])
+        rules: R(["“ตรวจสอบไม่ได้” และ “ปฏิเสธ” ต้องมีความเห็นถึงกลุ่ม — “ปฏิเสธ” บล็อกจนกว่าจะพิมพ์เหตุผล", "แถบการกระทำบนมือถือแสดง 3 ปุ่มที่มีป้ายชื่อ (รับรอง · แก้แล้วรับรอง · ขอให้แก้ไข) + ปุ่ม “⋯ ตัวเลือกอื่น” ที่เปิดชีต T-12b — ห้ามใช้ไอคอนเดี่ยวไม่มีป้ายเป็นปุ่มตัดสินผล", "ชีตตัวเลือกอื่นมี 2 แถวเต็มความกว้าง: “? ตรวจสอบไม่ได้” และ “✕ ปฏิเสธ (ต้องระบุเหตุผล)” พร้อมคำอธิบายผลที่ตามมาใต้แต่ละแถว", "มือถือต้องไม่หนาแน่นกว่าเดสก์ท็อป — จำนวนปุ่มที่เห็นพร้อมกันเท่ากันทั้งสองขนาด", "ชื่อที่ครูรับรองกลายเป็นความจริงหลัก ค่าจาก AI และนักเรียนยังคงแสดงใต้ลงไปเสมอ", "เปลี่ยนผลย้อนหลังได้ แต่บันทึกเป็นเวอร์ชันใหม่ในประวัติ"])
       },
       {
         id: "T-13", name: "ขอให้แก้ไข", entry: "T-12",
@@ -883,7 +895,7 @@ class Component extends DCLogic {
     }
     if (wantChecks) mapReadout.push(pill("จุดตรวจในขอบเขต " + checksIn + " / 3", checksIn === 3 ? "ok" : "warn"));
 
-    const line = (t, kind) => ({ t, style: { fontSize: "11.5px", lineHeight: 1.5, color: kind === "warn" ? "#6B3E05" : "#7C8B83" } });
+    const line = (t, kind) => ({ t, style: { fontSize: "11.5px", lineHeight: 1.5, color: kind === "warn" ? "#6B3E05" : "#5E6D64" } });
     const policyLines = [
       (p.strictOutOfBounds ?? false)
         ? line("นอกขอบเขต: ห้ามบันทึกการสังเกต — เสี่ยงบล็อกนักเรียนเมื่อ GPS คลาดในที่ร่ม", "warn")
@@ -1059,16 +1071,16 @@ class Component extends DCLogic {
 
         S("S-19", "ตรวจลักษณะ · ชบา", "ลักษณะใบ · กลุ่มที่ 2 จาก 5", "14:39", 0,
           [["strip", "ตรวจแล้ว 4 จาก 11 ลักษณะ", ""],
-           ["trait", "รูปใบ — AI ว่า: รูปไข่ ปลายแหลม", "✓ ตรง  |  ✕ ไม่ตรง  |  ? ไม่แน่ใจ  |  ◌ มองไม่เห็น"],
+           ["trait", "รูปใบ — AI ว่า: รูปไข่ ปลายแหลม", "✓ ตรง  |  ✕ ไม่ตรง  |  ? ไม่แน่ใจ  |  ◌ ไม่เห็น"],
            ["traitOn", "ขอบใบ — AI ว่า: หยักฟันเลื่อย", "เลือก ✕ ไม่ตรง → กรอก “ขอบใบเรียบช่วงโคน หยักเฉพาะปลายใบ”"],
            ["gap"],
            ["btn", "ถัดไป: ลักษณะลำต้น", "", 9]],
           "แบ่งเป็น 5 กลุ่มลักษณะ ไม่ใช่ฟอร์มเดียวยาว การเลือก “ไม่ตรง” จะเปิดช่องให้กรอกค่าที่ถูกต้องทันที",
-          [["D-014", "ทุกลักษณะเลือกได้ 4 แบบ: ตรง / ไม่ตรง / ไม่แน่ใจ / มองไม่เห็น"], ["D-015", "ค่าจาก AI และค่าที่นักเรียนแก้เก็บแยกกัน ไม่ทับกัน"]],
+          [["D-014", "ทุกลักษณะเลือกได้ 4 แบบ: ตรง / ไม่ตรง / ไม่แน่ใจ / ไม่เห็น"], ["D-015", "ค่าจาก AI และค่าที่นักเรียนแก้เก็บแยกกัน ไม่ทับกัน"]],
           ["ยังตรวจไม่ครบ", "ไม่มีผล AI (กรอกเองทั้งหมด)", "บันทึกร่างอัตโนมัติ"]),
 
         S("S-21", "สรุปก่อนส่ง", "พบชนิดซ้ำในรอบสำรวจ", "14:44", 0,
-          [["card", "ชบา · Hibiscus rosa-sinensis", "ตรง 7 · แก้ไข 2 · ไม่แน่ใจ 1 · มองไม่เห็น 1 · 5 ภาพ"],
+          [["card", "ชบา · Hibiscus rosa-sinensis", "ตรง 7 · แก้ไข 2 · ไม่แน่ใจ 1 · ไม่เห็น 1 · 5 ภาพ"],
            ["info", "เพื่อนบันทึกพืชชนิดนี้แล้ว 2 รายการ", "คุณบันทึกต้นของคุณต่อได้เลย — นี่คือการสังเกตรายบุคคล ไม่ใช่ข้อผิดพลาด"],
            ["row", "ชบา · ธนกฤต วงศ์ใหญ่", "ห่างจากคุณ 8 ม. · อาจเป็นต้นเดียวกัน"],
            ["gap"],
@@ -1113,7 +1125,7 @@ class Component extends DCLogic {
           [["img", "แกลเลอรี 1 / 5", ""],
            ["ok", "ชื่อที่ครูรับรองแล้ว", "ชบา · Hibiscus rosa-sinensis L. — อ.สุดา ใจดี 16:20 น."],
            ["ai", "AI เสนอ (ชั่วคราว · เก็บไว้ครบ)", "ชบา 0.62 · พู่ระหง 0.24 · ชบาหนู 0.09"],
-           ["card", "นักเรียนตรวจแล้ว", "ตรง 7 · แก้ไข 2 · ไม่แน่ใจ 1 · มองไม่เห็น 1"],
+           ["card", "นักเรียนตรวจแล้ว", "ตรง 7 · แก้ไข 2 · ไม่แน่ใจ 1 · ไม่เห็น 1"],
            ["gap"],
            ["btn2", "↺ เริ่มโฟลว์นักเรียนใหม่", "", 0]],
           "ลำดับการอ่านคือ ครูรับรอง → นักเรียน → AI เสมอ ให้ความจริงที่ผ่านการตรวจอยู่บนสุด และ AI อยู่ล่างสุดในกรอบเส้นประ",
@@ -1198,7 +1210,7 @@ class Component extends DCLogic {
         [["grid4", "ภาพ 5 ภาพ · แตะเพื่อขยาย", ""],
          ["card", "① นักเรียนสรุปว่า", "ชบา · Hibiscus rosa-sinensi · “ใบขอบหยักฟันเลื่อย ดอกเดี่ยวสีแดง...”"],
          ["ai", "② AI เสนอ (ชั่วคราว)", "ชบา 0.62 · พู่ระหง 0.24 · ชบาหนู 0.09"],
-         ["card", "③ การตรวจลักษณะของนักเรียน", "ตรง 7 · ไม่ตรง 2 (มีค่าที่แก้) · ไม่แน่ใจ 1 · มองไม่เห็น 1"],
+         ["card", "③ การตรวจลักษณะของนักเรียน", "ตรง 7 · ไม่ตรง 2 (มีค่าที่แก้) · ไม่แน่ใจ 1 · ไม่เห็น 1"],
          ["info", "ป้าย: ชนิดซ้ำในรอบนี้", "อีก 2 รายการ · 1 รายการอาจเป็นต้นเดียวกัน (ห่าง 8 ม.)"],
          ["gap"],
          ["btn2", "↩ ขอให้แก้ไข", "", 8],
@@ -1261,7 +1273,7 @@ class Component extends DCLogic {
     const tab = (on) => ({
       flex: 1, textAlign: "center", padding: "9px 0", borderRadius: "8px", fontSize: "13.5px",
       fontWeight: on ? 700 : 500, background: on ? "#FFFFFF" : "transparent",
-      color: on ? "#14472F" : "#7C8B83", cursor: "pointer",
+      color: on ? "#14472F" : "#5E6D64", cursor: "pointer",
       boxShadow: on ? "0 1px 2px rgba(22,33,28,.08)" : "none"
     });
 
@@ -1306,13 +1318,13 @@ class Component extends DCLogic {
     const subStyleFor = (k) => {
       if (k === "hero") return { display: "block", fontSize: "12px", color: "#BCD4C4", marginTop: "6px" };
       if (k === "btn" || k === "btnBig") return { display: "block", fontSize: "11.5px", color: "rgba(255,255,255,.8)", marginTop: "4px" };
-      if (k === "btn2") return { display: "block", fontSize: "11.5px", color: "#7C8B83", marginTop: "3px" };
+      if (k === "btn2") return { display: "block", fontSize: "11.5px", color: "#5E6D64", marginTop: "3px" };
       if (k === "ok") return { display: "block", fontSize: "12.5px", color: "#10662F", lineHeight: 1.6, marginTop: "4px" };
       if (k === "warn") return { display: "block", fontSize: "12.5px", color: "#6B3E05", lineHeight: 1.6, marginTop: "4px" };
       if (k === "err") return { display: "block", fontSize: "12.5px", color: "#8E1D17", lineHeight: 1.6, marginTop: "4px" };
       if (k === "info") return { display: "block", fontSize: "12.5px", color: "#143A78", lineHeight: 1.6, marginTop: "4px" };
       if (k === "gap" || k === "strip" || k === "note") return { display: "none" };
-      return { display: "block", fontSize: "12.5px", color: "#7C8B83", lineHeight: 1.55, marginTop: "4px" };
+      return { display: "block", fontSize: "12.5px", color: "#5E6D64", lineHeight: 1.55, marginTop: "4px" };
     };
     const okTitle = { ok: "#10662F", warn: "#6B3E05", err: "#8E1D17", info: "#143A78" };
 
@@ -1344,7 +1356,7 @@ class Component extends DCLogic {
       numStyle: {
         fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", flex: "none", width: "18px",
         height: "18px", borderRadius: "50%", display: "grid", placeItems: "center", marginTop: "1px",
-        background: idx === i ? "#1F6B47" : "#EFF2EF", color: idx === i ? "#FFFFFF" : "#7C8B83"
+        background: idx === i ? "#1F6B47" : "#EFF2EF", color: idx === i ? "#FFFFFF" : "#5E6D64"
       },
       go: () => this.go(idx)
     }));

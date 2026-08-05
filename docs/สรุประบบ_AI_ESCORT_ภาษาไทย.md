@@ -42,6 +42,10 @@ Flow หลักของระบบ:
 
 ## 2. ผู้ใช้งานและสิทธิ์
 
+ทุกบัญชีใช้ Email จริงและ Password ผ่าน Supabase Auth และต้องยืนยัน Email ก่อนเข้าใช้งานส่วนที่มีข้อมูล Class ระบบใช้ Email สำหรับยืนยันบัญชี เชิญ/อนุมัติสิทธิ์ครู แจ้งเตือนความปลอดภัย และกู้รหัสผ่าน
+
+สิทธิ์ผู้ใช้งานทั่วไปมีเพียง `student` และ `teacher` เท่านั้น นักเรียนไม่สามารถเปลี่ยนตนเองเป็นครูได้ สิทธิ์ครูเกิดจากคำเชิญทาง Email ที่ Platform Admin สร้างและระบบตรวจสอบแบบ Trusted Operation ส่วน Platform Admin เป็นสิทธิ์แยกต่างหาก ไม่ใช่สมาชิก Class
+
 ### 2.1 นักเรียน
 
 นักเรียนสามารถ:
@@ -110,7 +114,16 @@ Flow หลักของระบบ:
 
 ### 2.4 Admin
 
-Admin จัดการระบบระดับ Platform เช่น ผู้ใช้ โรงเรียน AI Provider การตั้งค่า และ Audit Log แต่ยังต้องมีการควบคุมสิทธิ์ตามโรงเรียนและ Class
+Admin ทำหน้าที่ด้าน Platform/DevOps ได้แก่:
+
+- ดูรายชื่อครูและนักเรียน โรงเรียน Class และสถานะการใช้งาน
+- สร้างโรงเรียนและออก/ยกเลิกคำเชิญสิทธิ์ครู
+- ดู Audit Event และ Error Log ที่ผ่านการปกปิดข้อมูลละเอียดอ่อน
+- ดูว่า Flow ใดมีปัญหา เช่น Join Class, สร้างกลุ่ม, Upload, Realtime, Gemini, Review และ Export
+- ดู Queue Depth, งานค้าง, Retry, Dead Letter, Latency และ Failure Category
+- รับทราบ Incident และเพิ่ม Note แบบ Append-only
+
+Admin ไม่เห็น Password, Token, Secret Key, Signed URL, รูปส่วนตัว หรือพิกัดตำแหน่งสดแบบละเอียดในหน้าปฏิบัติการปกติ การเข้าถึงข้อมูลอ่อนไหวเพื่อแก้เหตุฉุกเฉินต้องเป็น Break-glass ที่ระบุเหตุผล ขอบเขต เวลา และบันทึก Audit แยกต่างหาก
 
 ---
 
@@ -335,7 +348,7 @@ session_participants = สมาชิกจริงของ Session นั้
 
 ## 10. การแจ้งเตือนภายในแอป
 
-MVP ใช้ In-app Notification ไม่ต้องใช้ Email
+MVP ส่ง Product Notification ภายในแอป ไม่ส่ง Notification เหล่านี้ทาง Email แต่บัญชียังคงต้องใช้ Email ที่ยืนยันแล้วสำหรับ Authentication และ Recovery
 
 ระบบเก็บ Notification เป็น Row ใน PostgreSQL เพื่อให้นักเรียนเปิดแอปภายหลังแล้วยังเห็น และใช้ Realtime ส่งสัญญาณให้หน้าจออัปเดตทันที
 

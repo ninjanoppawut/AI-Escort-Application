@@ -11,11 +11,17 @@
 - Flexible AI/research payloads may use versioned `jsonb`.
 - Preserve append-only history for AI runs, submissions, reviews, status changes, group changes, and research events.
 - Realtime improves UI responsiveness but never replaces database validation.
+- Index every foreign-key column used for joins, cascade checks, RLS membership/ownership predicates, or worker selection; document any deliberate exception.
+- Mutable lists use keyset-friendly indexes matching their filter/equality columns followed by stable sort columns such as `(created_at, id)`.
+- Multi-row mutations acquire locks in a consistent documented order and keep transactions free of external network calls.
 
 ## 2. Core tables
 
 ```text
 profiles
+platform_admins
+break_glass_access_grants
+teacher_invitations
 schools
 school_memberships
 classes
@@ -24,10 +30,12 @@ class_invites
 
 groups
 group_members
+student_group_creation_claims
 group_invitations
 group_membership_history
 
 activities
+activity_versions
 activity_routes
 activity_boundaries
 activity_checkpoints
@@ -47,6 +55,9 @@ observation_ai_results
 student_trait_verifications
 observation_submissions
 teacher_reviews
+observation_revision_topics
+observation_unlock_requests
+observation_issue_reports
 observation_status_history
 observation_duplicate_candidates
 specimens
@@ -54,8 +65,115 @@ research_events
 
 notifications
 audit_logs
+operational_error_events
+operational_incidents
+operational_incident_notes
+idempotency_keys
 exports
 ```
+
+### Identity and platform control
+
+```sql
+create table profiles (
+  id uuid primary key references auth.users(id) on delete restrict,
+  email text not null,
+  display_name text not null,
+  account_type text not null default 'student'
+    check (account_type in ('student','teacher')),
+  status text not null default 'active'
+    check (status in ('active','deactivated')),
+  email_verified_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index profiles_email_unique
+on profiles (lower(email));
+
+create table platform_admins (
+  user_id uuid primary key references profiles(id) on delete restrict,
+  status text not null default 'active'
+    check (status in ('active','revoked')),
+  granted_by uuid references profiles(id) on delete restrict,
+  granted_at timestamptz not null default now(),
+  revoked_by uuid references profiles(id) on delete restrict,
+  revoked_at timestamptz,
+  reason text not null
+);
+
+create table break_glass_access_grants (
+  id uuid primary key default gen_random_uuid(),
+  admin_user_id uuid not null references platform_admins(user_id) on delete restrict,
+  resource_type text not null,
+  resource_id uuid not null,
+  reason text not null,
+  status text not null default 'requested'
+    check (status in ('requested','active','expired','revoked','denied')),
+  requested_at timestamptz not null default now(),
+  approved_by uuid references platform_admins(user_id) on delete restrict,
+  approved_at timestamptz,
+  expires_at timestamptz not null,
+  revoked_by uuid references platform_admins(user_id) on delete restrict,
+  revoked_at timestamptz,
+  check (expires_at > requested_at and expires_at <= requested_at + interval '1 hour')
+);
+
+create index break_glass_active_admin_expiry_idx
+on break_glass_access_grants (admin_user_id, expires_at)
+where status = 'active';
+
+create table schools (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  status text not null default 'active'
+    check (status in ('active','archived')),
+  created_by uuid not null references profiles(id) on delete restrict,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table school_memberships (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete restrict,
+  role text not null check (role in ('student','teacher')),
+  status text not null default 'active'
+    check (status in ('active','left')),
+  joined_at timestamptz not null default now(),
+  left_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (school_id, user_id)
+);
+
+create index school_memberships_user_school_idx
+on school_memberships (user_id, school_id)
+where status = 'active';
+
+create table teacher_invitations (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  email text not null,
+  token_hash text not null unique,
+  status text not null default 'pending'
+    check (status in ('pending','accepted','revoked','expired')),
+  created_by uuid not null references profiles(id) on delete restrict,
+  expires_at timestamptz not null,
+  accepted_by uuid references profiles(id) on delete restrict,
+  accepted_at timestamptz,
+  revoked_by uuid references profiles(id) on delete restrict,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create unique index one_pending_teacher_invite_per_school_email
+on teacher_invitations (school_id, lower(email))
+where status = 'pending';
+```
+
+`profiles.email`, `profiles.account_type`, and `profiles.status` are server-managed. A bootstrap trigger may create a student profile from a confirmed Auth identity, but it must never grant teacher/admin capability. Teacher invitation consumption compares normalized verified email, locks the invitation/profile rows, updates account type, and creates the school membership atomically.
+
+Platform-admin checks use `platform_admins`; admin is never stored in `class_members` or `school_memberships`. Admin table grants are not directly writable through the Data API.
 
 ## 3. Classes and class membership
 
@@ -95,8 +213,8 @@ create table class_members (
   id uuid primary key default gen_random_uuid(),
   class_id uuid not null references classes(id) on delete cascade,
   user_id uuid not null references profiles(id) on delete cascade,
-  role text not null check (role in ('student','teacher','assistant_teacher')),
-  status text not null check (status in ('invited','active','suspended','left')),
+  role text not null check (role in ('student','teacher')),
+  status text not null default 'active' check (status in ('active','left')),
   joined_at timestamptz,
   created_at timestamptz not null default now(),
   unique (class_id, user_id)
@@ -618,24 +736,367 @@ create table observation_status_history (
 
 create table research_events (
   id uuid primary key default gen_random_uuid(),
-  event_type text not null,
-  occurred_at timestamptz not null default now(),
-  user_id uuid references profiles(id),
-  class_id uuid references classes(id),
-  group_id uuid references groups(id),
-  activity_id uuid references activities(id),
-  session_id uuid references exploration_sessions(id),
-  observation_id uuid references observations(id),
+  event_name text not null,
+  schema_version integer not null check (schema_version >= 1),
+  actor_id uuid references profiles(id) on delete restrict,
+  school_id uuid references schools(id) on delete restrict,
+  class_id uuid references classes(id) on delete restrict,
+  group_id uuid references groups(id) on delete restrict,
+  activity_id uuid references activities(id) on delete restrict,
+  session_id uuid references exploration_sessions(id) on delete restrict,
+  observation_id uuid references observations(id) on delete restrict,
+  request_id uuid,
+  trace_id text,
+  occurred_at timestamptz not null,
+  received_at timestamptz not null default now(),
   payload jsonb not null default '{}'::jsonb
 );
+
+create index research_events_name_time_idx
+on research_events (event_name, occurred_at desc, id desc);
+
+create index research_events_session_time_idx
+on research_events (session_id, occurred_at desc, id desc)
+where session_id is not null;
 ```
 
-Use rows for events, not one growing JSON array. `jsonb` payloads may evolve while relational IDs support filtering and research export.
+Use rows for events, not one growing JSON array. The allowlisted payload contract is versioned in `RESEARCH_EVENT_DICTIONARY.md`; relational IDs support filtering and are pseudonymized or excluded from research export.
+
+## 14A. Activities, geometry, and sessions
+
+Published activity versions are immutable. A session references one published version so later activity edits never rewrite historical route/boundary/checkpoint data.
+
+```sql
+create table activities (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  title text not null,
+  description text,
+  status text not null default 'draft'
+    check (status in ('draft','published','archived')),
+  created_by uuid not null references profiles(id) on delete restrict,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index activities_class_status_updated_idx
+on activities (class_id, status, updated_at desc, id desc);
+
+create table activity_versions (
+  id uuid primary key default gen_random_uuid(),
+  activity_id uuid not null references activities(id) on delete cascade,
+  version_number integer not null check (version_number >= 1),
+  title text not null,
+  instructions text,
+  status text not null default 'draft'
+    check (status in ('draft','published','superseded')),
+  created_by uuid not null references profiles(id) on delete restrict,
+  published_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (activity_id, version_number)
+);
+
+create unique index one_published_activity_version
+on activity_versions (activity_id)
+where status = 'published';
+
+create table activity_routes (
+  activity_version_id uuid primary key references activity_versions(id) on delete cascade,
+  route geometry(linestring, 4326) not null,
+  created_at timestamptz not null default now(),
+  check (not st_isempty(route) and st_isvalid(route) and st_npoints(route) between 2 and 2000)
+);
+
+create table activity_boundaries (
+  activity_version_id uuid primary key references activity_versions(id) on delete cascade,
+  boundary geometry(polygon, 4326) not null,
+  created_at timestamptz not null default now(),
+  check (not st_isempty(boundary) and st_isvalid(boundary) and st_npoints(boundary) between 4 and 2000)
+);
+
+create table activity_checkpoints (
+  id uuid primary key default gen_random_uuid(),
+  activity_version_id uuid not null references activity_versions(id) on delete cascade,
+  sequence_number integer not null check (sequence_number >= 1),
+  title text not null,
+  instructions text,
+  location geometry(point, 4326) not null,
+  radius_m numeric not null default 20 check (radius_m > 0 and radius_m <= 500),
+  created_at timestamptz not null default now(),
+  unique (activity_version_id, sequence_number)
+);
+
+create index activity_checkpoints_version_idx
+on activity_checkpoints (activity_version_id, sequence_number);
+
+create table activity_plugin_configs (
+  activity_version_id uuid primary key references activity_versions(id) on delete cascade,
+  plugin_key text not null default 'plant_survey',
+  schema_version integer not null check (schema_version >= 1),
+  config jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+create table exploration_sessions (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references classes(id) on delete cascade,
+  activity_id uuid not null references activities(id) on delete restrict,
+  activity_version_id uuid not null references activity_versions(id) on delete restrict,
+  title text not null,
+  scheduled_at timestamptz,
+  status text not null default 'scheduled'
+    check (status in ('scheduled','open','paused','completed')),
+  opened_by uuid references profiles(id) on delete restrict,
+  opened_at timestamptz,
+  paused_at timestamptz,
+  completed_by uuid references profiles(id) on delete restrict,
+  completed_at timestamptz,
+  created_by uuid not null references profiles(id) on delete restrict,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index exploration_sessions_class_status_scheduled_idx
+on exploration_sessions (class_id, status, scheduled_at desc, id desc);
+
+create table location_events (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references exploration_sessions(id) on delete cascade,
+  session_participant_id uuid not null references session_participants(id) on delete cascade,
+  event_type text not null check (event_type in ('sample','boundary_warning','checkpoint_reached')),
+  location geography(point, 4326),
+  accuracy_m numeric,
+  recorded_at timestamptz not null,
+  received_at timestamptz not null default now(),
+  device_context jsonb not null default '{}'::jsonb
+);
+
+create index location_events_session_participant_time_idx
+on location_events (session_id, session_participant_id, recorded_at desc, id desc);
+
+create table location_tracks (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references exploration_sessions(id) on delete cascade,
+  session_participant_id uuid not null references session_participants(id) on delete cascade,
+  track geometry(linestring, 4326) not null,
+  sample_count integer not null check (sample_count >= 2),
+  started_at timestamptz not null,
+  ended_at timestamptz not null,
+  generated_at timestamptz not null default now(),
+  unique (session_id, session_participant_id)
+);
+
+create table session_events (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references exploration_sessions(id) on delete cascade,
+  session_group_id uuid references exploration_session_groups(id) on delete set null,
+  actor_id uuid references profiles(id) on delete restrict,
+  event_type text not null,
+  from_status text,
+  to_status text,
+  payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index session_events_session_created_idx
+on session_events (session_id, created_at desc, id desc);
+```
+
+The API accepts GeoJSON in longitude/latitude order and converts to SRID 4326 at the boundary. Publishing validates that the route and checkpoints are inside or intersect the boundary according to the activity rule, that checkpoint order is unique, and that the geometry is valid. Published versions and versions referenced by sessions reject mutation/delete.
+
+## 14B. Revision access and issue reports
+
+```sql
+create table observation_revision_topics (
+  id uuid primary key default gen_random_uuid(),
+  observation_id uuid not null references observations(id) on delete cascade,
+  review_id uuid not null references teacher_reviews(id) on delete cascade,
+  field_key text not null,
+  opened_by uuid not null references profiles(id) on delete restrict,
+  opened_at timestamptz not null default now(),
+  unique (review_id, field_key)
+);
+
+create table observation_unlock_requests (
+  id uuid primary key default gen_random_uuid(),
+  observation_id uuid not null references observations(id) on delete cascade,
+  requested_by uuid not null references profiles(id) on delete restrict,
+  requested_fields text[] not null check (cardinality(requested_fields) between 1 and 20),
+  reason text not null,
+  status text not null default 'pending'
+    check (status in ('pending','granted','denied','cancelled')),
+  decided_by uuid references profiles(id) on delete restrict,
+  decision_note text,
+  decided_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create unique index one_pending_unlock_request_per_observation
+on observation_unlock_requests (observation_id, requested_by)
+where status = 'pending';
+
+create table observation_issue_reports (
+  id uuid primary key default gen_random_uuid(),
+  observation_id uuid not null references observations(id) on delete cascade,
+  reporter_id uuid not null references profiles(id) on delete restrict,
+  report_type text not null check (report_type in ('identity','image','privacy','other')),
+  reason text not null,
+  status text not null default 'open'
+    check (status in ('open','reviewing','resolved','dismissed')),
+  resolved_by uuid references profiles(id) on delete restrict,
+  resolution_note text,
+  resolved_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index observation_issue_reports_observation_created_idx
+on observation_issue_reports (observation_id, created_at desc, id desc);
+
+create index observation_issue_reports_reporter_created_idx
+on observation_issue_reports (reporter_id, created_at desc, id desc);
+```
+
+Issue-report creation is a trusted function that locks a reporter/observation-scoped key, checks for a report within the preceding 24 hours, inserts once, and notifies the class teacher. The observation owner never receives reporter identity through RLS/read models.
+
+## 14C. Idempotency, audit, operations, incidents, and exports
+
+```sql
+create table idempotency_keys (
+  user_id uuid not null references profiles(id) on delete cascade,
+  scope text not null,
+  key uuid not null,
+  request_hash text not null,
+  status text not null default 'pending'
+    check (status in ('pending','completed','failed')),
+  response_status integer,
+  response_body jsonb,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  primary key (user_id, scope, key)
+);
+
+create index idempotency_keys_expiry_idx
+on idempotency_keys (expires_at);
+
+create table audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  actor_id uuid references profiles(id) on delete restrict,
+  actor_kind text not null check (actor_kind in ('student','teacher','admin','system','worker')),
+  action text not null,
+  resource_type text not null,
+  resource_id uuid,
+  class_id uuid references classes(id) on delete restrict,
+  session_id uuid references exploration_sessions(id) on delete restrict,
+  outcome text not null check (outcome in ('succeeded','denied','failed')),
+  request_id uuid,
+  trace_id text,
+  payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index audit_logs_created_idx
+on audit_logs (created_at desc, id desc);
+
+create index audit_logs_actor_created_idx
+on audit_logs (actor_id, created_at desc, id desc);
+
+create index audit_logs_resource_created_idx
+on audit_logs (resource_type, resource_id, created_at desc, id desc);
+
+create table operational_error_events (
+  id uuid primary key default gen_random_uuid(),
+  environment text not null,
+  release_version text,
+  flow text not null,
+  stage text not null,
+  error_code text not null,
+  severity text not null check (severity in ('info','warning','error','critical')),
+  request_id uuid,
+  trace_id text,
+  actor_id uuid references profiles(id) on delete set null,
+  class_id uuid references classes(id) on delete set null,
+  session_id uuid references exploration_sessions(id) on delete set null,
+  fingerprint text not null,
+  redacted_context jsonb not null default '{}'::jsonb,
+  occurred_at timestamptz not null,
+  received_at timestamptz not null default now()
+);
+
+create index operational_errors_flow_time_idx
+on operational_error_events (flow, occurred_at desc, id desc);
+
+create index operational_errors_code_time_idx
+on operational_error_events (error_code, occurred_at desc, id desc);
+
+create table operational_incidents (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  severity text not null check (severity in ('sev1','sev2','sev3','sev4')),
+  status text not null default 'open'
+    check (status in ('open','acknowledged','resolved')),
+  flow text,
+  opened_by uuid not null references profiles(id) on delete restrict,
+  acknowledged_by uuid references profiles(id) on delete restrict,
+  acknowledged_at timestamptz,
+  resolved_by uuid references profiles(id) on delete restrict,
+  resolved_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table operational_incident_notes (
+  id uuid primary key default gen_random_uuid(),
+  incident_id uuid not null references operational_incidents(id) on delete cascade,
+  author_id uuid not null references profiles(id) on delete restrict,
+  note text not null,
+  created_at timestamptz not null default now()
+);
+
+create index operational_incident_notes_incident_time_idx
+on operational_incident_notes (incident_id, created_at, id);
+
+create table exports (
+  id uuid primary key default gen_random_uuid(),
+  requested_by uuid not null references profiles(id) on delete restrict,
+  class_id uuid not null references classes(id) on delete cascade,
+  session_id uuid references exploration_sessions(id) on delete cascade,
+  export_type text not null check (export_type in ('csv','geojson','research_csv')),
+  status text not null default 'queued'
+    check (status in ('queued','running','ready','failed','expired')),
+  request_payload jsonb not null default '{}'::jsonb,
+  storage_path text,
+  row_count integer check (row_count >= 0),
+  failure_code text,
+  created_at timestamptz not null default now(),
+  started_at timestamptz,
+  completed_at timestamptz,
+  expires_at timestamptz not null
+);
+
+create index exports_requester_created_idx
+on exports (requested_by, created_at desc, id desc);
+
+create index exports_queue_idx
+on exports (created_at, id)
+where status = 'queued';
+```
+
+Idempotency entries are scoped to caller and operation, retain the original request hash/response for 24 hours, and reject same-key/different-body reuse. Cleanup uses the expiry index.
+
+Audit/research/status/session/submission/review/admin-note rows are append-only for application roles. Operational context is redacted before insert. High-cardinality IDs are query fields, not metrics labels.
+
+Export workers claim queued jobs without blocking peers, reauthorize scope at generation and download, write to the private export path, notify only after commit, and expire/delete artifacts after seven days.
 
 ## 15. Recommended RPCs
 
 ```text
 join_class_with_invite(code)
+consume_teacher_invitation(token)
+grant_platform_admin(user_id, reason)
+revoke_platform_admin(user_id, reason)
+request_break_glass_access(resource_type, resource_id, reason, expires_at)
+approve_break_glass_access(grant_id)
+revoke_break_glass_access(grant_id, reason)
 create_student_group(class_id, name, description)
 invite_classmate_to_group(group_id, invitee_id)
 accept_group_invitation(invitation_id)
@@ -654,12 +1115,22 @@ submit_observation(observation_id, expected_version)
 request_observation_revision(observation_id, submission_id, feedback)
 review_observation(observation_id, submission_id, decision, corrections)
 complete_exploration_session(session_id)
+request_additional_revision_fields(observation_id, field_keys, reason)
+decide_revision_unlock_request(request_id, decision, field_keys, note)
+report_observation_issue(observation_id, report_type, reason)
+request_export(class_id, session_id, export_type, filters)
+acknowledge_operational_incident(incident_id)
+append_operational_incident_note(incident_id, note)
 ```
 
 Sensitive functions validate `auth.uid()`, set a fixed `search_path`, restrict execute grants, and emit audit/status/notification events.
 
 ## 16. RLS intent
 
+- Unconfirmed Auth users cannot access protected application tables.
+- A user reads/updates only permitted presentation fields on their own profile; email, account type, status, and grants are server-managed.
+- Teacher invitation and platform-admin grant tables are not directly writable by ordinary authenticated users.
+- Platform admin reads use protected server operations/read models, require an active relational grant, and are themselves audited.
 - Student reads class/session data only with active membership/participant access.
 - Student reads class group summaries required for group formation.
 - Student creates a group only through the trusted group-creation RPC.
@@ -673,6 +1144,13 @@ Sensitive functions validate `auth.uid()`, set a fixed `search_path`, restrict e
 - Submitted/completed observation visibility to classmates follows session/class rules.
 - AI worker access uses trusted server credentials and validates target observation/session.
 - Research/audit tables are not broadly exposed to students.
+- Raw location events/tracks are visible only to the authorized class teacher and retention workers; completed-map access does not imply track access.
+- Observation issue-report read models hide reporter identity from the observation owner.
+- Operational error/incident/export tables are private to authorized server workers/admin operations and apply explicit grants in addition to RLS.
+
+Use `(select auth.uid())` in policies and index membership/ownership columns used by RLS. `TO authenticated` without an ownership/membership/admin predicate is not authorization. Every update policy has both `USING` and `WITH CHECK`.
+
+Views in exposed schemas use `security_invoker = true`. Privileged helper functions live in a non-exposed schema, set `search_path = ''`, validate `(select auth.uid())`, and revoke `EXECUTE` from `PUBLIC` before granting the minimum caller role.
 
 ## 17. Storage paths
 

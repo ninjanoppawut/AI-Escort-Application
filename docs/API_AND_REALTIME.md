@@ -11,6 +11,37 @@
 
 ## 2. Core operations
 
+### Authentication, identity, and platform operations
+
+```text
+POST /api/auth/sign-up
+GET  /api/auth/callback
+POST /api/auth/resend-confirmation
+POST /api/auth/forgot-password
+POST /api/auth/update-password
+POST /api/auth/sign-out
+
+GET  /api/me
+PUT  /api/me/profile
+POST /api/teacher-invitations/:token/accept
+
+GET  /api/admin/users
+GET  /api/admin/users/:id
+GET  /api/admin/schools
+POST /api/admin/schools
+POST /api/admin/schools/:id/teacher-invitations
+POST /api/admin/teacher-invitations/:id/revoke
+GET  /api/admin/audit-events
+GET  /api/admin/errors
+GET  /api/admin/flow-health
+GET  /api/admin/incidents
+POST /api/admin/incidents/:id/acknowledge
+POST /api/admin/incidents/:id/notes
+POST /api/admin/break-glass
+POST /api/admin/break-glass/:id/approve
+POST /api/admin/break-glass/:id/revoke
+```
+
 ### Classes and invitations
 
 ```text
@@ -22,6 +53,10 @@ POST /api/classes/join
 POST /api/classes/:id/group-formation/open
 POST /api/classes/:id/group-formation/close
 GET  /api/classes/:id/group-board
+GET  /api/classes/:id/members
+GET  /api/classes/:id/groups/:groupId
+GET  /api/groups/:id/eligible-classmates
+DELETE /api/groups/:id/members/:studentId
 ```
 
 ### Groups
@@ -59,7 +94,14 @@ POST /api/notifications/read-all
 
 ```text
 POST /api/activities
+GET  /api/activities
+GET  /api/activities/:id
+PUT  /api/activities/:id
+POST /api/activities/:id/publish
 POST /api/sessions
+GET  /api/sessions
+GET  /api/sessions/:id
+GET  /api/sessions/:id/group-queue
 POST /api/sessions/:id/open
 POST /api/sessions/:id/activate-group
 POST /api/sessions/:id/pause
@@ -80,8 +122,15 @@ POST /api/observations/:id/review
 POST /api/observations/:id/unlock-request
 POST /api/observations/:id/unlock-request/:requestId/grant
 POST /api/observations/:id/report
+GET  /api/observations
+GET  /api/reviews
 GET  /api/sessions/:id/map
 GET  /api/observations/:id/details
+
+POST /api/exports
+GET  /api/exports
+GET  /api/exports/:id
+GET  /api/exports/:id/download
 ```
 
 Literal REST routes are optional; equivalent server actions/RPC contracts are valid.
@@ -95,6 +144,53 @@ Literal REST routes are optional; equivalent server actions/RPC contracts are va
   "requestId": "uuid"
 }
 ```
+
+Error responses use one envelope:
+
+```json
+{
+  "data": null,
+  "error": {
+    "code": "GROUP_LIMIT_REACHED",
+    "message": "A safe localized fallback message.",
+    "retryable": false,
+    "details": {}
+  },
+  "requestId": "uuid"
+}
+```
+
+Do not return stack traces, secrets, signed URLs, raw provider payloads, or unauthorized resource identifiers in `details`.
+
+Stable auth/admin errors:
+
+```text
+AUTH_REQUIRED
+EMAIL_REQUIRED
+EMAIL_NOT_CONFIRMED
+INVALID_CREDENTIALS
+PASSWORD_POLICY_FAILED
+AUTH_CALLBACK_INVALID
+RECOVERY_LINK_INVALID
+ACCOUNT_DISABLED
+TEACHER_INVITE_REQUIRED
+TEACHER_INVITE_INVALID
+TEACHER_INVITE_EXPIRED
+ADMIN_REQUIRED
+MFA_REQUIRED
+TELEMETRY_SOURCE_UNAVAILABLE
+CONFIGURATION_INVALID
+BREAK_GLASS_REQUIRED
+BREAK_GLASS_EXPIRED
+INVALID_CURSOR
+TIME_RANGE_TOO_LARGE
+IDEMPOTENCY_KEY_REQUIRED
+IDEMPOTENCY_KEY_REUSE
+```
+
+`CONFIGURATION_INVALID` is reserved for operational readiness checks. It
+returns `503` with only invalid environment field names in safe details; it
+never returns configured values.
 
 Stable group/class errors:
 
@@ -143,14 +239,40 @@ SESSION_PAUSED
 RATE_LIMITED
 ```
 
-Every code above requires a defined UI state before the feature that raises it ships. `RATE_LIMITED` and `CLASS_NOT_ACTIVE` are currently unmapped (D-060).
+Every code above requires a defined UI state before the feature that raises it ships. `UI_CONTRACTS.md` defines the required mappings, including `RATE_LIMITED` and `CLASS_NOT_ACTIVE` (D-060).
 
 `OBSERVATION_VERSION_CONFLICT` blocks the second writer, states the reason, and returns the refreshed record with a repeat action (D-052).
+
+### HTTP, pagination, and idempotency rules
+
+- Domain validation returns `422`; authorization returns `403`; missing authorized resource returns `404`; state/version/idempotency contention returns `409`; rate limiting returns `429` with retry guidance; unexpected dependency/server failure returns `5xx` and `retryable=true` only when safe.
+- Contracts evolve additively. A breaking shape requires a new explicit API/schema version.
+- Mutable/growing lists use opaque cursor pagination ordered by a documented stable tuple, normally `(created_at desc, id desc)`.
+- Default list size is 50 and maximum is 100. Responses return `items`, `nextCursor`, and `hasMore`; total count is optional and separate.
+- Admin error/audit searches default to the previous 24 hours and reject ranges beyond 31 days without a narrower archive/export operation.
+- Non-idempotent POST mutations require an `Idempotency-Key` UUID unless the underlying RPC is naturally keyed by a client-generated resource ID.
+- Idempotency scope is caller + operation. Entries live for 24 hours. Same key/same request returns the stored response; same key/different request hash returns `IDEMPOTENCY_KEY_REUSE`; an in-flight duplicate returns `409`.
+- Clients honor `Retry-After` for `429` and use exponential backoff with jitter for retryable failures.
+
+Paginated response:
+
+```json
+{
+  "data": {
+    "items": [],
+    "nextCursor": null,
+    "hasMore": false
+  },
+  "error": null,
+  "requestId": "uuid"
+}
+```
 
 ## 4. Create class
 
 ```json
 {
+  "schoolId": "uuid",
   "name": "Biology M.4/1",
   "subject": "Biology",
   "academicYear": "2569",
@@ -165,7 +287,7 @@ Every code above requires a defined UI state before the feature that raises it s
 }
 ```
 
-The authenticated teacher becomes an active teacher member in the same transaction.
+The authenticated user must have trusted teacher capability and an active teacher membership in `schoolId`. The teacher becomes an active class teacher member in the same transaction.
 
 ## 5. Join class
 
@@ -175,7 +297,7 @@ The authenticated teacher becomes an active teacher member in the same transacti
 }
 ```
 
-The server validates expiry, disabled state, usage count, and existing membership. The resulting role is always `student`.
+The server validates confirmed email, active student account capability, class/school status, expiry, disabled state, usage count, and existing membership. The resulting role is always `student`; the same transaction creates an active student school membership when one does not already exist.
 
 ## 6. Group board
 
@@ -546,3 +668,196 @@ Drafts never appear on the teacher map. Session map and plant details use author
 - Client-generated observation IDs prevent duplicate drafts.
 - Media and AI jobs use deterministic IDs/idempotency keys.
 - Submission uses optimistic version checks.
+
+## 21. Authentication and trusted provisioning
+
+Logical signup input:
+
+```json
+{
+  "email": "student@example.edu",
+  "password": "long passphrase",
+  "returnTo": "/join/opaque-invite-token"
+}
+```
+
+`returnTo` must resolve to an allowlisted same-origin route. Signup never accepts account type, class role, school ID, class ID, or admin flag. Until confirmation, return `EMAIL_NOT_CONFIRMED` for protected reads.
+
+The PKCE callback consumes the authorization code, validates state/redirect, bootstraps the default student profile, and then resumes the invitation flow. Server route protection validates signed current claims; it does not treat an unvalidated cookie session as proof.
+
+Teacher invitation acceptance:
+
+```json
+{
+  "token": "opaque-token"
+}
+```
+
+The server hashes the token, validates pending/expiry/school state, compares the normalized invitation email with the confirmed Auth email, and atomically grants teacher account type plus school membership. The token is single-use and never stored in logs.
+
+Password-reset and confirmation resend responses do not reveal whether an arbitrary email is registered. Production mail uses custom SMTP; local tests use Mailpit.
+
+## 22. Class, group, activity, session, and work-queue read models
+
+Class members:
+
+```text
+GET /api/classes/:id/members?role=student&status=active&limit=50&cursor=opaque
+```
+
+Teacher results include permitted email/join/group fields. Student results omit email and expose only active classmates plus permitted group assignment. Stable order is `(display_name asc, id asc)` with the full tuple encoded in the cursor.
+
+Eligible classmates return only active, unassigned student members who are not already pending for the same group and whose acceptance would not exceed current capacity. The response is advisory; send/accept mutations revalidate.
+
+Leader member removal is an atomic trusted operation available only before lock/active-session restriction. It cannot remove the leader without an explicit same-operation successor transfer and emits history, notification, and group invalidation.
+
+Activity write model:
+
+```json
+{
+  "title": "Plant survey 1",
+  "description": "Field survey",
+  "instructions": "Stay inside the boundary.",
+  "expectedVersion": 3,
+  "geometry": {
+    "boundary": {"type": "Polygon", "coordinates": []},
+    "route": {"type": "LineString", "coordinates": []},
+    "checkpoints": [
+      {
+        "sequenceNumber": 1,
+        "title": "Start",
+        "instructions": "Meet here",
+        "location": {"type": "Point", "coordinates": [100.5018, 13.7563]},
+        "radiusM": 20
+      }
+    ]
+  },
+  "plugin": {
+    "key": "plant_survey",
+    "schemaVersion": 1,
+    "config": {}
+  }
+}
+```
+
+All GeoJSON coordinates are `[longitude, latitude]` in WGS84/SRID 4326. Boundary must be a valid non-empty Polygon, route a valid LineString, checkpoint sequence unique, and complexity within documented database limits. Publishing creates an immutable published version; sessions reference that version. Editing after publish creates a new draft version.
+
+Session detail returns activity version, queue order, authorized participant summary, current session/group status, route/boundary/checkpoints, state freshness, and allowed actions. Waiting students never receive peer live locations. Teacher live read models may include named current positions but not unrestricted historical tracks.
+
+Student observation list:
+
+```text
+GET /api/observations?classId=&activityId=&status=&limit=50&cursor=opaque
+```
+
+It returns only the caller's authorized observations across classes, ordered by `(updated_at desc, id desc)`, plus local-sync reconciliation keys where safe.
+
+Teacher review queue:
+
+```text
+GET /api/reviews?classId=&sessionId=&status=&sameSpecies=&limit=50&cursor=opaque
+```
+
+It returns submitted/resubmitted items authorized to the teacher, ordered by `(latest_submitted_at asc, id asc)` so oldest work is reviewed first.
+
+## 23. Admin operations contracts
+
+Every `/api/admin/*` operation requires a current active platform-admin grant. Admin mutations and sensitive reads require MFA at `aal2`. Routine results are redacted by the server before serialization.
+
+User directory:
+
+```text
+GET /api/admin/users?accountType=teacher&schoolId=&status=active&query=&limit=50&cursor=opaque
+```
+
+```json
+{
+  "id": "uuid",
+  "email": "teacher@example.edu",
+  "displayName": "Teacher A",
+  "accountType": "teacher",
+  "status": "active",
+  "emailVerified": true,
+  "schoolSummaries": [],
+  "classCount": 3,
+  "lastSignInAt": "2026-08-04T08:00:00Z"
+}
+```
+
+Audit/error explorer:
+
+```text
+GET /api/admin/audit-events?from=&to=&actorId=&action=&resourceType=&outcome=&limit=50&cursor=opaque
+GET /api/admin/errors?from=&to=&flow=&stage=&code=&release=&environment=&traceId=&limit=50&cursor=opaque
+```
+
+Error items include flow/stage/code/severity/time/release/fingerprint/request/trace correlation and allowlisted redacted context. They never include access/refresh tokens, cookies, passwords, SMTP/Gemini keys, signed URLs, exact coordinates, image bytes/URLs, or student evidence free text.
+
+Flow health returns freshness plus low-cardinality aggregates:
+
+```json
+{
+  "window": {"from": "...", "to": "..."},
+  "freshAt": "...",
+  "flows": [
+    {
+      "flow": "observation_upload",
+      "requests": 120,
+      "successRate": 0.975,
+      "p95Ms": 1800,
+      "topErrorCodes": [{"code": "IMAGE_TOO_LARGE", "count": 2}]
+    }
+  ],
+  "queues": {
+    "analysisDepth": 4,
+    "oldestMessageAgeSeconds": 12,
+    "deadLetterCount": 0
+  }
+}
+```
+
+Incident acknowledgement/note writes are idempotent, append-only where applicable, and return the updated incident. Source audit/error events cannot be edited.
+
+Break-glass access is a separate server contract requiring reason, exact resource type/ID, expiry of at most one hour, MFA reauthentication, and immutable audit. It is not a generic admin query parameter. Deployment policy may require approval by a second active admin before activation.
+
+## 24. Revision access, issue reports, and exports
+
+Unlock request:
+
+```json
+{
+  "fieldKeys": ["scientific_name", "trait:leaf_arrangement"],
+  "reason": "พบหลักฐานเพิ่มจากต้นจริง"
+}
+```
+
+The owner may create one pending request per observation. Teacher grant supplies the exact allowed field keys; a grant does not unlock unrelated fields. Decisions create notifications and audit/status events.
+
+Issue report:
+
+```json
+{
+  "type": "identity",
+  "reason": "ชื่อพืชอาจไม่ตรงกับรูป"
+}
+```
+
+Creation enforces one report per reporter/observation per rolling 24 hours and returns `RATE_LIMITED` with retry guidance when exceeded. Owner-facing observation data never exposes reporter identity.
+
+Export request:
+
+```json
+{
+  "classId": "uuid",
+  "sessionId": "uuid",
+  "type": "csv",
+  "filters": {
+    "statuses": ["verified"],
+    "includeResearchFields": false
+  }
+}
+```
+
+The request requires an `Idempotency-Key`. Small exports may complete synchronously; large exports return `202` with an export resource. Generation reauthorizes the requester, snapshots scope, uses the versioned schema in `PRIVACY_RETENTION_AND_RESEARCH.md`, writes a private artifact, and creates `export_ready` only after commit.
+
+Download reauthorizes current teacher/admin scope, returns a short-lived authorized response, and never places permanent public URLs in rows or notifications. Artifacts expire after seven days.

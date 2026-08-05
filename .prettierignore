@@ -1,0 +1,14 @@
+.next
+node_modules
+coverage
+playwright-report
+test-results
+design
+docs
+AGENTS.md
+CLAUDE.md
+README.md
+.claude
+.impeccable
+package-lock.json
+supabase/.temp

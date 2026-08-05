@@ -11,16 +11,18 @@ Next.js mobile-first PWA
  ├─ Student class/group workflow
  ├─ Student field workflow
  ├─ Teacher class/group/live/review dashboard
- └─ Admin functions
-        │
-        ├─ Supabase Auth
-        ├─ PostgreSQL + PostGIS
-        ├─ Supabase Realtime Broadcast + Presence
-        ├─ Supabase Storage
-        ├─ Supabase Queue
-        └─ Supabase Edge Function consumer
+ └─ Platform admin operations console
                  │
-                 └─ Gemini provider adapter
+                 ▼
+Shared server/data platform
+ ├─ Supabase Auth
+ ├─ PostgreSQL + PostGIS
+ ├─ Supabase Realtime Broadcast + Presence
+ ├─ Supabase Storage
+ ├─ Supabase Queue
+ └─ Supabase Edge Function consumer
+          │
+          └─ Gemini provider adapter
 ```
 
 The browser never holds Gemini or service-role secrets.
@@ -59,6 +61,8 @@ src/
     (admin)/
     api/
   features/
+    auth/
+    admin-operations/
     classes/
     class-invites/
     groups/
@@ -87,7 +91,9 @@ Keep domain logic independent from page components.
 
 ## 5. Authentication and authorization
 
-- Supabase Auth provides identity.
+- Supabase Auth provides verified email/password identity through SSR PKCE/cookies; protected server routes validate current claims.
+- Profiles store trusted `student`/`teacher` account capability; teacher capability comes only from an email-bound platform-admin invitation.
+- Platform admin is a separate relational grant, requires MFA for admin routes, and is never a class role.
 - Membership tables are authoritative for school/class/session access.
 - Class invitation joining occurs through trusted server logic; the client cannot choose a role.
 - Participant rows snapshot membership for each session.
@@ -146,7 +152,7 @@ Unused groups may be soft-deleted. Groups referenced by sessions are archived.
 
 ## 7. In-app notification architecture
 
-The MVP does not depend on email.
+Notifications and class invitation delivery do not depend on email. Account confirmation, teacher provisioning, security notifications, and password recovery do use production custom SMTP as defined in `AUTH_IDENTITY_AND_TENANCY.md`.
 
 ```text
 domain mutation succeeds
@@ -381,3 +387,7 @@ After teacher manually completes the session, an authorized completed-session pa
 Capture application errors, failed group mutations, group-slot race outcomes, invitations, leadership changes, student moves, group deletion/archive, failed uploads, queue/job state, Gemini latency/failure category, Realtime connection state, session-control events, observation lifecycle events, notification delivery state, and RLS test results.
 
 Never log access tokens, secret keys, exact live locations in general-purpose logs, or unrestricted private image URLs.
+
+Use request IDs for every synchronous operation and propagate a trace/correlation ID through uploads, queues, Edge Functions, notifications, and exports. Metrics use low-cardinality route-template/flow/stage/status dimensions; user/class/session/observation/request IDs belong only in access-controlled redacted logs/traces.
+
+The platform-admin console reads protected operational projections: account/school/class summaries, audit events, redacted errors, flow-level RED metrics, queue age/dead letters, Gemini categories, upload failures, and Realtime health. Platform admin is authorized independently from class membership and has no normal unrestricted student-content or live-location view.

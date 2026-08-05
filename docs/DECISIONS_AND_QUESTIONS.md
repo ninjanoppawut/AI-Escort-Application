@@ -161,7 +161,7 @@ This file records accepted product decisions for developers and AI coding agents
 ### D-031 — Class invitation delivery
 
 - **Status:** accepted
-- **Decision:** Teacher invites students using class code, link, or QR code. Email is not required for the MVP.
+- **Decision:** Teacher invites students using class code, link, or QR code. Email is not used to deliver the class invitation; verified account email remains required by D-061.
 - **Consequence:** Joining is validated by a trusted server function and always creates a student membership.
 
 ### D-032 — In-app notifications
@@ -296,6 +296,7 @@ This file records accepted product decisions for developers and AI coding agents
 - **Status:** accepted
 - **Decision:** Colour, shape, icon, and Thai text tokens are defined for all three status sets: observation (12), group (5), and session group (5).
 - **Consequence:** Group and session-group statuses may not rely on colour alone, matching the existing observation tokens.
+- **Implementation contract:** Exact Thai labels, semantic colors, icons, and shapes are defined in `UI_CONTRACTS.md` §2.
 
 ### D-054 — Live-location identifiability
 
@@ -326,17 +327,44 @@ This file records accepted product decisions for developers and AI coding agents
 - **Status:** accepted
 - **Decision:** Every notification type in `PRODUCT_REQUIREMENTS.md` §8 maps to one of the eight designed row layouts, with a defined icon, Thai copy string, and deep-link target.
 - **Consequence:** No notification copy is written at implementation time.
+- **Implementation contract:** The eight layouts and complete type/icon/Thai-copy/deep-link registry are defined in `UI_CONTRACTS.md` §§3–4.
 
 ### D-059 — Required additional screens
 
 - **Status:** accepted
 - **Decision:** The following need a full screen specification before implementation handoff: manual plant entry, group unlock and group-creation-claim reset, the cross-class student observation list, and the class member list for both roles.
 - **Reason:** Each is referenced by an accepted rule or an API operation but exists only as a navigation node.
+- **Implementation contract:** Full written screen/state specifications are defined in `UI_CONTRACTS.md` §6 and are authoritative until corresponding visual/application states are verified.
 
 ### D-060 — Unmapped error codes
 
 - **Status:** accepted
 - **Decision:** `RATE_LIMITED` and `CLASS_NOT_ACTIVE` require defined UI states before the features that raise them ship.
+- **Implementation contract:** Both mappings and all other stable errors are defined in `UI_CONTRACTS.md` §5.
+
+### D-061 — Required email/password authentication
+
+- **Status:** accepted
+- **Decision:** Every MVP account requires a real, verified email address and password through Supabase Auth. Email confirmation is required before protected application access. Password recovery uses the verified email address.
+- **Consequence:** Next.js uses the Supabase SSR PKCE/cookie flow, server authorization validates claims rather than trusting an unverified cookie session, anonymous sign-in is disabled, and production configures custom SMTP for confirmation, security, teacher-invitation, and password-reset messages.
+
+### D-062 — Teacher and student role model
+
+- **Status:** accepted
+- **Decision:** The only ordinary account/class roles are `teacher` and `student`. There is no `assistant_teacher` role and no class-member suspension workflow in the MVP.
+- **Consequence:** A new verified account defaults to student capability. Teacher capability is granted only through a trusted platform-admin teacher invitation/approval. The client never chooses or edits its account type or class role. A teacher who creates a class becomes its teacher member; a class invite always creates a student member.
+
+### D-063 — Platform admin operations role
+
+- **Status:** accepted
+- **Decision:** Platform admin is a separate trusted operations role, not a class membership role. Admin can list teacher/student accounts, schools/classes, audit events, redacted application errors, queue/AI job health, and flow-level failure metrics to diagnose where the product is breaking.
+- **Consequence:** Admin access is stored in a protected relational table and every access is audited. General operational views do not expose passwords, tokens, secret keys, private image URLs, AI credentials, or precise live-location payloads. Access to sensitive student content requires a separately audited break-glass operation and is not part of the normal MVP admin console.
+
+### D-064 — Working privacy-retention defaults
+
+- **Status:** accepted as an MVP engineering default, subject to a school or legal requirement that shortens retention
+- **Decision:** Apply the per-category retention and deletion schedule in `PRIVACY_RETENTION_AND_RESEARCH.md` and require separate consent for research use beyond classroom operation.
+- **Consequence:** Raw live-location samples and raw provider payloads have short retention; export artifacts expire quickly; durable learning records, audit history, and pseudonymized research data have separate lifecycles. A production/pilot owner must approve or shorten the schedule before deployment.
 
 ## Working defaults
 
@@ -359,13 +387,9 @@ These do not block initial implementation but must be finalized before productio
 
 What school/guardian consent and student age rules apply to location, image, notification, and research-event collection?
 
-### Q-002 — Retention
-
-How long should raw live-location events, processed images, AI payloads, notifications, audit logs, and research logs be retained?
-
 ### Q-003 — Production Gemini configuration
 
-Which Gemini model, rate limits, latency target, and monthly budget will production use?
+Which current Gemini model and per-user/session rate limits will production use within the latency/quality gates and THB 5,000 total pilot provider envelope defined by `NON_FUNCTIONAL_REQUIREMENTS.md` and `AI_EVALUATION.md`?
 
 ### Q-004 — Taxonomy normalization source
 

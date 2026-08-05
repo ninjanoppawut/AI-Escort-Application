@@ -1,0 +1,2 @@
+-- Phase 0 intentionally has no domain fixtures.
+-- Add deterministic synthetic identities and records with their owning slice.
