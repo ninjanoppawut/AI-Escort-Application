@@ -100,8 +100,9 @@ and configured with its modern browser-safe publishable key; legacy API keys
 are disabled. The Phase 1 identity/provisioning foundation migration is
 verified locally and deployed to the hosted development database. P1-01 Auth is
 implemented and locally verified with Supabase Auth, PKCE, SSR claim validation,
-Thai-first responsive UI, and Mailpit end-to-end coverage. It remains unchecked
-until PR/commit, hosted CI, custom SMTP, and deployed redirect evidence exist;
-trusted provisioning and the broader Phase 1 slice remain in progress.
+Thai-first responsive UI, and Mailpit end-to-end coverage. Hosted CI now passes
+quality, database, and real local Auth/Mailpit browser jobs. P1-01 remains
+unchecked until custom SMTP and deployed redirect evidence exists; trusted
+provisioning and the broader Phase 1 slice remain in progress.
 
 The exact Gemini normalized JSON schema will be finalized during the AI integration phase, but it must be versioned, validated, and compatible with the fields described in the documentation.

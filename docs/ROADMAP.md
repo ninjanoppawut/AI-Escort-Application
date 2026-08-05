@@ -30,21 +30,20 @@
 
 ## Phase 0 — Foundation
 
-- [ ] **P0-01:** Scaffold pinned Next.js App Router and TypeScript strict-mode application; commit lockfile.
-- [ ] **P0-02:** Configure Tailwind CSS, shadcn/ui, formatting, linting, Vitest, and Playwright.
-- [ ] **P0-03:** Establish `src/features`, server/client boundaries, shared Zod schemas, stable error envelope, and request IDs.
-- [ ] **P0-04:** Configure validated server/browser environment variables and Supabase clients without exposing secrets.
-- [ ] **P0-05:** Initialize/link the dedicated Supabase project and local migration workflow.
-- [ ] **P0-06:** Add CI for format/lint, typecheck, tests, and build.
-- [ ] **P0-07:** Add append-only event interface and baseline observability/redaction conventions.
-- [ ] **P0-08:** Configure request/trace correlation, release/environment metadata, RED/queue metrics, and redaction tests required by ADM.
+- [x] **P0-01:** Scaffold pinned Next.js App Router and TypeScript strict-mode application; commit lockfile.
+- [x] **P0-02:** Configure Tailwind CSS, shadcn/ui, formatting, linting, Vitest, and Playwright.
+- [x] **P0-03:** Establish `src/features`, server/client boundaries, shared Zod schemas, stable error envelope, and request IDs.
+- [x] **P0-04:** Configure validated server/browser environment variables and Supabase clients without exposing secrets.
+- [x] **P0-05:** Initialize/link the dedicated Supabase project and local migration workflow.
+- [x] **P0-06:** Add CI for format/lint, typecheck, tests, and build.
+- [x] **P0-07:** Add append-only event interface and baseline observability/redaction conventions.
+- [x] **P0-08:** Configure request/trace correlation, release/environment metadata, RED/queue metrics, and redaction tests required by ADM.
 - [ ] **P0-09:** Document and validate custom SMTP, allowlisted Auth redirects, local Mailpit, publishable/secret key boundaries, and environment matrix.
 - [ ] **P0-EXIT:** Local and CI builds pass; environment boundaries are documented and verified.
 
-Status: implemented and locally verified on 2026-08-05; checklist items remain
-unchecked until a commit/PR and hosted CI run provide the required final
-evidence. The hosted-project link is verified, while P0-EXIT remains open for
-hosted CI and production-service configuration evidence.
+Status: P0-01 through P0-08 are implemented and verified locally and in hosted
+CI as of 2026-08-06. P0-09 and P0-EXIT remain open for environment-owner custom
+SMTP and deployed redirect verification.
 
 Evidence:
 - Requirements: Phase 0 engineering foundation; no product requirement behavior shipped.
@@ -65,9 +64,14 @@ Evidence:
 - Advisors: local security/performance advisors reported no issues.
 - Commit: `3419dd0` (`Implement app foundation and verified authentication`),
   pushed directly to `origin/main` on 2026-08-05; no PR was requested.
+- CI fixes: `1d5a480` (`Pin npm 11 in CI`) and `92bffbc`
+  (`Run Auth smoke against local Supabase in CI`).
+- Hosted CI: run
+  `31029729582` passed `quality`, `database`, and `browser-smoke` on 2026-08-06;
+  https://github.com/ninjanoppawut/AI-Escort-Application/actions/runs/31029729582.
 - Remaining risk: the hosted project is linked, healthy, empty before Phase 1,
   and uses modern publishable/secret keys with legacy keys disabled. Production
-  custom SMTP, allowlisted deployment redirects, and hosted CI still require
+  custom SMTP and allowlisted deployment redirects still require
   environment-owner configuration and verification.
 
 ## Phase 1 — Authentication, classes, invitations, and RBAC
@@ -76,10 +80,10 @@ Requirements: `AUTH-001`–`AUTH-012` and provisioning foundations for `ADM-001`
 
 - [ ] **P1-01:** Implement verified email/password signup, PKCE confirmation, sign-in/out, resend, reset, profile bootstrap, and server-side claim validation.
 
-Status: implemented and locally verified on 2026-08-05. Keep this item
-unchecked until a PR/commit, hosted CI, and environment-owner evidence for
-custom SMTP and deployed Auth redirect allowlists exist. No hosted Auth setting,
-external email, hosted user, or hosted migration was changed for this slice.
+Status: implemented locally and verified in hosted CI as of 2026-08-06. Keep
+this item unchecked until environment-owner evidence for custom SMTP and
+deployed Auth redirect allowlists exists. No hosted Auth setting, external
+email, hosted user, or hosted migration was changed for this slice.
 
 Evidence to date:
 - Requirements: `AUTH-001`, `AUTH-009`-`AUTH-012` (student/default-account and
@@ -117,8 +121,11 @@ Evidence to date:
   only a local Supabase publishable key was used by Playwright.
 - Commit: `3419dd0` (`Implement app foundation and verified authentication`),
   pushed directly to `origin/main` on 2026-08-05; no PR was requested.
+- Hosted CI: `92bffbc` made browser smoke self-contained with local
+  Supabase/Mailpit; run `31029729582` passed the Auth journey plus quality,
+  database tests, advisors, generated-type verification, and production build.
 - Remaining risk: hosted custom SMTP, deployed redirect allowlists, CAPTCHA/rate
-  policy, staging email delivery, and hosted CI still need environment-owner
+  policy, and staging email delivery still need environment-owner
   configuration/verification.
 
 - [ ] **P1-02:** Add class, membership, and invite migrations with RLS and generated types.

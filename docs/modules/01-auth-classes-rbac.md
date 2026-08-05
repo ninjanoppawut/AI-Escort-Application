@@ -79,8 +79,9 @@ types in `src/lib/supabase/database.types.ts`. It establishes trusted student
 profile bootstrap, identity/school/admin/teacher-invitation tables,
 least-privilege grants, and RLS. Trusted teacher/admin provisioning RPCs,
 classes, and class invites remain incomplete. P1-01 remains unchecked pending
-PR/commit, hosted CI, and environment-owner custom SMTP/deployed redirect
-verification; this implementation did not change hosted Auth settings. Migration
+environment-owner custom SMTP/deployed redirect verification; hosted CI run
+`31029729582` passed quality, database, and local Auth/Mailpit browser jobs on
+2026-08-06. This implementation did not change hosted Auth settings. Migration
 `20260805083021` was deployed to the linked hosted development project and
 verified on 2026-08-05.
 
