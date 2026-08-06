@@ -128,39 +128,136 @@ Evidence to date:
   policy, and staging email delivery still need environment-owner
   configuration/verification.
 
-- [ ] **P1-02:** Add class, membership, and invite migrations with RLS and generated types.
-- [ ] **P1-02A:** Add profile, school membership, platform-admin, and teacher-invitation migrations with trusted provisioning operations.
+- [x] **P1-02:** Add class, membership, and invite migrations with RLS and generated types.
 
-P1-02A status: in progress — the relational identity foundation, Auth-user profile
-sync, least-privilege grants, MFA-aware admin read boundary, RLS, and generated
-types exist locally, and migration `20260805083021` is deployed to the linked
-hosted development project. Trusted teacher/admin provisioning operations and
-their replay/revocation tests remain before this item can be checked.
+P1-02 status: complete and verified on the isolated local Supabase stack as of
+2026-08-06. The slice establishes the relational and authorization foundation
+only; teacher mutation RPCs/UI remain P1-03, atomic invitation consumption
+remains P1-04, and class/member UI remains P1-05.
 
-Evidence to date:
-- Requirements: `AUTH-001`, `AUTH-009`–`AUTH-011`, and provisioning foundations
-  for `ADM-001`–`ADM-003`.
-- Implementation: `supabase/migrations/20260805083021_phase1_identity_foundation.sql`;
-  `src/lib/supabase/database.types.ts`.
-- Tests: `supabase/tests/phase1_identity_foundation_test.sql` (26 pgTAP
-  assertions covering RLS, role escalation, confirmation, MFA, constraints,
-  privileges, indexes, and fixed-search-path privileged functions).
-- Commands: `npx supabase db reset --local`;
-  `npx supabase test db supabase/tests/phase1_identity_foundation_test.sql --local`;
+Evidence:
+- Requirements: database foundations for `AUTH-002`–`AUTH-007` and class-boundary
+  enforcement for `AUTH-009`–`AUTH-011`; decisions D-030, D-031, D-033, D-047,
+  D-059, D-061, and D-062.
+- Migration: `supabase/migrations/20260805224248_phase1_class_foundation.sql`,
+  created with `npx supabase migration new phase1_class_foundation` and applied
+  only to the isolated local stack. No hosted migration or configuration changed.
+- Schema: `classes`, `class_members`, and `class_invites` with documented class
+  settings, lifecycle/role/count/time constraints, unique membership and invite
+  secrets, indexed foreign keys and RLS columns, and trusted actor-validation
+  triggers. Invitation token hashes are not granted to browser roles.
+- Authorization: RLS is enabled on every new exposed table; class reads are
+  membership-authoritative, member visibility is role-appropriate, invitation
+  visibility is teacher-only, and browser writes are denied pending P1-03/P1-04
+  trusted operations. No user-editable Auth metadata is used for authorization.
+- Database tests: `supabase/tests/phase1_class_foundation_test.sql` passes 46
+  pgTAP assertions for positive/negative RLS, cross-class denial,
+  inactive/unconfirmed denial and recovery, role escalation, invalid/duplicate
+  membership, invitation visibility/expiry/revocation/capacity, token
+  non-disclosure, grants, indexes, and helper hardening. The full local database
+  suite passes 72 assertions.
+- Concurrency: `supabase/tests/phase1_class_foundation_concurrency.ps1`, with SQL
+  fixtures under `supabase/test-support`, proves two concurrent inserts for the
+  same class/user produce one membership and one SQLSTATE `23505` race loser.
+- Database commands: `npx supabase db reset --local`;
+  `npx supabase test db supabase/tests/phase1_class_foundation_test.sql --local`;
+  `npx supabase test db --local`;
+  `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/phase1_class_foundation_concurrency.ps1`;
   `npx supabase db lint --local --schema public,private --level warning --fail-on error`;
   `npx supabase db advisors --local --type all --level warn --fail-on error`.
+- Generated types: `npx supabase gen types --local --schema public` regenerated
+  `src/lib/supabase/database.types.ts`; an independently generated and formatted
+  copy matched it at SHA-256
+  `68C7BFEE5E77F74FD0AB75924285686BCDA88A153F6B4EACE76D6AC9394DD8C2`.
+- Repository quality: `npm run check` passed formatting, ESLint, strict
+  TypeScript, all 35 Vitest tests, and the production build.
+- Browser smoke: `npx playwright test tests/e2e/foundation.spec.ts --project=student-mobile-chromium --workers=1`
+  passed 3 tests; the same scoped command for `tests/e2e/auth.spec.ts` with
+  `--grep 'auth screens are mobile-safe'` passed 1 test.
+- Commit/PR: none created; this work remains uncommitted as requested.
+- Remaining delivery boundary: hosted migration requires explicit approval;
+  P1-03/P1-04 must add authorized mutations, audit/research events, invitation
+  consumption, replay/idempotency, and their operation-level tests.
+
+- [x] **P1-02A:** Add profile, school membership, platform-admin, and teacher-invitation migrations with trusted provisioning operations.
+
+P1-02A status: complete and verified on the isolated local Supabase stack as of
+2026-08-06. The slice completes the trusted platform-admin and
+teacher-invitation provisioning boundary only; admin UI/read models remain P15,
+class creation remains P1-03, and student class-invitation consumption remains
+P1-04. No hosted migration, hosted Auth setting, external email, commit, push,
+or PR action was performed.
+
+Evidence:
+- Requirements: `AUTH-001`, `AUTH-009`–`AUTH-011`, and provisioning foundations
+  for `ADM-001`–`ADM-003`.
+- Existing foundation implementation:
+  `supabase/migrations/20260805083021_phase1_identity_foundation.sql`;
+  `src/lib/supabase/database.types.ts`.
+- Migration:
+  `supabase/migrations/20260806035312_phase1_trusted_provisioning.sql`.
+  It adds `audit_logs` and `research_events`, private validation/hash/audit
+  helpers, and public `grant_platform_admin`, `revoke_platform_admin`,
+  `issue_teacher_invitation`, `revoke_teacher_invitation`,
+  `preview_teacher_invitation`, and `consume_teacher_invitation` RPCs. Browser
+  table writes remain ungranted; invitation tokens are generated by PostgreSQL
+  and stored only as hashes. Privileged functions are security definers with
+  fixed empty `search_path` and minimal execute grants.
+- Focused database tests:
+  `supabase/tests/phase1_trusted_provisioning_test.sql` passed 48 pgTAP
+  assertions for non-admin/MFA denial, role escalation denial, admin
+  grant/revoke, invitation token non-disclosure, issue/preview/revoke/consume,
+  email mismatch, expiry, inactive/unconfirmed accounts, archived school,
+  replay, rollback, grants, fixed search paths, and foreign-key indexes.
+- Concurrency: `supabase/tests/phase1_trusted_provisioning_concurrency.ps1`,
+  with SQL fixtures under `supabase/test-support`, passed with one successful
+  consume, one replay denial, one accepted invitation, one teacher school
+  membership, and one `teacher_invitation_consumed` research event.
+- Existing tests: `supabase/tests/phase1_identity_foundation_test.sql` (26 pgTAP
+  assertions covering RLS, role escalation, confirmation, MFA, constraints,
+  privileges, indexes, and fixed-search-path privileged functions).
+- Full database suite: `supabase test db --local` passed 120 pgTAP assertions
+  across identity, class foundation, and trusted provisioning. The existing
+  P1-02 duplicate-membership concurrency harness still passed with one insert,
+  one SQLSTATE `23505`, and one final row.
+- Commands: `supabase db reset --local`;
+  `supabase test db supabase/tests/phase1_trusted_provisioning_test.sql --local`;
+  `supabase test db --local`;
+  `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/phase1_trusted_provisioning_concurrency.ps1`;
+  `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/phase1_class_foundation_concurrency.ps1`;
+  `supabase db lint --local --schema public,private --level warning --fail-on error`;
+  `supabase db advisors --local --type all --level warn --fail-on error`.
 - Migration: `20260805083021`; applied to the isolated local stack and linked
   hosted development project `rhntelxdmuvldrxyceqx` on 2026-08-05.
+- Migration: `20260806035312`; created with the installed Supabase CLI and
+  applied only to the isolated local stack. Hosted application requires explicit
+  approval before this migration is applied.
 - Advisors: local security/performance advisors reported no issues; hosted
-  advisors reported no warnings or errors.
+  advisors were not run for the new migration because it was not applied hosted.
 - Hosted verification: migration history matches local; all five public tables
   have RLS enabled; the Auth profile-sync trigger and fixed-empty-search-path
   private functions exist; hosted schema types match local types after ignoring
   hosted PostgREST-version metadata.
-- Commit: `3419dd0` (`Implement app foundation and verified authentication`),
-  pushed directly to `origin/main` on 2026-08-05; no PR was requested.
-- Remaining risk: trusted provisioning operations, server contracts, and
-  production SMTP/redirect verification remain.
+- Generated types: `supabase gen types --local --schema public` regenerated
+  `src/lib/supabase/database.types.ts`; an independently generated and formatted
+  second copy matched it at SHA-256
+  `877F2C88112127C5DC4B53A8EA2E5DCE96DE98CF88EB99306242361FDD42CAE0`.
+- Repository quality: `npm run format:check`, `npm run lint`,
+  `npm run typecheck`, `npm test` (35 Vitest tests), `npm run build`, and the
+  canonical `npm run check` passed.
+- Browser smoke: `npx playwright test tests/e2e/foundation.spec.ts --project=student-mobile-chromium --workers=1`
+  passed 3 tests; `npx playwright test tests/e2e/auth.spec.ts --project=student-mobile-chromium --grep "auth screens are mobile-safe" --workers=1`
+  passed 1 test. A parallel attempt at both Playwright commands failed only
+  because both web servers tried to bind port 3000.
+- Operational note: Docker Desktop was restarted locally after disk pressure and
+  hung Docker clients; repo-local `node_modules` was temporarily moved to D: to
+  free C: space, then restored inside the workspace because Next/Turbopack
+  rejects an out-of-root junction.
+- Commit/PR: none created; this work remains uncommitted as requested.
+- Remaining risks: hosted migration requires explicit approval; P1-01 remains
+  unchecked for environment-owner SMTP/redirect/CAPTCHA/staging-email gates; P15
+  must still add admin UI/read models and P1-03/P1-04 must add class mutation and
+  student class-invitation consumption flows.
 
 - [ ] **P1-03:** Implement class creation/settings and code/link/QR invitation management.
 - [ ] **P1-04:** Implement atomic invitation consumption and student membership creation.

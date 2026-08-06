@@ -72,18 +72,66 @@ mobile/offline/error states. Unit/integration coverage is under
 `src/features/auth/**/*.test.ts(x)` and the real local Supabase/Mailpit journey is
 `tests/e2e/auth.spec.ts`.
 
-The first identity migration is
-`supabase/migrations/20260805083021_phase1_identity_foundation.sql`, with pgTAP
-coverage in `supabase/tests/phase1_identity_foundation_test.sql` and generated
-types in `src/lib/supabase/database.types.ts`. It establishes trusted student
-profile bootstrap, identity/school/admin/teacher-invitation tables,
-least-privilege grants, and RLS. Trusted teacher/admin provisioning RPCs,
-classes, and class invites remain incomplete. P1-01 remains unchecked pending
-environment-owner custom SMTP/deployed redirect verification; hosted CI run
-`31029729582` passed quality, database, and local Auth/Mailpit browser jobs on
-2026-08-06. This implementation did not change hosted Auth settings. Migration
-`20260805083021` was deployed to the linked hosted development project and
-verified on 2026-08-05.
+The identity migration
+`supabase/migrations/20260805083021_phase1_identity_foundation.sql` establishes
+trusted student profile bootstrap, identity/school/admin/teacher-invitation
+tables, least-privilege grants, and RLS. Its pgTAP coverage is
+`supabase/tests/phase1_identity_foundation_test.sql`.
+
+P1-02A trusted provisioning is implemented in the local working tree by
+`supabase/migrations/20260806035312_phase1_trusted_provisioning.sql` and
+verified on the isolated local Supabase stack. It adds append-only `audit_logs`
+and `research_events`, private fixed-search-path helpers for admin/MFA
+validation, token hashing, and audit insertion, and trusted RPCs for
+`grant_platform_admin`,
+`revoke_platform_admin`, `issue_teacher_invitation`,
+`revoke_teacher_invitation`, `preview_teacher_invitation`, and
+`consume_teacher_invitation`. Teacher invitation secrets are generated inside
+PostgreSQL, returned only from the issue RPC, stored only as SHA-256 hashes,
+and never granted through ordinary table reads. Consumption is email-bound,
+locks the caller profile and invitation row, rejects expired/revoked/replayed
+tokens, promotes the account to teacher, upserts one active teacher school
+membership, and emits the documented `teacher_invitation_consumed` research
+event in the same transaction.
+
+P1-02A verification files are
+`supabase/tests/phase1_trusted_provisioning_test.sql` and
+`supabase/tests/phase1_trusted_provisioning_concurrency.ps1` with SQL fixtures
+under `supabase/test-support`. The focused pgTAP suite passed 48 assertions; the
+full local database suite passed 120 assertions; the two-connection consume race
+passed with one success, one replay denial, one accepted invitation, one teacher
+membership, and one research event. Local database lint and
+security/performance advisors reported no issues. Generated database types match
+a second local generation at SHA-256
+`877F2C88112127C5DC4B53A8EA2E5DCE96DE98CF88EB99306242361FDD42CAE0`.
+
+P1-02 is implemented locally by
+`supabase/migrations/20260805224248_phase1_class_foundation.sql`. It adds
+relational classes, class memberships, and class invitations with documented
+configuration and lifecycle constraints, relational role validation, indexed
+foreign keys and policy columns, least-privilege grants, and membership-based
+RLS. Browser access is read-only for this foundation; invitation token hashes
+are excluded from authenticated Data API grants. Trusted actor-validation
+triggers reject inactive, unconfirmed, cross-school, or role-mismatched actors.
+P1-03 owns class creation/settings mutation contracts and class audit events,
+while P1-04 owns student class-invitation consumption and replay/idempotency
+behavior. P1-02A owns the trusted platform-admin and teacher-invitation
+provisioning boundary only.
+
+P1-02 verification is in
+`supabase/tests/phase1_class_foundation_test.sql` (46 pgTAP assertions) and
+`supabase/tests/phase1_class_foundation_concurrency.ps1` (one duplicate
+membership insert succeeds and one receives SQLSTATE `23505`). A clean reset
+passes all 72 database assertions; local lint and security/performance advisors
+report no issues; `src/lib/supabase/database.types.ts` matches a fresh local
+schema generation. No P1-02 migration was applied to a hosted project.
+
+P1-01 remains unchecked pending environment-owner custom SMTP/deployed redirect
+verification; hosted CI run `31029729582` passed quality, database, and local
+Auth/Mailpit browser jobs on 2026-08-06. This implementation did not change
+hosted Auth settings. Identity migration `20260805083021` was deployed to the
+linked hosted development project and verified on 2026-08-05. No P1-02A hosted
+migration or hosted Auth configuration change has been applied.
 
 ## Definition of done
 

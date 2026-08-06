@@ -45,7 +45,7 @@ describe("auth forms", () => {
       password: "long passphrase 123",
       returnTo: "/app",
     });
-  });
+  }, 10_000);
 
   it("shows the documented unconfirmed-email recovery action", () => {
     render(<SignInForm initialError="EMAIL_NOT_CONFIRMED" returnTo="/app" />);

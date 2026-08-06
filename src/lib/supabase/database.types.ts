@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -9,6 +9,266 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string;
+          actor_id: string | null;
+          actor_kind: string;
+          class_id: string | null;
+          created_at: string;
+          id: string;
+          outcome: string;
+          payload: Json;
+          request_id: string | null;
+          resource_id: string | null;
+          resource_type: string;
+          school_id: string | null;
+          trace_id: string | null;
+        };
+        Insert: {
+          action: string;
+          actor_id?: string | null;
+          actor_kind: string;
+          class_id?: string | null;
+          created_at?: string;
+          id?: string;
+          outcome: string;
+          payload?: Json;
+          request_id?: string | null;
+          resource_id?: string | null;
+          resource_type: string;
+          school_id?: string | null;
+          trace_id?: string | null;
+        };
+        Update: {
+          action?: string;
+          actor_id?: string | null;
+          actor_kind?: string;
+          class_id?: string | null;
+          created_at?: string;
+          id?: string;
+          outcome?: string;
+          payload?: Json;
+          request_id?: string | null;
+          resource_id?: string | null;
+          resource_type?: string;
+          school_id?: string | null;
+          trace_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "audit_logs_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "audit_logs_school_id_fkey";
+            columns: ["school_id"];
+            isOneToOne: false;
+            referencedRelation: "schools";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      class_invites: {
+        Row: {
+          class_id: string;
+          code: string;
+          created_at: string;
+          created_by: string;
+          disabled_at: string | null;
+          disabled_by: string | null;
+          expires_at: string | null;
+          id: string;
+          max_uses: number | null;
+          status: string;
+          token_hash: string;
+          updated_at: string;
+          used_count: number;
+        };
+        Insert: {
+          class_id: string;
+          code: string;
+          created_at?: string;
+          created_by: string;
+          disabled_at?: string | null;
+          disabled_by?: string | null;
+          expires_at?: string | null;
+          id?: string;
+          max_uses?: number | null;
+          status?: string;
+          token_hash: string;
+          updated_at?: string;
+          used_count?: number;
+        };
+        Update: {
+          class_id?: string;
+          code?: string;
+          created_at?: string;
+          created_by?: string;
+          disabled_at?: string | null;
+          disabled_by?: string | null;
+          expires_at?: string | null;
+          id?: string;
+          max_uses?: number | null;
+          status?: string;
+          token_hash?: string;
+          updated_at?: string;
+          used_count?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_invites_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_invites_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_invites_disabled_by_fkey";
+            columns: ["disabled_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      class_members: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          id: string;
+          joined_at: string;
+          left_at: string | null;
+          role: string;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          id?: string;
+          joined_at?: string;
+          left_at?: string | null;
+          role: string;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          id?: string;
+          joined_at?: string;
+          left_at?: string | null;
+          role?: string;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "class_members_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "class_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      classes: {
+        Row: {
+          academic_year: string | null;
+          allow_student_groups: boolean;
+          created_at: string;
+          created_by: string;
+          description: string | null;
+          group_formation_status: string;
+          id: string;
+          max_group_size: number;
+          maximum_groups: number;
+          min_group_size: number;
+          name: string;
+          school_id: string;
+          semester: string | null;
+          status: string;
+          subject: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          academic_year?: string | null;
+          allow_student_groups?: boolean;
+          created_at?: string;
+          created_by: string;
+          description?: string | null;
+          group_formation_status?: string;
+          id?: string;
+          max_group_size?: number;
+          maximum_groups?: number;
+          min_group_size?: number;
+          name: string;
+          school_id: string;
+          semester?: string | null;
+          status?: string;
+          subject?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          academic_year?: string | null;
+          allow_student_groups?: boolean;
+          created_at?: string;
+          created_by?: string;
+          description?: string | null;
+          group_formation_status?: string;
+          id?: string;
+          max_group_size?: number;
+          maximum_groups?: number;
+          min_group_size?: number;
+          name?: string;
+          school_id?: string;
+          semester?: string | null;
+          status?: string;
+          subject?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "classes_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "classes_school_id_fkey";
+            columns: ["school_id"];
+            isOneToOne: false;
+            referencedRelation: "schools";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       platform_admins: {
         Row: {
           granted_at: string;
@@ -96,6 +356,70 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      research_events: {
+        Row: {
+          actor_id: string | null;
+          class_id: string | null;
+          event_name: string;
+          id: string;
+          occurred_at: string;
+          payload: Json;
+          received_at: string;
+          request_id: string | null;
+          schema_version: number;
+          school_id: string | null;
+          trace_id: string | null;
+        };
+        Insert: {
+          actor_id?: string | null;
+          class_id?: string | null;
+          event_name: string;
+          id?: string;
+          occurred_at: string;
+          payload?: Json;
+          received_at?: string;
+          request_id?: string | null;
+          schema_version: number;
+          school_id?: string | null;
+          trace_id?: string | null;
+        };
+        Update: {
+          actor_id?: string | null;
+          class_id?: string | null;
+          event_name?: string;
+          id?: string;
+          occurred_at?: string;
+          payload?: Json;
+          received_at?: string;
+          request_id?: string | null;
+          schema_version?: number;
+          school_id?: string | null;
+          trace_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "research_events_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "research_events_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "research_events_school_id_fkey";
+            columns: ["school_id"];
+            isOneToOne: false;
+            referencedRelation: "schools";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       school_memberships: {
         Row: {
@@ -259,7 +583,62 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      consume_teacher_invitation: {
+        Args: { invitation_token: string };
+        Returns: {
+          account_type: string;
+          invitation_id: string;
+          membership_role: string;
+          school_id: string;
+          user_id: string;
+        }[];
+      };
+      grant_platform_admin: {
+        Args: { reason: string; target_user_id: string };
+        Returns: {
+          granted_at: string;
+          status: string;
+          user_id: string;
+        }[];
+      };
+      issue_teacher_invitation: {
+        Args: {
+          invitation_expires_at: string;
+          target_email: string;
+          target_school_id: string;
+        };
+        Returns: {
+          expires_at: string;
+          invitation_id: string;
+          token: string;
+        }[];
+      };
+      preview_teacher_invitation: {
+        Args: { invitation_token: string };
+        Returns: {
+          email: string;
+          expires_at: string;
+          invitation_id: string;
+          school_id: string;
+          school_name: string;
+        }[];
+      };
+      revoke_platform_admin: {
+        Args: { reason: string; target_user_id: string };
+        Returns: {
+          revoked_at: string;
+          status: string;
+          user_id: string;
+        }[];
+      };
+      revoke_teacher_invitation: {
+        Args: { invitation_id: string; reason: string };
+        Returns: {
+          id: string;
+          revoked_at: string;
+          status: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
