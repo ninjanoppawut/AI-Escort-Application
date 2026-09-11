@@ -269,6 +269,84 @@ export type Database = {
           },
         ];
       };
+      group_invitations: {
+        Row: {
+          cancelled_by: string | null;
+          class_id: string;
+          created_at: string;
+          expires_at: string;
+          group_id: string;
+          id: string;
+          invited_by: string;
+          invitee_id: string;
+          responded_at: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          cancelled_by?: string | null;
+          class_id: string;
+          created_at?: string;
+          expires_at?: string;
+          group_id: string;
+          id?: string;
+          invited_by: string;
+          invitee_id: string;
+          responded_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          cancelled_by?: string | null;
+          class_id?: string;
+          created_at?: string;
+          expires_at?: string;
+          group_id?: string;
+          id?: string;
+          invited_by?: string;
+          invitee_id?: string;
+          responded_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "group_invitations_cancelled_by_fkey";
+            columns: ["cancelled_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_invitations_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_invitations_group_class_fk";
+            columns: ["group_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id", "class_id"];
+          },
+          {
+            foreignKeyName: "group_invitations_invited_by_fkey";
+            columns: ["invited_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_invitations_invitee_id_fkey";
+            columns: ["invitee_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       group_members: {
         Row: {
           class_id: string;
