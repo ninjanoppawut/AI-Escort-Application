@@ -10,6 +10,9 @@ describe("auth redirect validation", () => {
     expect(safeReturnPath("/join/opaque_token-123")).toBe(
       "/join/opaque_token-123",
     );
+    expect(
+      safeReturnPath("/classes/20000000-0000-4000-8000-000000003201/groups"),
+    ).toBe("/classes/20000000-0000-4000-8000-000000003201/groups");
   });
 
   it.each([
@@ -18,6 +21,8 @@ describe("auth redirect validation", () => {
     "/\\evil.example/steal",
     "/auth/update-password",
     "/join/short",
+    "/classes/not-a-class/groups",
+    "/classes/20000000-0000-4000-8000-000000003201/groups/extra",
   ])("falls back for unsafe destination %s", (destination) => {
     expect(safeReturnPath(destination)).toBe("/app");
   });

@@ -10,6 +10,14 @@ function isAllowedPath(pathname: string) {
     return /^[A-Za-z0-9_-]{8,256}$/.test(token);
   }
 
+  if (
+    /^\/classes\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/groups$/i.test(
+      pathname,
+    )
+  ) {
+    return true;
+  }
+
   return false;
 }
 

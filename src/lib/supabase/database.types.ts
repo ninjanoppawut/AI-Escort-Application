@@ -1098,6 +1098,10 @@ export type Database = {
           status: string;
         }[];
       };
+      get_class_group_board: {
+        Args: { target_class_id: string };
+        Returns: Json;
+      };
       grant_platform_admin: {
         Args: { reason: string; target_user_id: string };
         Returns: {

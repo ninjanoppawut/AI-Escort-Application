@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   UsersRound,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -185,9 +186,17 @@ export function ClassMemberBrowser({ initialClasses, mode }: Props) {
             <p className="text-muted-foreground mt-1 text-sm">
               {selectedClass.group_formation_status === "open"
                 ? "เปิดจัดกลุ่ม"
-                : "ปิดจัดกลุ่ม"}{" "}
-              · กลุ่มปัจจุบันจะแสดงเมื่อระบบกลุ่มพร้อมใช้งาน
+                : "ปิดจัดกลุ่ม"}
             </p>
+            {selectedClass.status === "active" ? (
+              <Link
+                className="border-border bg-background mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold"
+                href={`/classes/${selectedClass.id}/groups`}
+              >
+                <UsersRound className="size-4" aria-hidden="true" />
+                ดูกลุ่มในชั้นเรียน
+              </Link>
+            ) : null}
           </div>
 
           {selectedClass.status !== "active" ? (

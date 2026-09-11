@@ -594,20 +594,39 @@ test.describe("P2-EXIT notification durability", () => {
 
     restartLocalDatabase();
 
+    // Auth settings do not touch PostgreSQL, so wait for a real password grant
+    // and an authenticated PostgREST read before driving the browser.
     await expect
       .poll(
         async () => {
-          const response = await request.get(
-            `${localEnv.API_URL}/auth/v1/settings`,
-            {
+          const token = await request
+            .post(`${localEnv.API_URL}/auth/v1/token?grant_type=password`, {
               headers: { apikey: localEnv.PUBLISHABLE_KEY },
-            },
-          );
-          return response.status();
+              data: { email: ownerEmail, password },
+              failOnStatusCode: false,
+            })
+            .catch(() => null);
+          if (!token?.ok()) return false;
+          const { access_token: accessToken } = (await token.json()) as {
+            access_token: string;
+          };
+          const rest = await request
+            .get(
+              `${localEnv.API_URL}/rest/v1/notifications?select=id&limit=1`,
+              {
+                headers: {
+                  apikey: localEnv.PUBLISHABLE_KEY,
+                  authorization: `Bearer ${accessToken}`,
+                },
+                failOnStatusCode: false,
+              },
+            )
+            .catch(() => null);
+          return rest?.ok() ?? false;
         },
-        { timeout: 60_000 },
+        { timeout: 120_000, intervals: [1_000, 2_000, 5_000] },
       )
-      .toBeLessThan(500);
+      .toBe(true);
 
     await page.goto("/auth/sign-in");
     await page.locator('input[type="email"]').fill(ownerEmail);
