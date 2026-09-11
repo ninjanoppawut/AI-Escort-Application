@@ -52,6 +52,24 @@ Waiting, ready, active, paused, completed, stale position, location denied, poor
 
 AUTH, NOT, GRP/MGT, Mapbox adapter, PostGIS, and event logging.
 
+## Implementation status
+
+- **P6-01:** `20260911212813_phase6_activity_session_foundation.sql` installs
+  PostGIS in `extensions` and adds activities, immutable activity versions,
+  boundary/route/checkpoint/plugin tables with PostGIS validity and complexity
+  checks, exploration sessions (at most one open or paused per class), session
+  group queue snapshots, participant snapshots, and append-only session events.
+  Browsers have `SELECT` only; drafts are teacher-only; students read published
+  or superseded versions of their class; participants read their session
+  roster; session events are teacher-only. Triggers keep published versions,
+  snapshot identity, leadership at start, and queue position immutable. The
+  Phase 5 stubs now read session snapshots: a snapshotted group has history,
+  and it is in an active session while its snapshot is uncompleted in an open or
+  paused session.
+- **Mapbox:** map drawing and tiles are blocked on a Mapbox token
+  (`OWNER_QUESTIONS_PENDING.md`). Geometry authoring accepts GeoJSON and every
+  map view keeps an equivalent list view.
+
 ## Definition of done
 
 Session state, authorization, snapshots, live-location privacy, and one-active-group correctness are proven with database and browser tests.

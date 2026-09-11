@@ -9,6 +9,246 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      activities: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          created_by: string;
+          description: string | null;
+          id: string;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          created_by: string;
+          description?: string | null;
+          id?: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          created_by?: string;
+          description?: string | null;
+          id?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "activities_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "activities_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      activity_boundaries: {
+        Row: {
+          activity_version_id: string;
+          boundary: unknown;
+          created_at: string;
+        };
+        Insert: {
+          activity_version_id: string;
+          boundary: unknown;
+          created_at?: string;
+        };
+        Update: {
+          activity_version_id?: string;
+          boundary?: unknown;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "activity_boundaries_activity_version_id_fkey";
+            columns: ["activity_version_id"];
+            isOneToOne: true;
+            referencedRelation: "activity_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      activity_checkpoints: {
+        Row: {
+          activity_version_id: string;
+          created_at: string;
+          id: string;
+          instructions: string | null;
+          location: unknown;
+          radius_m: number;
+          sequence_number: number;
+          title: string;
+        };
+        Insert: {
+          activity_version_id: string;
+          created_at?: string;
+          id?: string;
+          instructions?: string | null;
+          location: unknown;
+          radius_m?: number;
+          sequence_number: number;
+          title: string;
+        };
+        Update: {
+          activity_version_id?: string;
+          created_at?: string;
+          id?: string;
+          instructions?: string | null;
+          location?: unknown;
+          radius_m?: number;
+          sequence_number?: number;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "activity_checkpoints_activity_version_id_fkey";
+            columns: ["activity_version_id"];
+            isOneToOne: false;
+            referencedRelation: "activity_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      activity_plugin_configs: {
+        Row: {
+          activity_version_id: string;
+          config: Json;
+          created_at: string;
+          plugin_key: string;
+          schema_version: number;
+        };
+        Insert: {
+          activity_version_id: string;
+          config?: Json;
+          created_at?: string;
+          plugin_key?: string;
+          schema_version: number;
+        };
+        Update: {
+          activity_version_id?: string;
+          config?: Json;
+          created_at?: string;
+          plugin_key?: string;
+          schema_version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "activity_plugin_configs_activity_version_id_fkey";
+            columns: ["activity_version_id"];
+            isOneToOne: true;
+            referencedRelation: "activity_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      activity_routes: {
+        Row: {
+          activity_version_id: string;
+          created_at: string;
+          route: unknown;
+        };
+        Insert: {
+          activity_version_id: string;
+          created_at?: string;
+          route: unknown;
+        };
+        Update: {
+          activity_version_id?: string;
+          created_at?: string;
+          route?: unknown;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "activity_routes_activity_version_id_fkey";
+            columns: ["activity_version_id"];
+            isOneToOne: true;
+            referencedRelation: "activity_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      activity_versions: {
+        Row: {
+          activity_id: string;
+          class_id: string;
+          created_at: string;
+          created_by: string;
+          id: string;
+          instructions: string | null;
+          published_at: string | null;
+          published_by: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          version_number: number;
+        };
+        Insert: {
+          activity_id: string;
+          class_id: string;
+          created_at?: string;
+          created_by: string;
+          id?: string;
+          instructions?: string | null;
+          published_at?: string | null;
+          published_by?: string | null;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          version_number: number;
+        };
+        Update: {
+          activity_id?: string;
+          class_id?: string;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          instructions?: string | null;
+          published_at?: string | null;
+          published_by?: string | null;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          version_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "activity_versions_activity_class_fk";
+            columns: ["activity_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "activities";
+            referencedColumns: ["id", "class_id"];
+          },
+          {
+            foreignKeyName: "activity_versions_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "activity_versions_published_by_fkey";
+            columns: ["published_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       audit_logs: {
         Row: {
           action: string;
@@ -266,6 +506,157 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "schools";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      exploration_session_groups: {
+        Row: {
+          activated_at: string | null;
+          class_id: string;
+          completed_at: string | null;
+          created_at: string;
+          group_id: string;
+          id: string;
+          queue_position: number;
+          session_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          activated_at?: string | null;
+          class_id: string;
+          completed_at?: string | null;
+          created_at?: string;
+          group_id: string;
+          id?: string;
+          queue_position: number;
+          session_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          activated_at?: string | null;
+          class_id?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          group_id?: string;
+          id?: string;
+          queue_position?: number;
+          session_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exploration_session_groups_group_class_fk";
+            columns: ["group_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id", "class_id"];
+          },
+          {
+            foreignKeyName: "exploration_session_groups_session_class_fk";
+            columns: ["session_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_sessions";
+            referencedColumns: ["id", "class_id"];
+          },
+        ];
+      };
+      exploration_sessions: {
+        Row: {
+          activity_id: string;
+          activity_version_id: string;
+          class_id: string;
+          completed_at: string | null;
+          completed_by: string | null;
+          created_at: string;
+          created_by: string;
+          id: string;
+          opened_at: string | null;
+          opened_by: string | null;
+          paused_at: string | null;
+          scheduled_at: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          activity_id: string;
+          activity_version_id: string;
+          class_id: string;
+          completed_at?: string | null;
+          completed_by?: string | null;
+          created_at?: string;
+          created_by: string;
+          id?: string;
+          opened_at?: string | null;
+          opened_by?: string | null;
+          paused_at?: string | null;
+          scheduled_at?: string | null;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          activity_id?: string;
+          activity_version_id?: string;
+          class_id?: string;
+          completed_at?: string | null;
+          completed_by?: string | null;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          opened_at?: string | null;
+          opened_by?: string | null;
+          paused_at?: string | null;
+          scheduled_at?: string | null;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exploration_sessions_activity_class_fk";
+            columns: ["activity_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "activities";
+            referencedColumns: ["id", "class_id"];
+          },
+          {
+            foreignKeyName: "exploration_sessions_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exploration_sessions_completed_by_fkey";
+            columns: ["completed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exploration_sessions_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exploration_sessions_opened_by_fkey";
+            columns: ["opened_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exploration_sessions_version_activity_fk";
+            columns: ["activity_version_id", "activity_id"];
+            isOneToOne: false;
+            referencedRelation: "activity_versions";
+            referencedColumns: ["id", "activity_id"];
           },
         ];
       };
@@ -955,6 +1346,128 @@ export type Database = {
           {
             foreignKeyName: "schools_created_by_fkey";
             columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      session_events: {
+        Row: {
+          actor_id: string | null;
+          class_id: string;
+          created_at: string;
+          event_type: string;
+          from_status: string | null;
+          id: string;
+          payload: Json;
+          session_group_id: string | null;
+          session_id: string;
+          to_status: string | null;
+        };
+        Insert: {
+          actor_id?: string | null;
+          class_id: string;
+          created_at?: string;
+          event_type: string;
+          from_status?: string | null;
+          id?: string;
+          payload?: Json;
+          session_group_id?: string | null;
+          session_id: string;
+          to_status?: string | null;
+        };
+        Update: {
+          actor_id?: string | null;
+          class_id?: string;
+          created_at?: string;
+          event_type?: string;
+          from_status?: string | null;
+          id?: string;
+          payload?: Json;
+          session_group_id?: string | null;
+          session_id?: string;
+          to_status?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_events_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_events_session_class_fk";
+            columns: ["session_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_sessions";
+            referencedColumns: ["id", "class_id"];
+          },
+          {
+            foreignKeyName: "session_events_session_group_id_fkey";
+            columns: ["session_group_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_session_groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      session_participants: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          id: string;
+          joined_at: string;
+          left_at: string | null;
+          participation_status: string;
+          role_at_start: string;
+          session_group_id: string;
+          session_id: string;
+          user_id: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          id?: string;
+          joined_at?: string;
+          left_at?: string | null;
+          participation_status?: string;
+          role_at_start: string;
+          session_group_id: string;
+          session_id: string;
+          user_id: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          id?: string;
+          joined_at?: string;
+          left_at?: string | null;
+          participation_status?: string;
+          role_at_start?: string;
+          session_group_id?: string;
+          session_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_participants_group_session_fk";
+            columns: ["session_group_id", "session_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_session_groups";
+            referencedColumns: ["id", "session_id"];
+          },
+          {
+            foreignKeyName: "session_participants_session_class_fk";
+            columns: ["session_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_sessions";
+            referencedColumns: ["id", "class_id"];
+          },
+          {
+            foreignKeyName: "session_participants_user_id_fkey";
+            columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];

@@ -71,10 +71,18 @@ contract was silent. Each can be changed without data loss.
     return to unassigned, so explicit re-homing happens beforehand with the
     move dialog. The separate `POST /api/groups/:id/archive` route and the
     `memberHandling`/`moves` body in `API_AND_REALTIME.md` §10 were not added.
-13. **Phase 6/7 must replace two stubs.** `private.group_has_session_history`
-    and `private.group_in_active_session` return false until session tables
-    exist, so archive and active-session denials are verified in pgTAP by
-    overriding the stubs inside the test transaction.
+13. **Session stubs were replaced in P6-01.** A group has session history once
+    any session snapshot includes it, and it is in an active session while its
+    uncompleted snapshot belongs to an open or paused session.
+14. **A class has at most one open or paused session at a time.** This keeps
+    the student waiting and field shells unambiguous; a teacher completes one
+    session before opening the next.
+15. **An activity has at most one draft and one published version.** Editing a
+    published activity creates the next draft version; publishing supersedes the
+    previous version, which stays readable for sessions that used it.
+16. **Activity and session rows restrict class deletion** instead of cascading as
+    sketched in `DATABASE_DESIGN.md` §14A, so historical sessions cannot vanish
+    with a class. Classes are archived rather than deleted today.
 
 ## Local environment note
 
