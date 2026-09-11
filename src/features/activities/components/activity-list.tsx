@@ -127,6 +127,12 @@ export function TeacherActivityList({
             </p>
             <h1 className="text-2xl font-bold">กิจกรรม</h1>
           </div>
+          <Link
+            className="border-border bg-card ml-auto inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold"
+            href={`/teacher/classes/${classId}/sessions`}
+          >
+            รอบสำรวจ
+          </Link>
         </header>
 
         {!online ? (

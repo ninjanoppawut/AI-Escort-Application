@@ -17,6 +17,9 @@ function isAllowedPath(pathname: string) {
     new RegExp(`^/teacher/classes/${uuid}/activities(/${uuid})?$`, "i").test(
       pathname,
     ) ||
+    new RegExp(`^/teacher/classes/${uuid}/sessions(/${uuid})?$`, "i").test(
+      pathname,
+    ) ||
     new RegExp(`^/group-invitations/${uuid}$`, "i").test(pathname)
   ) {
     return true;

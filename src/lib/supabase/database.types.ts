@@ -1197,6 +1197,7 @@ export type Database = {
       };
       research_events: {
         Row: {
+          activity_id: string | null;
           actor_id: string | null;
           class_id: string | null;
           event_name: string;
@@ -1208,9 +1209,11 @@ export type Database = {
           request_id: string | null;
           schema_version: number;
           school_id: string | null;
+          session_id: string | null;
           trace_id: string | null;
         };
         Insert: {
+          activity_id?: string | null;
           actor_id?: string | null;
           class_id?: string | null;
           event_name: string;
@@ -1222,9 +1225,11 @@ export type Database = {
           request_id?: string | null;
           schema_version: number;
           school_id?: string | null;
+          session_id?: string | null;
           trace_id?: string | null;
         };
         Update: {
+          activity_id?: string | null;
           actor_id?: string | null;
           class_id?: string | null;
           event_name?: string;
@@ -1236,9 +1241,17 @@ export type Database = {
           request_id?: string | null;
           schema_version?: number;
           school_id?: string | null;
+          session_id?: string | null;
           trace_id?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "research_events_activity_id_fkey";
+            columns: ["activity_id"];
+            isOneToOne: false;
+            referencedRelation: "activities";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "research_events_actor_id_fkey";
             columns: ["actor_id"];
@@ -1265,6 +1278,13 @@ export type Database = {
             columns: ["school_id"];
             isOneToOne: false;
             referencedRelation: "schools";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "research_events_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_sessions";
             referencedColumns: ["id"];
           },
         ];
@@ -1694,6 +1714,20 @@ export type Database = {
           subject: string;
         }[];
       };
+      create_exploration_session: {
+        Args: {
+          scheduled_start?: string;
+          session_title: string;
+          target_activity_id: string;
+        };
+        Returns: {
+          activity_version_id: string;
+          class_id: string;
+          error_code: string;
+          outcome: string;
+          session_id: string;
+        }[];
+      };
       create_student_group: {
         Args: {
           group_description?: string;
@@ -1775,6 +1809,10 @@ export type Database = {
       get_group_detail: { Args: { target_group_id: string }; Returns: Json };
       get_group_invitation: {
         Args: { target_invitation_id: string };
+        Returns: Json;
+      };
+      get_session_setup: {
+        Args: { target_session_id: string };
         Returns: Json;
       };
       grant_platform_admin: {
@@ -1881,6 +1919,10 @@ export type Database = {
           user_id: string;
         }[];
       };
+      list_class_sessions: {
+        Args: { target_class_id: string };
+        Returns: Json;
+      };
       list_group_eligible_classmates: {
         Args: { target_group_id: string };
         Returns: Json;
@@ -1922,6 +1964,17 @@ export type Database = {
           outcome: string;
           source_group_id: string;
           student_id: string;
+        }[];
+      };
+      open_exploration_session: {
+        Args: { group_order: string[]; target_session_id: string };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          group_count: number;
+          outcome: string;
+          participant_count: number;
+          session_id: string;
         }[];
       };
       preview_teacher_invitation: {

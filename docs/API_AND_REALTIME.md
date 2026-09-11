@@ -998,6 +998,35 @@ GET /api/reviews?classId=&sessionId=&status=&sameSpecies=&limit=50&cursor=opaque
 
 It returns submitted/resubmitted items authorized to the teacher, ordered by `(latest_submitted_at asc, id asc)` so oldest work is reviewed first.
 
+P6-03 implements session scheduling and opening:
+
+- `POST /api/sessions` with `{ activityId, title, scheduledAt }` →
+  `create_exploration_session`. The activity must have a published version
+  (`ACTIVITY_NOT_PUBLISHED`); the session stores that version so later activity
+  edits never change it. Returns `201` with `sessionId`.
+- `GET /api/sessions?classId=` → `list_class_sessions`: every class member sees
+  the class sessions with status, activity title, group and participant counts,
+  and `viewerIsParticipant`.
+- `GET /api/sessions/:id` → `get_session_setup` (teacher only): session and
+  activity summary, `runningSession` when another session is open or paused,
+  `eligibleGroups` (current groups with at least one active member),
+  `excludedGroups` (`no_members`), `unassignedStudentCount`, and, once opened,
+  the immutable `queue` with each group's participants.
+- `POST /api/sessions/:id/open` with `{ "groupOrder": ["uuid", ...] }` →
+  `open_exploration_session`. It locks the class row and every current group,
+  then requires `groupOrder` to name exactly the eligible groups, in the queue
+  order to use. Denials: `INVALID_STATUS_TRANSITION` with `reason`
+  `queue_mismatch` (with `eligibleGroupIds`), `no_groups`, or
+  `session_completed`, and `SESSION_ALREADY_RUNNING` with `runningSessionId`.
+  Success snapshots `exploration_session_groups` and `session_participants`
+  (`role_at_start`), writes a `session_opened` session event, research event,
+  and audit row, and returns `groupCount` and `participantCount`. Replaying
+  open returns the existing snapshot unchanged (D-043).
+
+Once a session is open or paused, teacher group moves, removals, deletions, and
+leadership changes for its snapshotted groups return `GROUP_IN_ACTIVE_SESSION`
+(D-045).
+
 ## 23. Admin operations contracts
 
 Every `/api/admin/*` operation requires a current active platform-admin grant. Admin mutations and sensitive reads require MFA at `aal2`. Routine results are redacted by the server before serialization.

@@ -78,6 +78,17 @@ AUTH, NOT, GRP/MGT, Mapbox adapter, PostGIS, and event logging.
   and a five-step editor (details, boundary, route, checkpoints, review/publish)
   with GeoJSON paste/import, a coordinate sketch, dirty/saved state, conflict
   reload, and publish readiness.
+- **P6-03/P6-04:** `20260911220535_phase6_session_open.sql` adds relational
+  `activity_id`/`session_id` on research events plus
+  `create_exploration_session`, `open_exploration_session`, `get_session_setup`,
+  and `list_class_sessions`. Opening locks the class row and every current
+  group, requires the queue to name exactly the groups that still have members
+  (`queue_mismatch` otherwise), snapshots groups and participants, and writes a
+  session event, a `session_opened` research event, and an audit row. Replaying
+  open returns the existing snapshot. `/teacher/classes/[classId]/sessions`
+  lists and schedules sessions; the setup screen orders the queue, shows
+  excluded empty groups and unassigned students, states the snapshot warning,
+  confirms who is affected, and then shows the immutable roster.
 - **Mapbox:** map drawing and tiles are blocked on a Mapbox token
   (`OWNER_QUESTIONS_PENDING.md`). Geometry authoring accepts GeoJSON and every
   map view keeps an equivalent list view.

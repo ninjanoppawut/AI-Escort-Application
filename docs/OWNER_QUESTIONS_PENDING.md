@@ -94,6 +94,13 @@ contract was silent. Each can be changed without data loss.
     `ACTIVITY_VERSION_CONFLICT`, `ACTIVITY_NOT_PUBLISHED`, and
     `SESSION_ALREADY_RUNNING` extend `API_AND_REALTIME.md` §3 additively, with
     Thai copy in `UI_CONTRACTS.md` §5.
+20. **A session snapshots every current group that still has a member**, in the
+    queue order the teacher sets. Empty groups are listed as excluded, and
+    students with no group do not join the session. The queue must name exactly
+    those groups, so a membership change during setup is refused rather than
+    silently snapshotting a stale roster.
+21. **Session lists are visible to the whole class**, but only teachers read the
+    setup screen, and participants read only their own session roster.
 
 ## Local environment note
 
