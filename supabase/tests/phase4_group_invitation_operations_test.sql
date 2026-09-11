@@ -489,6 +489,7 @@ select is(
       select count(*)
       from public.research_events
       where event_name = 'group_invitation_accepted'
+        and class_id = '20000000-0000-0000-0000-000000004201'
         and payload ->> 'group_member_count' = '2'
         and payload ? 'invite_age_s'
     )

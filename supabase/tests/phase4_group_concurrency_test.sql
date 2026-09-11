@@ -173,9 +173,10 @@ select is(
   'the group never exceeds capacity'
 );
 
--- Race 2: one student accepts invitations from two groups at once.
+-- Race 2: one student accepts invitations from two groups at once. The refused
+-- race-1 invitation is still pending and holds a seat, so capacity rises to 4.
 select dblink_exec('race_setup', format(
-  'update public.classes set max_group_size = 3 where id = %L', pg_temp.id('class')
+  'update public.classes set max_group_size = 4 where id = %L', pg_temp.id('class')
 ));
 select dblink_exec('race_setup', pg_temp.autocommit_claims_sql('leader'));
 insert into race (key, value)
