@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(29);
+select plan(30);
 
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
 values
@@ -236,6 +236,7 @@ select is(
     where group_id = pg_temp.group_id()
       and event_type in ('leadership_transferred', 'became_leader')
       and actor_id = '00000000-0000-0000-0000-000000004502'
+      and payload ->> 'source' = 'leader'
   ),
   2::bigint,
   'transfer appends leadership history for both students'

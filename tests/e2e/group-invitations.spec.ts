@@ -204,7 +204,10 @@ test.describe("P4 consent-based group invitations", () => {
           const refused = page.getByText(
             /คำเชิญนี้ถูกยกเลิกแล้ว|คำเชิญนี้ดำเนินการแล้ว|คุณอยู่กลุ่มอื่นแล้ว|คุณอยู่ในกลุ่มแล้ว/,
           );
-          await expect(joined.or(refused).first()).toBeVisible();
+          // The first acceptance may wait for next dev to compile the route.
+          await expect(joined.or(refused).first()).toBeVisible({
+            timeout: 30_000,
+          });
           return (await joined.isVisible()) ? "joined" : "refused";
         }),
       );
@@ -228,7 +231,11 @@ test.describe("P4 consent-based group invitations", () => {
 
       // The leader's open detail screen refreshes from the private signal.
       if (joinedGroup === "Leaf Team") {
-        await expect(leader.getByText("Bo Invitee")).toBeVisible({
+        await expect(
+          leader
+            .getByRole("region", { name: "สมาชิก" })
+            .getByText("Bo Invitee"),
+        ).toBeVisible({
           timeout: 15_000,
         });
         await expect(
