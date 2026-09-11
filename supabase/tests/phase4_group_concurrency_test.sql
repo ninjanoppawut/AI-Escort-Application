@@ -28,11 +28,18 @@ as $$
   select value::uuid from race where key = key_value;
 $$;
 
+-- dblink requires password authentication for non-superusers. Loopback is
+-- trust-authenticated in the local stack, so connect through the address the
+-- test session itself used, which requires the password.
 create function pg_temp.connection_string()
 returns text
 language sql
 as $$
-  select 'host=127.0.0.1 port=5432 dbname=postgres user=postgres password=postgres';
+  select format(
+    'host=%s port=%s dbname=postgres user=postgres password=postgres',
+    coalesce(host(inet_server_addr()), '127.0.0.1'),
+    coalesce(inet_server_port(), 5432)
+  );
 $$;
 
 create function pg_temp.claims_sql(key_value text)

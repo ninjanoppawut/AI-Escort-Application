@@ -1192,6 +1192,25 @@ export type Database = {
           status: string;
         }[];
       };
+      create_teacher_group: {
+        Args: {
+          group_description?: string;
+          group_name: string;
+          leader_student_id?: string;
+          member_student_ids?: string[];
+          target_class_id: string;
+        };
+        Returns: {
+          class_id: string;
+          current_group_count: number;
+          error_code: string;
+          group_id: string;
+          maximum_groups: number;
+          member_count: number;
+          outcome: string;
+          remaining_group_slots: number;
+        }[];
+      };
       decline_group_invitation: {
         Args: { target_invitation_id: string };
         Returns: {
@@ -1330,6 +1349,22 @@ export type Database = {
           minimum_size: number;
           outcome: string;
           status: string;
+        }[];
+      };
+      move_student_between_groups: {
+        Args: {
+          target_class_id: string;
+          target_destination_group_id?: string;
+          target_student_id: string;
+          target_successor_leader_id?: string;
+        };
+        Returns: {
+          destination_group_id: string;
+          error_code: string;
+          leader_changed: boolean;
+          outcome: string;
+          source_group_id: string;
+          student_id: string;
         }[];
       };
       preview_teacher_invitation: {

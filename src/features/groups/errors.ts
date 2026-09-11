@@ -16,6 +16,7 @@ export const GROUP_UI_ERROR_CODES = [
   "GROUP_LOCKED",
   "NOT_GROUP_LEADER",
   "LEADER_SUCCESSOR_REQUIRED",
+  "GROUP_IN_ACTIVE_SESSION",
   "INVITATION_NOT_PENDING",
   "INVITATION_EXPIRED",
   "DESTINATION_GROUP_INVALID",
@@ -61,6 +62,21 @@ export const GROUP_LEADERSHIP_DENIAL_CODES = [
 
 export type GroupLeadershipDenialCode =
   (typeof GROUP_LEADERSHIP_DENIAL_CODES)[number];
+
+/** Denial codes returned by teacher group management operations. */
+export const GROUP_TEACHER_DENIAL_CODES = [
+  "GROUP_LIMIT_REACHED",
+  "GROUP_FULL",
+  "GROUP_LOCKED",
+  "STUDENT_ALREADY_IN_GROUP",
+  "LEADER_SUCCESSOR_REQUIRED",
+  "GROUP_IN_ACTIVE_SESSION",
+  "DESTINATION_GROUP_INVALID",
+  "INVALID_STATUS_TRANSITION",
+] as const satisfies readonly GroupUiErrorCode[];
+
+export type GroupTeacherDenialCode =
+  (typeof GROUP_TEACHER_DENIAL_CODES)[number];
 
 // Titles and primary actions follow UI_CONTRACTS.md §5.
 export const GROUP_ERROR_PRESENTATIONS: Record<
@@ -134,8 +150,14 @@ export const GROUP_ERROR_PRESENTATIONS: Record<
   },
   LEADER_SUCCESSOR_REQUIRED: {
     title: "ต้องเลือกหัวหน้าคนใหม่ก่อน",
-    description: "โอนหัวหน้ากลุ่มให้สมาชิกคนอื่นก่อนนำหัวหน้าออกจากกลุ่ม",
+    description:
+      "กลุ่มที่ยังมีสมาชิกต้องมีหัวหน้าเสมอ เลือกผู้สืบทอดในขั้นตอนเดียวกัน",
     action: "เลือกผู้สืบทอด",
+  },
+  GROUP_IN_ACTIVE_SESSION: {
+    title: "เปลี่ยนกลุ่มไม่ได้ระหว่างกิจกรรม",
+    description: "กลุ่มหรือนักเรียนนี้อยู่ในรอบสำรวจที่กำลังทำงาน",
+    action: "รอให้กิจกรรมจบ",
   },
   INVITATION_NOT_PENDING: {
     title: "คำเชิญนี้ดำเนินการแล้ว",
@@ -149,7 +171,7 @@ export const GROUP_ERROR_PRESENTATIONS: Record<
   },
   DESTINATION_GROUP_INVALID: {
     title: "ย้ายไปกลุ่มนี้ไม่ได้",
-    description: "กลุ่มนี้ถูกลบหรือเก็บถาวรแล้ว",
+    description: "กลุ่มนี้ถูกลบ เก็บถาวร หรือไม่ได้อยู่ในชั้นเรียนนี้",
     action: "เลือกกลุ่มใหม่",
   },
   INVALID_STATUS_TRANSITION: {
@@ -165,42 +187,40 @@ export const GROUP_ERROR_PRESENTATIONS: Record<
   },
 };
 
+function isCodeIn<TCode extends GroupUiErrorCode>(
+  codes: readonly TCode[],
+  value: unknown,
+): value is TCode {
+  return typeof value === "string" && codes.includes(value as TCode);
+}
+
 export function isGroupCreationDenialCode(
   value: unknown,
 ): value is GroupCreationDenialCode {
-  return (
-    typeof value === "string" &&
-    GROUP_CREATION_DENIAL_CODES.includes(value as GroupCreationDenialCode)
-  );
+  return isCodeIn(GROUP_CREATION_DENIAL_CODES, value);
 }
 
 export function isGroupInvitationDenialCode(
   value: unknown,
 ): value is GroupInvitationDenialCode {
-  return (
-    typeof value === "string" &&
-    GROUP_INVITATION_DENIAL_CODES.includes(value as GroupInvitationDenialCode)
-  );
+  return isCodeIn(GROUP_INVITATION_DENIAL_CODES, value);
 }
 
 export function isGroupLeadershipDenialCode(
   value: unknown,
 ): value is GroupLeadershipDenialCode {
-  return (
-    typeof value === "string" &&
-    GROUP_LEADERSHIP_DENIAL_CODES.includes(value as GroupLeadershipDenialCode)
-  );
+  return isCodeIn(GROUP_LEADERSHIP_DENIAL_CODES, value);
+}
+
+export function isGroupTeacherDenialCode(
+  value: unknown,
+): value is GroupTeacherDenialCode {
+  return isCodeIn(GROUP_TEACHER_DENIAL_CODES, value);
 }
 
 export function mapPostgresGroupError(message?: string): GroupUiErrorCode {
   const normalized = message?.toUpperCase();
-  if (
-    normalized &&
-    GROUP_UI_ERROR_CODES.includes(normalized as GroupUiErrorCode)
-  ) {
-    return normalized as GroupUiErrorCode;
-  }
-  return "FORBIDDEN";
+  return isCodeIn(GROUP_UI_ERROR_CODES, normalized) ? normalized : "FORBIDDEN";
 }
 
 export function groupApiError(
@@ -225,6 +245,7 @@ const CONFLICT_CODES = new Set<GroupUiErrorCode>([
   "GROUP_FULL",
   "GROUP_LOCKED",
   "LEADER_SUCCESSOR_REQUIRED",
+  "GROUP_IN_ACTIVE_SESSION",
   "INVITATION_NOT_PENDING",
   "INVITATION_EXPIRED",
   "DESTINATION_GROUP_INVALID",
