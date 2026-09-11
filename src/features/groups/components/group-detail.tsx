@@ -39,6 +39,7 @@ import {
   type GroupDetail,
   type SendGroupInvitationResult,
 } from "../invitations";
+import { GroupLeaderActions } from "./group-leader-actions";
 import { GroupStatusBadge } from "./group-status-badge";
 
 const CANNOT_INVITE_MESSAGES: Record<
@@ -524,6 +525,10 @@ export function GroupDetailScreen({
                 ))}
               </ul>
             </section>
+
+            {detail.viewer.isLeader && canManage ? (
+              <GroupLeaderActions detail={detail} online={online} />
+            ) : null}
 
             {detail.viewer.isLeader || detail.viewer.role === "teacher" ? (
               <section
