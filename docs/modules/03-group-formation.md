@@ -64,9 +64,19 @@ AUTH memberships/settings and NOT delivery.
   creation claim, class/group consistency, append-only history, RLS isolation,
   browser write denial, helper hardening, FK indexes, and generated type
   refresh.
-- `create_student_group`, group-board read models, private class-group
-  Realtime invalidation, final-slot concurrency, invitation flows, and mobile UI
-  remain P3-02 through P4.
+- **P3-02 complete:** `public.create_student_group(uuid,text,text)` in
+  `supabase/migrations/20260911183206_phase3_create_student_group.sql` locks the
+  class row and atomically enforces GRP-002–GRP-006. Domain denials return
+  `outcome=denied` with a stable `error_code` so the denied audit row and
+  `group_creation_failed` research event commit; authorization failures raise.
+  `POST /api/groups` (`src/app/api/groups/route.ts`) validates with Zod and
+  returns `201` or a `409` error envelope carrying slot counts.
+- Verification lives in `supabase/tests/phase3_create_student_group_test.sql`,
+  `supabase/tests/phase3_create_student_group_concurrency.ps1`, and
+  `src/features/groups/*.test.ts`.
+- Group-board read models, private class-group Realtime invalidation, the
+  browser final-slot journey, invitation flows, and mobile UI remain P3-03
+  through P4.
 
 ## Definition of done
 

@@ -384,6 +384,20 @@ one request returns GROUP_LIMIT_REACHED
 
 The losing client refetches the group board.
 
+P3-02 implements `POST /api/groups` backed by
+`create_student_group(uuid,text,text)`. The RPC returns one row with `outcome`
+(`created` or `denied`), `error_code`, the created group fields, the creator as
+`leader_id`, and authoritative `current_group_count`, `maximum_groups`, and
+`remaining_group_slots`. Domain denials (`STUDENT_GROUP_CREATION_DISABLED`,
+`GROUP_FORMATION_CLOSED`, `STUDENT_ALREADY_IN_GROUP`,
+`STUDENT_GROUP_ALREADY_CREATED`, `GROUP_LIMIT_REACHED`) are committed results so
+their audit and research events persist; the route maps them to `409` error
+envelopes with the slot counts in `details`. `AUTH_REQUIRED` returns `401`;
+`ACCOUNT_DISABLED`, `EMAIL_NOT_CONFIRMED`, and `FORBIDDEN` return `403`;
+`CLASS_NOT_ACTIVE` returns `409`; an invalid body returns `422`. The operation is
+naturally keyed by the one-current-group and one-creation-claim invariants, so a
+retried request cannot create a second group and needs no `Idempotency-Key`.
+
 ## 8. Group invitation
 
 Send:

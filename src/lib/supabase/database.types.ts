@@ -731,6 +731,7 @@ export type Database = {
           actor_id: string | null;
           class_id: string | null;
           event_name: string;
+          group_id: string | null;
           id: string;
           occurred_at: string;
           payload: Json;
@@ -744,6 +745,7 @@ export type Database = {
           actor_id?: string | null;
           class_id?: string | null;
           event_name: string;
+          group_id?: string | null;
           id?: string;
           occurred_at: string;
           payload?: Json;
@@ -757,6 +759,7 @@ export type Database = {
           actor_id?: string | null;
           class_id?: string | null;
           event_name?: string;
+          group_id?: string | null;
           id?: string;
           occurred_at?: string;
           payload?: Json;
@@ -779,6 +782,13 @@ export type Database = {
             columns: ["class_id"];
             isOneToOne: false;
             referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "research_events_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
             referencedColumns: ["id"];
           },
           {
@@ -1057,6 +1067,27 @@ export type Database = {
           semester: string;
           status: string;
           subject: string;
+        }[];
+      };
+      create_student_group: {
+        Args: {
+          group_description?: string;
+          group_name: string;
+          target_class_id: string;
+        };
+        Returns: {
+          class_id: string;
+          created_at: string;
+          current_group_count: number;
+          description: string;
+          error_code: string;
+          group_id: string;
+          leader_id: string;
+          maximum_groups: number;
+          name: string;
+          outcome: string;
+          remaining_group_slots: number;
+          status: string;
         }[];
       };
       disable_class_invite: {

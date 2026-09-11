@@ -397,45 +397,35 @@ test.describe("P2-05 notification browser behavior", () => {
     await page.locator('input[type="password"]').fill(password);
     await page.locator('button[type="submit"]').click();
     await page.waitForURL(/\/app$/);
-    await expect(
-      page.getByRole("link", { name: /à¹à¸ˆà¹‰à¸‡à¹€à¸•à¸·à¸­à¸™/ }),
-    ).toContainText("à¹à¸ˆà¹‰à¸‡à¹€à¸•à¸·à¸­à¸™");
+    await expect(page.getByRole("link", { name: /แจ้งเตือน/ })).toContainText(
+      "แจ้งเตือน",
+    );
 
-    await page
-      .getByRole("link", { name: /à¹à¸ˆà¹‰à¸‡à¹€à¸•à¸·à¸­à¸™/ })
-      .click();
+    await page.getByRole("link", { name: /แจ้งเตือน/ }).click();
     await page.waitForURL(/\/notifications$/);
     await expect(
-      page.getByRole("heading", { name: "à¸à¸²à¸£à¹à¸ˆà¹‰à¸‡à¹€à¸•à¸·à¸­à¸™" }),
+      page.getByRole("heading", { name: "การแจ้งเตือน" }),
     ).toBeVisible();
     await expect(page.getByText(initialTitle)).toBeVisible();
     await expect(page.getByText(deletedTargetTitle)).toBeVisible();
     await expect(page.getByText(otherTitle)).toHaveCount(0);
     await expect(
-      page.getByRole("link", { name: /à¸”à¸¹à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”/ }),
+      page.getByRole("link", { name: /ดูรายละเอียด/ }),
     ).toHaveAttribute("href", `/classes/${classId}`);
-    await expect(
-      page.getByText(
-        "à¸›à¸¥à¸²à¸¢à¸—à¸²à¸‡à¸–à¸¹à¸à¸¥à¸šà¸«à¸£à¸·à¸­à¸«à¸¡à¸”à¸­à¸²à¸¢à¸¸",
-      ),
-    ).toBeVisible();
+    await expect(page.getByText("ปลายทางถูกลบหรือหมดอายุ")).toBeVisible();
 
     await page.reload();
     await expect(page.getByText(initialTitle)).toBeVisible();
     await page
       .getByRole("button", {
-        name: "à¸—à¸³à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸«à¸¡à¸²à¸¢à¸§à¹ˆà¸²à¸­à¹ˆà¸²à¸™à¹à¸¥à¹‰à¸§",
+        name: "ทำเครื่องหมายว่าอ่านแล้ว",
       })
       .first()
       .click();
-    await expect(
-      page.getByText("à¸­à¹ˆà¸²à¸™à¹à¸¥à¹‰à¸§").first(),
-    ).toBeVisible();
+    await expect(page.getByText("อ่านแล้ว").first()).toBeVisible();
     await page.reload();
     await expect(page.getByText(initialTitle)).toBeVisible();
-    await expect(
-      page.getByText("à¸­à¹ˆà¸²à¸™à¹à¸¥à¹‰à¸§").first(),
-    ).toBeVisible();
+    await expect(page.getByText("อ่านแล้ว").first()).toBeVisible();
 
     const crossUserMark = await page.evaluate(async (id) => {
       const response = await fetch(`/api/notifications/${id}/read`, {
@@ -512,13 +502,9 @@ test.describe("P2-05 notification browser behavior", () => {
     });
     await expect(page.getByText(otherTitle)).toHaveCount(0);
 
-    await page
-      .getByRole("link", { name: "à¸à¸¥à¸±à¸šà¸«à¸™à¹‰à¸²à¸«à¸¥à¸±à¸" })
-      .click();
+    await page.getByRole("link", { name: "กลับหน้าหลัก" }).click();
     await page.waitForURL(/\/app$/);
-    await page
-      .getByRole("button", { name: /à¸­à¸­à¸à¸ˆà¸²à¸à¸£à¸°à¸šà¸š/ })
-      .click();
+    await page.getByRole("button", { name: /ออกจากระบบ/ }).click();
     await page.waitForURL(/\/auth\/sign-in/);
 
     await page.locator('input[type="email"]').fill(otherEmail);

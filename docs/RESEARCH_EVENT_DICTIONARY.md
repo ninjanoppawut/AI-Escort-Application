@@ -86,6 +86,13 @@ event. `invite_channel` is `code` or `link`; `attempt_count` is the committed
 invite usage count after the successful consume. Payloads exclude invite codes,
 raw link/QR tokens, token hashes, emails, display names, and free text.
 
+P3-02 producer note: `create_student_group(uuid,text,text)` emits
+`group_created` with `creator_type` and `remaining_slots` and sets the relational
+`group_id`. Every committed domain denial emits `group_creation_failed` with only
+`error_code` and no `group_id`. Authorization failures raise and roll back, so
+they produce no event. Group names and descriptions are never copied into event
+payloads.
+
 ## 4. Timing and retry semantics
 
 - Business events are written in the same transaction as the authoritative change when possible.

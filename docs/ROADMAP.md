@@ -857,7 +857,77 @@ Evidence:
   `.\\node_modules\\.bin\\supabase.cmd gen types typescript --local --schema public`
   and formatted.
 
-- [ ] **P3-02:** Implement and secure atomic `create_student_group`.
+- [x] **P3-02:** Implement and secure atomic `create_student_group`.
+
+P3-02 status: complete and verified locally as of 2026-09-12. The slice adds
+the trusted atomic creation RPC and its typed server contract. The group board
+UI, private class-group Realtime signal, and browser race journey remain P3-03
+through P3-05.
+
+Evidence:
+- Requirements: `GRP-002`, `GRP-003`, `GRP-004` (database race), `GRP-005`,
+  and `GRP-006`; D-034–D-038 and D-047.
+- Migration:
+  `supabase/migrations/20260911183206_phase3_create_student_group.sql`,
+  created with `supabase migration new` and applied by
+  `supabase db reset --local`.
+- RPC: `public.create_student_group(uuid,text,text)` validates the auth
+  subject, active verified profile, active student class/school membership, and
+  class status; locks the class row; then checks student creation enabled,
+  formation open, no current group, no unreset creation claim, and current slot
+  count below `maximum_groups`. Success creates the forming group, the creator
+  as sole active leader, the creation claim, `creation_claimed`/`joined`/
+  `became_leader` history, a `group_created` audit row, and a `group_created`
+  research event (`creator_type`, `remaining_slots`). Domain denials
+  (`STUDENT_GROUP_CREATION_DISABLED`, `GROUP_FORMATION_CLOSED`,
+  `STUDENT_ALREADY_IN_GROUP`, `STUDENT_GROUP_ALREADY_CREATED`,
+  `GROUP_LIMIT_REACHED`) return `outcome=denied` so the denied audit row and
+  `group_creation_failed` event (`error_code`) commit without any group write.
+  Authorization/account failures raise `AUTH_REQUIRED`, `ACCOUNT_DISABLED`,
+  `EMAIL_NOT_CONFIRMED`, `FORBIDDEN`, or `CLASS_NOT_ACTIVE`. Soft-deleted and
+  archived groups do not occupy a slot; deleting a group never releases the
+  creation claim. `research_events.group_id` was added with an index.
+- Security: SECURITY DEFINER with empty `search_path`; execute revoked from
+  `public`/`anon` and granted only to `authenticated`; private helpers
+  `insert_group_research_event` and `count_current_class_groups` are not
+  browser callable. No notification is produced because no creation
+  notification type exists in `UI_CONTRACTS.md` §4.
+- Server contract: `POST /api/groups` in `src/app/api/groups/route.ts`, Zod
+  request schema in `src/features/groups/contracts.ts`, stable error mapping
+  and Thai presentations in `src/features/groups/errors.ts`, result
+  interpretation in `src/features/groups/create-result.ts`, and the server-only
+  RPC call in `src/features/groups/server/operations.ts`. Denials return `409`
+  with slot counts in safe `details`.
+- Tests: `supabase/tests/phase3_create_student_group_test.sql` (42 pgTAP
+  assertions: success writes, every denial code, claim retention after delete,
+  archived/deleted slot release, teacher/cross-class/unknown-class/anon/no-sub/
+  deactivated denial, name validation, grants, helper hardening, one leader and
+  one current group invariants, and RLS read isolation);
+  `supabase/tests/phase3_create_student_group_concurrency.ps1` with
+  `supabase/test-support/phase3_create_student_group_concurrency_*.sql`
+  (10 advisory-lock-gated rounds of two students racing for one slot);
+  `src/features/groups/contracts.test.ts` and
+  `src/features/groups/create-result.test.ts`.
+- Commands: `supabase test db supabase/tests/phase3_create_student_group_test.sql --local`
+  (42 passed); `supabase test db --local` (11 files, 380 assertions passed);
+  `supabase/tests/phase3_create_student_group_concurrency.ps1` (PASS, each round
+  exactly one `created` and one `GROUP_LIMIT_REACHED`, one group, one leader,
+  one claim, one success and one failure event);
+  `supabase db lint --local --schema public,private --level warning --fail-on error`
+  (existing non-failing `invite_age_seconds` warning only);
+  `supabase db advisors --local --type all --level warn --fail-on error`
+  (no issues); `supabase gen types --local --schema public` matched the
+  committed `src/lib/supabase/database.types.ts` after Prettier; `npm run check`.
+- CI repair in the same change: hosted run `34633092440` failed `npm audit`
+  on Next.js 16.3.0 (critical advisory) and the P2-05 browser test because
+  Thai selectors in `tests/e2e/notifications.spec.ts` had been saved as
+  double-encoded UTF-8. Next.js and `eslint-config-next` are pinned to 16.3.5,
+  non-breaking transitive audit fixes were applied (remaining findings are
+  moderate only), and the spec plus `docs/TRACEABILITY_MATRIX.md` were
+  restored to valid UTF-8.
+- Commit: `Implement P3-02 atomic student group creation` on `main`.
+- Remaining risk: the race harness is a local PowerShell script and is not run
+  by hosted CI; the pgTAP suite is.
 - [ ] **P3-03:** Build group board and explanatory create-group availability states.
 - [ ] **P3-04:** Implement private class-group invalidation and refetch lifecycle.
 - [ ] **P3-05:** Pass final-slot race, one-leader, one-group, creation-claim, RLS, and Realtime tests.
