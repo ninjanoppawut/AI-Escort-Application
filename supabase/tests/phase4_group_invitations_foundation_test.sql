@@ -153,13 +153,12 @@ values (
   '00000000-0000-0000-0000-000000004102'
 );
 
-select is(
+select ok(
   (
-    select array[status, (expires_at - created_at)::text]
+    select status = 'pending' and expires_at - created_at = interval '24 hours'
     from public.group_invitations
     where id = '60000000-0000-0000-0000-000000004101'
   ),
-  array['pending', '24:00:00'],
   'new invitations are pending and expire after 24 hours'
 );
 
@@ -267,7 +266,7 @@ select throws_ok(
 
 select throws_ok(
   $$update public.group_invitations
-    set invitee_id = '00000000-0000-0000-0000-000000004104'
+    set invitee_id = '00000000-0000-0000-0000-000000004103'
     where id = '60000000-0000-0000-0000-000000004102'$$,
   '42501',
   'INVITATION_IDENTITY_IMMUTABLE',

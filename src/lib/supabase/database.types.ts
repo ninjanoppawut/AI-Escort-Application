@@ -1105,6 +1105,30 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accept_group_invitation: {
+        Args: { target_invitation_id: string };
+        Returns: {
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          invitation_id: string;
+          maximum_size: number;
+          member_count: number;
+          membership_id: string;
+          outcome: string;
+        }[];
+      };
+      cancel_group_invitation: {
+        Args: { target_invitation_id: string };
+        Returns: {
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          invitation_id: string;
+          outcome: string;
+          status: string;
+        }[];
+      };
       consume_teacher_invitation: {
         Args: { invitation_token: string };
         Returns: {
@@ -1168,6 +1192,17 @@ export type Database = {
           status: string;
         }[];
       };
+      decline_group_invitation: {
+        Args: { target_invitation_id: string };
+        Returns: {
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          invitation_id: string;
+          outcome: string;
+          status: string;
+        }[];
+      };
       disable_class_invite: {
         Args: { target_invite_id: string };
         Returns: {
@@ -1178,6 +1213,11 @@ export type Database = {
       };
       get_class_group_board: {
         Args: { target_class_id: string };
+        Returns: Json;
+      };
+      get_group_detail: { Args: { target_group_id: string }; Returns: Json };
+      get_group_invitation: {
+        Args: { target_invitation_id: string };
         Returns: Json;
       };
       grant_platform_admin: {
@@ -1276,6 +1316,10 @@ export type Database = {
           user_id: string;
         }[];
       };
+      list_group_eligible_classmates: {
+        Args: { target_group_id: string };
+        Returns: Json;
+      };
       preview_teacher_invitation: {
         Args: { invitation_token: string };
         Returns: {
@@ -1318,6 +1362,19 @@ export type Database = {
           superseded_invite_id: string;
           token: string;
           used_count: number;
+        }[];
+      };
+      send_group_invitation: {
+        Args: { target_group_id: string; target_invitee_id: string };
+        Returns: {
+          available_seats: number;
+          class_id: string;
+          error_code: string;
+          expires_at: string;
+          group_id: string;
+          invitation_id: string;
+          invitee_id: string;
+          outcome: string;
         }[];
       };
       update_class_group_settings: {

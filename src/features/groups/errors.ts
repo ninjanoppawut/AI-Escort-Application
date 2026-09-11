@@ -12,6 +12,12 @@ export const GROUP_UI_ERROR_CODES = [
   "GROUP_LIMIT_REACHED",
   "STUDENT_ALREADY_IN_GROUP",
   "STUDENT_GROUP_ALREADY_CREATED",
+  "GROUP_FULL",
+  "GROUP_LOCKED",
+  "NOT_GROUP_LEADER",
+  "INVITATION_NOT_PENDING",
+  "INVITATION_EXPIRED",
+  "DESTINATION_GROUP_INVALID",
   "RATE_LIMITED",
 ] as const satisfies readonly ApiErrorCode[];
 
@@ -28,6 +34,20 @@ export const GROUP_CREATION_DENIAL_CODES = [
 
 export type GroupCreationDenialCode =
   (typeof GROUP_CREATION_DENIAL_CODES)[number];
+
+/** Denial codes returned as committed results by invitation operations. */
+export const GROUP_INVITATION_DENIAL_CODES = [
+  "GROUP_FORMATION_CLOSED",
+  "STUDENT_ALREADY_IN_GROUP",
+  "GROUP_FULL",
+  "GROUP_LOCKED",
+  "INVITATION_NOT_PENDING",
+  "INVITATION_EXPIRED",
+  "DESTINATION_GROUP_INVALID",
+] as const satisfies readonly GroupUiErrorCode[];
+
+export type GroupInvitationDenialCode =
+  (typeof GROUP_INVITATION_DENIAL_CODES)[number];
 
 // Titles and primary actions follow UI_CONTRACTS.md §5.
 export const GROUP_ERROR_PRESENTATIONS: Record<
@@ -84,6 +104,36 @@ export const GROUP_ERROR_PRESENTATIONS: Record<
     description: "สร้างกลุ่มได้หนึ่งครั้งต่อชั้นเรียน ครูรีเซ็ตสิทธิ์ได้",
     action: "เปิดกลุ่ม / ติดต่อครู",
   },
+  GROUP_FULL: {
+    title: "กลุ่มนี้เต็มแล้ว",
+    description: "ที่นั่งในกลุ่มถูกใช้หรือถูกเชิญไว้ครบแล้ว",
+    action: "เลือกกลุ่มอื่น",
+  },
+  GROUP_LOCKED: {
+    title: "กลุ่มถูกล็อกแล้ว",
+    description: "ครูล็อกกลุ่มนี้ จึงเปลี่ยนสมาชิกไม่ได้",
+    action: "กลับหน้ากลุ่ม",
+  },
+  NOT_GROUP_LEADER: {
+    title: "เฉพาะหัวหน้ากลุ่มทำรายการนี้ได้",
+    description: "หัวหน้ากลุ่มอาจเปลี่ยนไปแล้ว รีเฟรชข้อมูลกลุ่ม",
+    action: "กลับหน้ากลุ่ม",
+  },
+  INVITATION_NOT_PENDING: {
+    title: "คำเชิญนี้ดำเนินการแล้ว",
+    description: "คำเชิญถูกตอบรับ ปฏิเสธ หรือยกเลิกไปแล้ว",
+    action: "รีเฟรชข้อมูล",
+  },
+  INVITATION_EXPIRED: {
+    title: "คำเชิญเข้ากลุ่มหมดอายุ",
+    description: "คำเชิญมีอายุ 24 ชั่วโมง ขอให้หัวหน้ากลุ่มเชิญใหม่",
+    action: "กลับหน้ากลุ่ม",
+  },
+  DESTINATION_GROUP_INVALID: {
+    title: "ย้ายไปกลุ่มนี้ไม่ได้",
+    description: "กลุ่มนี้ถูกลบหรือเก็บถาวรแล้ว",
+    action: "เลือกกลุ่มใหม่",
+  },
   RATE_LIMITED: {
     title: "ทำรายการบ่อยเกินไป",
     description: "รอตามเวลาที่แสดงแล้วลองอีกครั้ง",
@@ -97,6 +147,15 @@ export function isGroupCreationDenialCode(
   return (
     typeof value === "string" &&
     GROUP_CREATION_DENIAL_CODES.includes(value as GroupCreationDenialCode)
+  );
+}
+
+export function isGroupInvitationDenialCode(
+  value: unknown,
+): value is GroupInvitationDenialCode {
+  return (
+    typeof value === "string" &&
+    GROUP_INVITATION_DENIAL_CODES.includes(value as GroupInvitationDenialCode)
   );
 }
 
@@ -123,17 +182,23 @@ export function groupApiError(
   };
 }
 
+const CONFLICT_CODES = new Set<GroupUiErrorCode>([
+  "CLASS_NOT_ACTIVE",
+  "GROUP_FORMATION_CLOSED",
+  "STUDENT_GROUP_CREATION_DISABLED",
+  "GROUP_LIMIT_REACHED",
+  "STUDENT_ALREADY_IN_GROUP",
+  "STUDENT_GROUP_ALREADY_CREATED",
+  "GROUP_FULL",
+  "GROUP_LOCKED",
+  "INVITATION_NOT_PENDING",
+  "INVITATION_EXPIRED",
+  "DESTINATION_GROUP_INVALID",
+]);
+
 export function httpStatusForGroupError(code: GroupUiErrorCode) {
   if (code === "AUTH_REQUIRED") return 401;
   if (code === "RATE_LIMITED") return 429;
-  if (
-    code === "CLASS_NOT_ACTIVE" ||
-    code === "GROUP_FORMATION_CLOSED" ||
-    code === "STUDENT_GROUP_CREATION_DISABLED" ||
-    code === "GROUP_LIMIT_REACHED" ||
-    code === "STUDENT_ALREADY_IN_GROUP" ||
-    code === "STUDENT_GROUP_ALREADY_CREATED"
-  )
-    return 409;
+  if (CONFLICT_CODES.has(code)) return 409;
   return 403;
 }
