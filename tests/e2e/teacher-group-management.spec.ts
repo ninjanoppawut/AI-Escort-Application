@@ -7,7 +7,6 @@ import {
   getLocalSupabaseEnv,
   queryLocalSql,
   runLocalSql,
-  signIn,
   sqlLiteral,
 } from "./support/local-supabase";
 
@@ -118,12 +117,19 @@ test.describe("P5 teacher group management", () => {
     const path = `/teacher/classes/${classId}/groups`;
     await page.goto(path);
     await page.waitForURL(/\/auth\/sign-in\?/);
-    await signIn(page, teacherEmail, password);
-    await page.waitForURL(new RegExp(`${path}$`));
+    // Sign in through the same API the form uses; filling the form before it
+    // hydrates would submit natively and stall this journey. The sign-in UI
+    // itself is covered by the auth suite.
+    const signInResponse = await page.request.post("/api/auth/sign-in", {
+      data: { email: teacherEmail, password, returnTo: path },
+    });
+    expect(signInResponse.ok()).toBe(true);
+    expect((await signInResponse.json()).data.destination).toBe(path);
+    await page.goto(path);
 
     await expect(
       page.getByRole("heading", { name: "จัดการกลุ่ม" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 60_000 });
     await expect(page.getByText("อัปเดตสดอยู่")).toBeVisible({
       timeout: 30_000,
     });

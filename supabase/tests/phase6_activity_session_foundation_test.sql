@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(29);
+select plan(30);
 
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
 values
@@ -165,9 +165,9 @@ select throws_ok(
 
 select throws_like(
   $$insert into public.activity_checkpoints (activity_version_id, sequence_number, title, location)
-    values ('61000000-0000-0000-0000-000000006103', 1, 'No SRID', st_geomfromtext('POINT(100.60 13.75)'))$$,
+    values ('61000000-0000-0000-0000-000000006103', 1, 'Web Mercator', st_geomfromtext('POINT(11196000 1545000)', 3857))$$,
   '%SRID%',
-  'geometry without SRID 4326 is rejected'
+  'geometry in another SRID is rejected'
 );
 
 -- Published versions are immutable.
