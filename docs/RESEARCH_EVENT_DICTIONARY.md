@@ -34,6 +34,11 @@ Use the minimum applicable relational IDs. `payload` contains only versioned eve
 |---|---|---|---|
 | `account_confirmed` | verified email first confirmed | `account_type` | onboarding reliability |
 | `teacher_invitation_consumed` | trusted teacher grant succeeds | `school_id`, `invite_age_s` | provisioning audit |
+| `class_created` | teacher class creation commits | `minimum_group_size`, `maximum_group_size`, `maximum_groups`, `allow_student_groups`, `formation_status` | class setup |
+| `class_group_settings_updated` | teacher group settings commit | `minimum_group_size`, `maximum_group_size`, `maximum_groups`, `allow_student_groups`, `formation_status` | group-formation setup |
+| `class_invitation_issued` | teacher creates a class invite | `has_expiry`, `has_max_uses` | invitation setup |
+| `class_invitation_disabled` | teacher disables a class invite | `used_count` | invitation lifecycle |
+| `class_invitation_rotated` | teacher replaces a class invite | `previous_used_count`, `has_expiry`, `has_max_uses` | invitation lifecycle |
 | `class_joined` | student class invite commits | `invite_channel`, `attempt_count` | onboarding flow |
 | `group_created` | atomic group creation commits | `creator_type`, `remaining_slots` | group formation |
 | `group_creation_failed` | trusted creation denied | `error_code` | flow diagnosis |
@@ -74,6 +79,13 @@ Use the minimum applicable relational IDs. `payload` contains only versioned eve
 
 High-cardinality identifiers remain relational columns, not payload fields or metric labels.
 
+P1-04 producer note: `class_joined` is emitted by
+`join_class_with_invite(text,text)` only for first successful membership
+creation/reactivation. Idempotent already-joined replay does not duplicate the
+event. `invite_channel` is `code` or `link`; `attempt_count` is the committed
+invite usage count after the successful consume. Payloads exclude invite codes,
+raw link/QR tokens, token hashes, emails, display names, and free text.
+
 ## 4. Timing and retry semantics
 
 - Business events are written in the same transaction as the authoritative change when possible.
@@ -96,7 +108,7 @@ school/class/session pseudonymous IDs where approved
 allowlisted payload fields
 ```
 
-Exclude email, display name, raw operational IDs, exact coordinates, private image URLs, teacher free text, student evidence free text, IP address, user agent, request ID, and trace ID unless the approved protocol explicitly requires and protects them.
+Exclude email, display name, raw operational IDs, exact coordinates, private image URLs, invite codes, raw invitation tokens, token hashes, teacher free text, student evidence free text, IP address, user agent, request ID, and trace ID unless the approved protocol explicitly requires and protects them.
 
 ## 6. Change control
 

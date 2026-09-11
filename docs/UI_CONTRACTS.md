@@ -214,6 +214,36 @@ All errors show an accessible title, explanation, and safe action. Developer det
 - Teacher view: students/teachers, join date, current group, invitation/membership state, and relevant actions already allowed by product rules.
 - No suspend action. Class role is only teacher/student.
 - Search/filter stays within the authorized class and uses cursor pagination where the hard class limit could still produce long lists.
+- P1-05 uses the same member-list layout for `/app` and `/teacher/classes`.
+  Current group is shown as a Thai null placeholder until group tables ship.
+  Load more uses the opaque API cursor; retry is available for failed reads,
+  and archived classes render the class-not-active state instead of attempting a
+  member fetch.
+
+### Teacher class and invitation management
+
+- Route: `/teacher/classes`.
+- The teacher can create a class, configure minimum group size, maximum group size, maximum group count, student group creation, and formation status in one visible workflow.
+- Class creation and settings forms show loading, success, validation, offline, retry, and permission-denied states without relying on color alone.
+- Invite management displays active invite code status, optional expiry/use limit, and used count. Raw link tokens are shown only immediately after issue or rotation because only token hashes are stored.
+- A newly issued or rotated invite exposes copy, share/open link, and QR preview actions. The full-screen QR view is dismissible and reuses the same one-time link.
+- Disable and rotate require confirmation. Disable is idempotent in the server contract; rotation replaces the prior active invite and updates the visible code/link/QR state.
+- Student join and membership creation are not available from this teacher
+  screen; P1-04 implements them on `/join` and `/join/{token}`.
+
+### Student class join
+
+- Routes: `/join` for code entry and `/join/{token}` for link/QR landing.
+- The form submits either `inviteCode` or `token`; it never sends class ID,
+  school ID, user ID, or role.
+- States: loading, offline/no-network, invalid invite, expired invite, disabled
+  invite, inactive class/school, account disabled, email not confirmed,
+  permission denied, already joined/idempotent replay, and success.
+- Success shows the joined class and school and links back to the protected app
+  home. Already-joined replay uses the same class summary and does not present
+  the state as a destructive error.
+- Mobile layout must stay within the viewport at 390 px and keep status text,
+  icon, and action visible without relying on color alone.
 
 ## 7. Admin screen contracts
 

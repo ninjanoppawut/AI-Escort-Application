@@ -126,6 +126,123 @@ passes all 72 database assertions; local lint and security/performance advisors
 report no issues; `src/lib/supabase/database.types.ts` matches a fresh local
 schema generation. No P1-02 migration was applied to a hosted project.
 
+P1-03 is implemented locally by
+`supabase/migrations/20260806062357_phase1_class_operations.sql`,
+`src/features/classes`, `src/app/api/classes`, and
+`src/app/teacher/classes/page.tsx`. It adds trusted class creation, class group
+settings update, class invite issue/disable/rotate RPCs, Zod request contracts,
+stable error mapping, server route handlers, a teacher mobile-first class and
+invitation manager, one-time link/QR generation, and a teacher entry link from
+the app home. The RPCs validate active confirmed teacher capability, school or
+class teacher membership, active class/school status, group-size limits,
+invitation expiry/use limits, and URL class/invite consistency in the HTTP
+route layer. Invitation secrets are generated server-side, stored only as token
+hashes, and returned once for link/QR display. Class creation/settings and
+invitation mutations emit append-only audit and research events without
+including invite codes, raw tokens, token hashes, emails, or free text in
+research payloads.
+
+P1-03 verification is in
+`supabase/tests/phase1_class_operations_test.sql`,
+`supabase/tests/phase1_class_operations_concurrency.ps1`,
+`src/features/classes/contracts.test.ts`, and
+`src/features/classes/components/teacher-class-manager.test.tsx`. Focused
+coverage proves teacher-only mutation authorization, inactive/unconfirmed and
+cross-school denial, no partial writes for invalid settings, invite secret
+non-disclosure, disable idempotency, disable/rotate race consistency, direct
+browser table-write denial, QR/link UI behavior, and stable contract/error
+validation.
+
+P1-04 is implemented locally by
+`supabase/migrations/20260806135731_phase1_class_join.sql`,
+`src/app/api/classes/join/route.ts`, `/join`, `/join/[token]`, and
+`src/features/classes/components/student-class-joiner.tsx`. It adds the trusted
+`join_class_with_invite` RPC, durable class-join notification rows, student code
+entry and link/QR landing states, stable invite error mapping, idempotent
+already-joined replay, and generated database types. Verification is
+`supabase/tests/phase1_class_join_test.sql`,
+`supabase/tests/phase1_class_join_concurrency.ps1`,
+`src/features/classes/**/*.test.ts(x)`, and the scoped Playwright class-join
+journey. P1-05 still owns full class/member list states, and P1-06 still owns
+broader phase-level join/RLS regression coverage.
+
+P1-05 is implemented locally by
+`supabase/migrations/20260806162428_phase1_class_member_read_models.sql`,
+`GET /api/classes`, `GET /api/classes/:id/members`,
+`src/features/classes/components/class-member-browser.tsx`, `/app`, and
+`/teacher/classes`. It adds membership-authoritative class/member read-model
+RPCs with fixed empty `search_path`, opaque member cursors ordered by
+`(display_name asc, member_id asc)`, teacher-visible email/join/status/role
+fields, student classmate-only rows with email omitted, and null current-group
+placeholders until group tables ship. The student surface lists only active
+authorized classes; teacher surfaces show authorized classes and render archived
+classes as class-not-active. Browser table writes to trusted class tables remain
+denied.
+
+P1-05 verification is in
+`supabase/tests/phase1_class_member_read_models_test.sql`,
+`src/features/classes/contracts.test.ts`,
+`src/features/classes/components/class-member-browser.test.tsx`, and the
+member-list Playwright grep in `tests/e2e/class-management.spec.ts`. P1-06 owns
+broader multi-user/class RLS, role-escalation, and full phase regression
+coverage; P1-07 owns email confirmation/recovery and admin-MFA edge coverage.
+
+P1-06 is implemented locally by
+`supabase/tests/phase1_auth_classes_rbac_regression_test.sql` and the
+`student join replay denies cross-class and teacher-route access` Playwright
+case in `tests/e2e/class-management.spec.ts`. It adds broad Phase 1 regression
+coverage without changing schema, RPCs, generated types, API contracts, or UI
+contracts. The pgTAP suite proves multi-user, multi-school, and multi-class RLS
+isolation across profiles, schools, school memberships, classes, class members,
+class invites, notifications, teacher provisioning, and platform-admin data;
+students cannot self-promote or rely on user-editable metadata; browser writes
+to trusted class/provisioning/notification tables remain denied; teachers cannot
+read or manage classes outside authorized school/class membership; anon cannot
+execute Phase 1 class/auth RPCs; and repeated invite code/token attempts are
+idempotent without duplicate memberships, usage, audit, research, or
+notification rows. The browser case verifies local Supabase join replay,
+cross-class member-list denial, unauthorized class hiding on `/app`, and
+signed-in student denial on `/teacher/classes`.
+
+P1-06 verification passed on 2026-08-07 with `npx supabase db reset --local`,
+focused P1-06 pgTAP (46 assertions), full local pgTAP (259 assertions),
+`npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test`,
+`npm run build`, `npm run check`, focused P1-06 Playwright with local Supabase
+env overrides, local database lint, local security/performance advisors, and a
+`.next/static` secret-marker scan. P1-07 completed the remaining targeted
+email confirmation/recovery, invalid callback, teacher provisioning, admin
+grant/revoke, and admin-MFA authorization tests.
+
+P1-07 targeted coverage was completed and verified on 2026-08-07 without
+adding admin UI/read models or changing hosted Auth/Supabase settings. The
+slice adds a pure `src/features/auth/recovery.ts` signed recovery-AMR helper,
+unit coverage in `src/features/auth/server/identity.test.ts`, browser coverage
+in `tests/e2e/auth.spec.ts` for protected `/app` denial before confirmation,
+recovery replay, and invalid callback code, plus
+`supabase/tests/phase1_trusted_provisioning_test.sql` coverage for admin revoke
+MFA checks, user-editable metadata denial, revoked-admin next-check denial, and
+revoked teacher-invitation preview/consume denial. Local Supabase/Mailpit
+verification passed with database reset, full and focused pgTAP, format, lint,
+strict typecheck, Vitest, production build, `npm run check`, the scoped auth
+Playwright spec, local database lint/advisors, and a built-client secret-marker
+scan. No schema or RPC contract changed in P1-07; generated database types were
+not rewritten.
+
+P1-EXIT coverage was completed and verified on 2026-08-07 without adding
+Phase 2 notifications-center work, group formation, platform-admin UI, hosted
+Supabase changes, or hosted Auth changes. The focused Playwright scenario
+`P1-EXIT` in `tests/e2e/class-management.spec.ts` verifies that an
+unprovisioned teacher cannot create a class, trusted platform-admin
+provisioning enables the teacher path, the provisioned teacher creates a class
+and invite, verified-email students join through both code and link-token/QR
+paths, the browser cannot choose/escalate role, invite replay is idempotent,
+and cross-class member access remains denied. Supporting local Auth/Mailpit
+coverage in `tests/e2e/auth.spec.ts` also passed. Full local verification
+passed with database reset, full pgTAP, format, lint, strict typecheck, Vitest,
+production build, `npm run check`, local database lint/advisors, generated
+database-type comparison against a fresh formatted local generation, and a
+built-client secret-marker scan.
+
 P1-01 remains unchecked pending environment-owner custom SMTP/deployed redirect
 verification; hosted CI run `31029729582` passed quality, database, and local
 Auth/Mailpit browser jobs on 2026-08-06. This implementation did not change

@@ -1,0 +1,52 @@
+drop function if exists private.p1_04_race_join(text, uuid);
+drop table if exists public.p1_04_race_results;
+drop table if exists public.p1_04_race_subjects;
+
+delete from public.notifications
+where recipient_id in (
+  '00000000-0000-0000-0000-000000000501',
+  '00000000-0000-0000-0000-000000000502',
+  '00000000-0000-0000-0000-000000000503'
+);
+delete from public.research_events
+where actor_id in (
+  '00000000-0000-0000-0000-000000000501',
+  '00000000-0000-0000-0000-000000000502',
+  '00000000-0000-0000-0000-000000000503'
+);
+delete from public.audit_logs
+where actor_id in (
+  '00000000-0000-0000-0000-000000000501',
+  '00000000-0000-0000-0000-000000000502',
+  '00000000-0000-0000-0000-000000000503'
+);
+delete from public.class_invites
+where created_by = '00000000-0000-0000-0000-000000000501';
+delete from public.class_members
+where user_id in (
+  '00000000-0000-0000-0000-000000000501',
+  '00000000-0000-0000-0000-000000000502',
+  '00000000-0000-0000-0000-000000000503'
+);
+delete from public.classes
+where created_by = '00000000-0000-0000-0000-000000000501';
+delete from public.school_memberships
+where user_id in (
+  '00000000-0000-0000-0000-000000000501',
+  '00000000-0000-0000-0000-000000000502',
+  '00000000-0000-0000-0000-000000000503'
+);
+delete from public.schools
+where created_by = '00000000-0000-0000-0000-000000000501';
+delete from public.profiles
+where id in (
+  '00000000-0000-0000-0000-000000000501',
+  '00000000-0000-0000-0000-000000000502',
+  '00000000-0000-0000-0000-000000000503'
+);
+delete from auth.users
+where id in (
+  '00000000-0000-0000-0000-000000000501',
+  '00000000-0000-0000-0000-000000000502',
+  '00000000-0000-0000-0000-000000000503'
+);

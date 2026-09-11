@@ -48,6 +48,7 @@ Never mark a feature complete based only on UI behavior or a happy-path manual c
 - Preserve unrelated working-tree changes, especially design artifacts.
 - Keep domain logic under the feature-module structure described in `docs/SYSTEM_ARCHITECTURE.md`.
 - Keep server-only modules out of client dependency graphs; do not import secret-bearing configuration into Client Components.
+- Default Supabase target is the hosted project `rhntelxdmuvldrxyceqx` at `https://rhntelxdmuvldrxyceqx.supabase.co`, using `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and server-only `SUPABASE_SECRET_KEY` from the ignored local environment. Do not default to the local Supabase stack unless the user explicitly asks for local-only work or a test command requires it.
 - Create migrations with the installed Supabase CLI's documented migration command; do not invent migration timestamps.
 - Treat committed migrations as the repeatable source of database state. Keep seed/test fixtures deterministic and free of real student data.
 - Apply schema changes to a local or dedicated development environment before production. Never use an unrelated Supabase project.

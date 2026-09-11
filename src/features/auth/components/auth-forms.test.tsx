@@ -38,7 +38,9 @@ describe("auth forms", () => {
       screen.getByRole("button", { name: "สร้างบัญชีนักเรียน" }),
     );
 
-    expect(await screen.findByText("ตรวจอีเมลเพื่อยืนยันบัญชี")).toBeVisible();
+    await vi.waitFor(() => {
+      expect(screen.getByText("ตรวจอีเมลเพื่อยืนยันบัญชี")).toBeVisible();
+    });
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(JSON.parse(request.body as string)).toEqual({
       email: "student@example.edu",

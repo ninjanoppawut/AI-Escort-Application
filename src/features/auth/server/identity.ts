@@ -7,6 +7,7 @@ import {
   type IdentityResult,
   validateActiveProfile,
 } from "@/features/auth/profile-gate";
+export { hasRecoveryMethod } from "@/features/auth/recovery";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const signedClaimsSchema = z.object({
@@ -22,14 +23,6 @@ export type {
   ActiveIdentity,
   IdentityResult,
 } from "@/features/auth/profile-gate";
-
-export function hasRecoveryMethod(claims: unknown) {
-  const result = signedClaimsSchema.safeParse(claims);
-  return (
-    result.success &&
-    result.data.amr?.some((entry) => entry.method === "recovery") === true
-  );
-}
 
 export async function getActiveIdentity(
   allowedAccountTypes: readonly ActiveIdentity["account_type"][] = [

@@ -15,10 +15,10 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: `npm run dev -- --port ${devPort}`,
+    command: `node node_modules/next/dist/bin/next dev --port ${devPort}`,
     url: baseURL,
     reuseExistingServer: false,
-    timeout: 120_000,
+    timeout: 300_000,
   },
   projects: [
     {

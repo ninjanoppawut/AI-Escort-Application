@@ -259,29 +259,604 @@ Evidence:
   must still add admin UI/read models and P1-03/P1-04 must add class mutation and
   student class-invitation consumption flows.
 
-- [ ] **P1-03:** Implement class creation/settings and code/link/QR invitation management.
-- [ ] **P1-04:** Implement atomic invitation consumption and student membership creation.
-- [ ] **P1-05:** Build teacher/student class and member-list states.
-- [ ] **P1-06:** Pass multi-user/class RLS, role-escalation, invite-idempotency, and Playwright join tests.
-- [ ] **P1-07:** Pass email confirmation/recovery, invalid callback, teacher-provisioning, admin grant/revoke, and admin-MFA authorization tests.
-- [ ] **P1-EXIT:** An admin-provisioned teacher creates a class and a verified-email student joins through code/link/QR without cross-class access.
+- [x] **P1-03:** Implement class creation/settings and code/link/QR invitation management.
+
+P1-03 status: complete and verified on the isolated local Supabase stack as of
+2026-08-06. The slice implements trusted teacher class creation, class group
+settings updates, and class invitation issue/disable/rotate with one-time
+link/QR display. Student invitation consumption and membership creation remain
+P1-04. No hosted migration, hosted Auth setting, external email, commit, push,
+or PR action was performed.
+
+Evidence:
+
+- Requirements: `AUTH-002`, `AUTH-003`, and class/invitation event coverage for
+  `AUTH-008`; `AUTH-004` remains P1-04.
+- Migration: `supabase/migrations/20260806062357_phase1_class_operations.sql`,
+  created with `npx supabase migration new phase1_class_operations` and applied
+  by `npx supabase db reset --local`.
+- Implementation:
+  `src/features/classes`, `src/app/api/classes`, `src/app/teacher/classes/page.tsx`,
+  `src/app/app/page.tsx`, and generated
+  `src/lib/supabase/database.types.ts`.
+- Authorization/security: trusted `SECURITY DEFINER` RPCs use fixed empty
+  `search_path`, browser table writes remain denied, active confirmed teacher
+  school/class membership is required, invite tokens are generated server-side,
+  only token hashes are stored, route class/invite mismatches are rejected, and
+  research payloads exclude invite codes, raw tokens, token hashes, emails, and
+  free text.
+- Database tests: `npx supabase test db --local` passed 156 pgTAP assertions.
+- Concurrency: `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/phase1_class_operations_concurrency.ps1`
+  passed the rotate/disable race with consistent invite state.
+- UI/unit tests: `npm test` passed 40 Vitest assertions, including class
+  contracts and teacher class-manager invite QR/disable/rotate behavior.
+- Browser: local Playwright command with local Supabase env overrides passed
+  `tests/e2e/class-management.spec.ts --project=student-mobile-chromium`
+  (teacher mobile class/settings/link/QR/disable/rotate workflow and signed-out
+  denial).
+- Quality gates: `npm run format:check`, `npm run lint`, `npm run typecheck`,
+  `npm run build`, `npx supabase db lint --local --schema public,private --level warning --fail-on error`,
+  and `npx supabase db advisors --local --type all --level warn --fail-on error`
+  passed. Generated database types match a fresh formatted local generation at
+  SHA-256 `E7BEE0F4D5B6B8635C68DC5E23CD2851F84FDEAE2790448582CD0FD7FD7EFA2D`.
+  Built client assets under `.next/static` contain no service-role, secret-key,
+  Gemini, or invite-token-hash markers.
+  `npm run check` was also run after documentation updates.
+  The scoped Playwright command uses local Supabase values because `.env.local`
+  currently points at the hosted development project.
+
+- [x] **P1-04:** Implement atomic invitation consumption and student membership creation.
+
+P1-04 status: complete and verified on the isolated local Supabase stack as of
+2026-08-06. The slice implements student class-join by invite code and opaque
+link/QR token only. No hosted migration, hosted Auth setting, external email,
+commit, push, or PR action was performed.
+
+Evidence:
+
+- Requirements: `AUTH-004`, class-join coverage for `AUTH-008`, and the
+  student side of D-031/D-062.
+- Migration: `supabase/migrations/20260806135731_phase1_class_join.sql`,
+  created with `npx supabase migration new phase1_class_join` and applied by
+  `npx supabase db reset --local`.
+- Implementation:
+  `public.join_class_with_invite(text,text)`, `public.notifications`,
+  `POST /api/classes/join`, `/join`, `/join/[token]`,
+  `src/features/classes/components/student-class-joiner.tsx`, class contracts,
+  class operation wrappers, and generated
+  `src/lib/supabase/database.types.ts`.
+- Authorization/security: the browser never supplies role, school ID, class ID,
+  user ID, or token hash. The RPC validates active authenticated identity,
+  confirmed email, active student account, active class/school, invite status,
+  expiry, disabled state, max uses, and existing membership under row locks. It
+  creates/reactivates active student school and class memberships atomically,
+  increments invite usage only for non-replay joins, and returns idempotent
+  `already_joined=true` for replay by an already active student member.
+- Events/notifications: successful first joins emit append-only `class_joined`
+  audit and research events plus durable `class_joined` and
+  `student_joined_class` notification rows. Research payloads exclude invite
+  codes, raw tokens, token hashes, emails, and free text.
+- Database tests: `npx supabase test db supabase/tests/phase1_class_join_test.sql --local`
+  passed 33 pgTAP assertions; `npx supabase test db --local` passed 189
+  assertions across the full local DB suite.
+- Concurrency: `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/phase1_class_join_concurrency.ps1`
+  passed the max-use race with one successful consumer and one `INVITE_INVALID`
+  loser.
+- UI/unit tests: `npm test` passed 44 Vitest assertions, including join contract
+  validation, code normalization, token auto-consumption, failure rendering, and
+  replay state.
+- Browser: local Playwright command with local Supabase env overrides passed
+  `tests/e2e/class-management.spec.ts --project=student-mobile-chromium --grep "student joins class by code and link token"`.
+- Quality gates: `npm run format:check`, `npm run lint`, `npm run typecheck`,
+  `npm test`, `npm run build`, `npm run check`,
+  `npx supabase db lint --local --schema public,private --level warning --fail-on error`,
+  and `npx supabase db advisors --local --type all --level warn --fail-on error`
+  passed. Generated database types match a fresh local generation at SHA-256
+  `0C72777C82F97AAAD596040C5791B0A78E5BD41630E6BC46D25F87354BC0F7B6`.
+  Built client assets under `.next/static` contain no service-role, secret-key,
+  Gemini, token-hash, or private invitation hash helper markers.
+- Remaining delivery boundary: P1-06 still owns broader multi-user/class RLS
+  and full phase join regression coverage. Hosted migration requires explicit
+  approval.
+- [x] **P1-05:** Build teacher/student class and member-list states.
+
+P1-05 status: complete and verified on the isolated local Supabase stack as of
+2026-08-06. The slice implements authorized teacher/student class and member
+read surfaces only. Group formation mutations and group assignment data remain
+later phases; current group is intentionally a null placeholder. No hosted
+migration, hosted Auth setting, external email, commit, push, or PR action was
+performed.
+
+Evidence:
+
+- Requirements: `AUTH-005`–`AUTH-007`, D-030, D-059, D-060, and class/member
+  privacy rules from `UI_CONTRACTS.md`.
+- Migration/read models:
+  `supabase/migrations/20260806162428_phase1_class_member_read_models.sql`,
+  created with `npx supabase migration new phase1_class_member_read_models`.
+  It adds `list_authorized_classes()` and
+  `list_class_members(uuid,text,text,integer,text,uuid)`, cursor-friendly
+  indexes, fixed empty `search_path`, authenticated-only execute grants, and
+  null current-group placeholders.
+- Implementation:
+  `GET /api/classes`, `GET /api/classes/:id/members`,
+  `src/features/classes/components/class-member-browser.tsx`, `/app`,
+  `/teacher/classes`, `src/features/classes/contracts.ts`, and generated
+  `src/lib/supabase/database.types.ts`.
+- Authorization/privacy: class/member reads are database membership
+  authoritative. Students receive only active authorized classes and active
+  student classmates with email omitted. Teachers receive authorized classes and
+  permitted member email/join/status/role fields. Browser writes to
+  `classes`, `class_members`, and `class_invites` remain denied.
+- Tests:
+  `supabase/tests/phase1_class_member_read_models_test.sql` passes 24 pgTAP
+  assertions for teacher/student visibility, cross-class denial,
+  class-not-active denial, email filtering, cursor pagination, function grants,
+  function hardening, and browser write denial. Full local database suite
+  passes 213 assertions across 6 files.
+- UI/contract tests:
+  `src/features/classes/contracts.test.ts` and
+  `src/features/classes/components/class-member-browser.test.tsx`; full Vitest
+  suite passes 48 tests across 18 files.
+- Browser: scoped Playwright command with local Supabase overrides
+  `npx playwright test tests/e2e/class-management.spec.ts --grep "teacher and student view authorized class member lists"`
+  passed 1 test on `student-mobile-chromium`; the other 5 projects were
+  intentionally skipped by the test guard.
+- Commands passed:
+  `npx supabase db reset --local`;
+  `npx supabase test db --local`;
+  `npx supabase test db --local supabase/tests/phase1_class_member_read_models_test.sql`;
+  `npm run format:check`;
+  `npm run lint`;
+  `npm run typecheck`;
+  `npm test`;
+  `npm run build`;
+  `npm run check`;
+  `npx supabase db lint --local --schema public,private --level warning --fail-on error`;
+  `npx supabase db advisors --local --type all --level warn --fail-on error`.
+- Generated database types match a fresh local generation after formatter
+  normalization at SHA-256
+  `4A9877FFF17C8AE6DE7CBC65830D0885F821C6B9AA65024DE9FA5FC0ED662878`.
+  Built client assets under `.next/static` contain no service-role, secret-key,
+  Gemini, token-hash, or private invitation hash helper markers.
+- Remaining delivery boundary: P1-06 owns broader multi-user/class RLS,
+  role-escalation, invite idempotency, and full phase join regression coverage.
+  P1-07 owns confirmation/recovery, invalid callback, teacher provisioning,
+  admin grant/revoke, and admin-MFA authorization tests. Hosted migration
+  requires explicit approval.
+- [x] **P1-06:** Pass multi-user/class RLS, role-escalation, invite-idempotency, and Playwright join tests.
+
+P1-06 status: complete and verified on the isolated local Supabase stack as of
+2026-08-07. This slice added broad Phase 1 auth/classes/RBAC regression
+coverage only. No schema/RPC contract, hosted migration, hosted Auth setting,
+external email, commit, push, or PR action was performed.
+
+Evidence:
+
+- Requirements: regression coverage for `AUTH-004`-`AUTH-007` and
+  `AUTH-010`-`AUTH-011`, plus D-030, D-031, D-061, and D-062.
+- Implementation:
+  `supabase/tests/phase1_auth_classes_rbac_regression_test.sql` and the P1-06
+  Playwright case in `tests/e2e/class-management.spec.ts`. No application
+  schema, RPC, generated type, API, or UI contract changed.
+- Database coverage: 46 focused pgTAP assertions prove RLS is enabled across
+  Phase 1 exposed tables, students cannot read or mutate unauthorized profile,
+  school, school-membership, class, class-member, class-invite, notification,
+  platform-admin, or teacher-provisioning data, raw user metadata cannot grant
+  teacher/admin capability, teachers cannot read/manage another school/class,
+  browser writes to trusted class/provisioning/notification tables stay denied,
+  anon cannot execute Phase 1 class/auth RPCs, and repeated invite code/token
+  attempts remain idempotent without duplicate membership, invite usage, audit,
+  research, or notification rows.
+- Browser coverage: the P1-06 Playwright case signs in local Supabase users,
+  joins through an opaque token, replays the invite through `POST
+  /api/classes/join`, verifies `already_joined=true` and student role, denies
+  `GET /api/classes/:id/members` for a cross-class member read with
+  `FORBIDDEN`, hides unauthorized classes on `/app`, and renders the signed-in
+  student teacher-route permission-denied state on `/teacher/classes`.
+- Commands passed:
+  `npx supabase db reset --local`;
+  `npx supabase test db supabase/tests/phase1_auth_classes_rbac_regression_test.sql --local`
+  (46 assertions);
+  `npx supabase test db --local` (259 assertions across 7 files);
+  `npm run format:check`;
+  `npm run lint`;
+  `npm run typecheck`;
+  `npm test` (48 Vitest tests);
+  `npm run build`;
+  `npm run check`;
+  `npx playwright test tests/e2e/class-management.spec.ts --project=student-mobile-chromium --grep "student join replay denies cross-class and teacher-route access" --workers=1`
+  with local Supabase env overrides and `PLAYWRIGHT_BASE_URL=http://localhost:3001`;
+  `npx supabase db lint --local --schema public,private --level warning --fail-on error`;
+  `npx supabase db advisors --local --type all --level warn --fail-on error`.
+- Advisors: local database lint and security/performance advisors reported no
+  issues.
+- Generated types: not regenerated because P1-06 made no schema or RPC changes.
+- Secret scan: exact marker scan of `.next/static` found no service-role,
+  secret-key, Gemini, token-hash, private hash-helper, or Supabase secret key
+  markers.
+- Remaining delivery boundary: P1-EXIT still owns the full admin-provisioned
+  teacher creates class plus verified-email student joins code/link/QR
+  scenario.
+- [x] **P1-07:** Pass email confirmation/recovery, invalid callback, teacher-provisioning, admin grant/revoke, and admin-MFA authorization tests.
+
+P1-07 status: complete and verified on the isolated local Supabase stack as of
+2026-08-07. No hosted migration, hosted Auth setting, external email, commit,
+push, or PR action was performed.
+
+Evidence:
+- Requirements: `AUTH-001`, `AUTH-009`, `AUTH-010`, `AUTH-011`, `AUTH-012`,
+  `ADM-001`-`ADM-003`.
+- Implementation/tests: `src/features/auth/recovery.ts`,
+  `src/features/auth/server/identity.ts`,
+  `src/features/auth/server/identity.test.ts`,
+  `tests/e2e/auth.spec.ts`, and
+  `supabase/tests/phase1_trusted_provisioning_test.sql`.
+- Coverage: recovery password updates now have a pure signed-recovery-claim
+  unit test; auth e2e now checks protected `/app` denial before confirmation,
+  recovery-link replay denial, and bogus callback-code denial; trusted
+  provisioning pgTAP now includes MFA denial for admin and invitation revokes,
+  user-editable metadata denial for admin authorization, revoked-admin
+  next-check denial, and revoked teacher-invitation preview/consume denial.
+- Database commands: `npx supabase start`;
+  `npx supabase db reset --local`;
+  `npx supabase test db --local` (266 pgTAP assertions across 7 files);
+  `npx supabase test db --local supabase/tests/phase1_trusted_provisioning_test.sql`
+  (55 assertions);
+  `npx supabase db lint --local --schema public,private --level warning --fail-on error`;
+  `npx supabase db advisors --local --type all --level warn --fail-on error`.
+- Repository quality: `npm run format:check`, `npm run lint`,
+  `npm run typecheck`, `npm test` (49 Vitest tests), `npm run build`, and
+  `npm run check` passed.
+- Browser: `npx playwright test tests/e2e/auth.spec.ts --project=student-mobile-chromium --workers=1`
+  passed 2 tests with local Supabase/Mailpit overrides:
+  `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54621`,
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<fresh local publishable key>`,
+  `MAILPIT_URL=http://127.0.0.1:54624`, and
+  `PLAYWRIGHT_BASE_URL=http://localhost:3001`.
+- Advisors: local database lint and security/performance advisors reported no
+  issues.
+- Generated types: no schema or RPC contract changed in P1-07. A fresh local
+  `npx supabase gen types --local --schema public` generation differed only by
+  omitting the existing `graphql_public` schema block; the file was not
+  rewritten.
+- Secret scan: `.next/static` contained no service-role, Supabase secret,
+  Gemini/API-key, token-hash, refresh/access-token, SMTP, SendGrid, or generic
+  secret markers.
+- Fixes during verification: corrected the trusted-provisioning pgTAP final
+  side-effect assertion to read outside authenticated RLS; made slow local
+  Playwright auth waits explicit; accepted Supabase's recovery replay hash
+  fragment while still requiring the stable `RECOVERY_LINK_INVALID` code; and
+  gave one long class-manager interaction test a test-specific timeout.
+- Remaining delivery boundary: P1-EXIT still owns the full
+  admin-provisioned-teacher creates class plus verified-email student joins
+  code/link/QR scenario.
+- [x] **P1-EXIT:** An admin-provisioned teacher creates a class and a verified-email student joins through code/link/QR without cross-class access.
+
+P1-EXIT status: complete and verified on the isolated local Supabase stack as
+of 2026-08-07. The end-to-end exit scenario now covers platform-admin/trusted
+teacher provisioning, denial for an unprovisioned teacher, teacher class
+creation, teacher invite code/link token creation with QR-path coverage,
+verified-email student joins by code and link token, client role-escalation
+denial, cross-class member denial, and replay/idempotent join behavior. No
+hosted migration, hosted Auth setting, external email, commit, push, or PR was
+performed.
+
+- Verification evidence:
+  `npx supabase start` passed locally with Mailpit and local Auth; `npx
+  supabase db reset --local` passed; `npx supabase test db --local` passed with
+  7 files and 266 pgTAP assertions; `npm run format:check`, `npm run lint`,
+  `npm run typecheck`, `npm test`, `npm run build`, and `npm run check` passed;
+  `npx supabase db lint --local --schema public,private --level warning
+  --fail-on error` passed with no schema errors; and `npx supabase db advisors
+  --local --type all --level warn --fail-on error` passed with no issues.
+- Browser evidence: with local overrides
+  `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54621`,
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local publishable key>`, and
+  `MAILPIT_URL=http://127.0.0.1:54624`, `npx playwright test
+  tests/e2e/class-management.spec.ts --project=student-mobile-chromium --grep
+  "P1-EXIT" --workers=1` passed with 1 test, and `npx playwright test
+  tests/e2e/auth.spec.ts --project=student-mobile-chromium --workers=1` passed
+  with 2 tests.
+- Generated types: `src/lib/supabase/database.types.ts` was refreshed from the
+  local database using `npx supabase gen types typescript --db-url
+  postgresql://postgres:postgres@127.0.0.1:54622/postgres --schema public
+  --schema private`, formatted, and verified to match a fresh formatted local
+  generation.
+- Secret scan: `.next/static` contained no service-role, Supabase secret,
+  Gemini/API-key, token-hash, refresh/access-token, SMTP, SendGrid, or generic
+  secret markers.
+- Fixes during verification: added the focused P1-EXIT Playwright scenario,
+  forced auth/class Playwright contexts online to avoid false offline-state
+  submissions, stabilized Vitest on Windows with an isolated single threads
+  worker, used webpack for the Next production build to avoid Windows
+  Turbopack worker teardown failures, disabled the unused local storage vector
+  sidecar to avoid reset health races, and refreshed generated database types
+  for the public/private schemas.
+- Remaining delivery boundary: Phase 2 starts durable notifications. P1-EXIT
+  does not include a notifications center, group formation, platform-admin UI,
+  or later read-model UX beyond the Phase 1 auth/classes/RBAC exit path.
 
 ## Phase 2 — Durable notifications
 
 Requirements: `NOT-001`–`NOT-007`.
 
-- [ ] **P2-01:** Add notification schema, type registry, RLS, indexes, and event-producer interface.
-- [ ] **P2-02:** Implement list, unread count, mark-one/all-read, and authorized deep links.
-- [ ] **P2-03:** Implement private signal channel and authoritative refetch triggers.
-- [ ] **P2-04:** Build all required layouts and empty/offline/stale/deleted-target states.
-- [ ] **P2-05:** Pass recipient-isolation, persistence, signal/refetch, and deep-link tests.
-- [ ] **P2-EXIT:** Notifications survive restart and only the recipient can read or mutate them.
+- [x] **P2-01:** Add notification schema, type registry, RLS, indexes, and event-producer interface.
+
+P2-01 status: complete and verified on the isolated local Supabase stack as of
+2026-08-12. The slice upgrades the Phase 1 class-join notification table into
+the durable notification foundation: database-backed type registry, registry FK,
+recipient-scoped RLS, supporting indexes, relational target columns, and a
+validated private producer helper. Notification list/read APIs, Realtime signal
+channels, UI layouts, and deep-link destination handling remain P2-02 through
+P2-05.
+
+Evidence:
+- Requirements: database and producer foundations for `NOT-001`, `NOT-002`, and
+  `NOT-005`; D-032 and D-058.
+- Migration:
+  `supabase/migrations/20260812021256_phase2_notification_foundation.sql`,
+  created with the installed Supabase CLI migration command and applied by
+  `npx.cmd supabase db reset --local`.
+- Implementation:
+  `public.notification_types`, upgraded `public.notifications`, private
+  `populate_notification_targets` trigger, hardened
+  `private.insert_notification`, `src/features/notifications/contracts.ts`, and
+  generated `src/lib/supabase/database.types.ts`.
+- Authorization/security: RLS is enabled on notification tables; recipients can
+  select and update only their own notification `read_at`; browser callers
+  cannot insert notification rows or execute the private producer; producer
+  validates active recipient, registered active type, nonempty content, and
+  object payload.
+- Tests: `supabase/tests/phase2_notification_foundation_test.sql` passed 26
+  pgTAP assertions; full `npx.cmd supabase test db --local` passed 8 files and
+  292 assertions.
+- Quality: `npm.cmd run format:check`, `npm.cmd run lint`,
+  `npm.cmd run typecheck`, `npm.cmd test` (52 Vitest tests), and
+  `npm.cmd run build` passed.
+- Advisors: `npx.cmd supabase db lint --local --schema public,private --level warning --fail-on error`
+  passed with one non-failing pre-existing warning for unused
+  `invite_age_seconds` in `public.join_class_with_invite`; `npx.cmd supabase db advisors --local --type all --level warn --fail-on error`
+  reported no issues.
+- Generated types: a fresh formatted generation from the local database matched
+  `src/lib/supabase/database.types.ts` at SHA-256
+  `48707055146EBE7CA4ABFD87DECD967858919E995DACB4E33C3E531511639011`.
+
+- [x] **P2-02:** Implement list, unread count, mark-one/all-read, and authorized deep links.
+
+P2-02 status: complete and verified on the isolated local Supabase stack as of
+2026-08-12. The slice adds authenticated notification APIs for durable list
+fetching, unread count, mark-one-read, mark-all-read, and deterministic
+registry-based deep links. It relies on the P2-01 recipient RLS policies for
+authorization; possession of a notification does not grant destination access,
+and destination reauthorization remains enforced by the target routes as they
+ship. Realtime private signals and notification-center UI states remain P2-03
+and P2-04.
+
+Evidence:
+- Requirements: API/server portions of `NOT-001`, `NOT-002`, and `NOT-005`.
+- Implementation:
+  `src/app/api/notifications/route.ts`,
+  `src/app/api/notifications/[id]/read/route.ts`,
+  `src/app/api/notifications/read-all/route.ts`,
+  `src/features/notifications/deep-link.ts`,
+  `src/features/notifications/errors.ts`, and
+  `src/features/notifications/server/operations.ts`.
+- Contracts: `notificationListQuerySchema` validates status filters, cursor,
+  and page-size caps; notification pages return `items`, `unreadCount`,
+  `nextCursor`, and `hasMore`; cursors encode `(createdAt, id)` for the
+  documented `(created_at desc, id desc)` order.
+- Authorization/security: list/count/update operations use the authenticated
+  Supabase server client and recipient-scoped RLS. Same-origin checks guard
+  mark-one/read-all mutations. Deep links are generated from the typed registry
+  plus relational IDs/versioned payload values and never trust arbitrary
+  server-supplied HTML or URLs.
+- Browser/API evidence: with local Supabase overrides,
+  `npx.cmd playwright test tests/e2e/notifications.spec.ts --project=student-mobile-chromium --workers=1`
+  passed, proving recipient-only listing, unread count, cursor pagination,
+  deep-link generation, cross-user mark-read denial, mark-one, unread filtering,
+  and mark-all-read.
+- Unit evidence: focused `npm.cmd test -- src/features/notifications` passed 7
+  tests; full `npm.cmd test` passed 20 files and 56 tests.
+- Quality: `npm.cmd run format:check`, `npm.cmd run lint`,
+  `npm.cmd run typecheck`, `npm.cmd run build`, and fresh
+  `npx.cmd supabase test db --local` passed. Before the final pgTAP run, the
+  local database was reset because the Playwright API test intentionally inserts
+  notification fixtures.
+
+- [x] **P2-03:** Implement private signal channel and authoritative refetch triggers.
+
+P2-03 status: complete and verified on the isolated local Supabase stack as of
+2026-08-12. The slice adds private Supabase Realtime Broadcast authorization,
+database notification-created signals, and a client bridge that invalidates the
+authoritative notification query namespace after private signals, channel
+subscribe/reconnect/error transitions, auth-session changes, foreground, and
+network reconnect. Notification center layouts and stale/offline/deleted-target
+presentation remain P2-04, and broader persistence/signal browser scenarios
+remain P2-05/P2-EXIT.
+
+Evidence:
+- Requirements: `NOT-003` and `NOT-004`; D-032.
+- Migration:
+  `supabase/migrations/20260812041306_phase2_notification_realtime.sql`,
+  created with the installed Supabase CLI migration command and applied by
+  `.\\node_modules\\.bin\\supabase.cmd db reset --local`.
+- Implementation:
+  `private.broadcast_notification_signal`, trigger
+  `broadcast_notification_signal_after_insert`, Realtime RLS policy
+  `notification_realtime_receive_own_broadcasts`,
+  `src/features/notifications/client/realtime.tsx`,
+  `src/app/app-providers.tsx`, `notificationSignalSchema`, and refreshed
+  `src/lib/supabase/database.types.ts`.
+- Authorization/security: private channel authorization is recipient-scoped to
+  `user:{auth.uid()}:notifications`, active profiles only, Broadcast receive
+  only, and payloads contain only signal metadata. Clients invalidate and
+  refetch `/api/notifications`; Realtime content is not treated as authority.
+- Tests: focused
+  `.\\node_modules\\.bin\\supabase.cmd test db supabase/tests/phase2_notification_realtime_test.sql --local`
+  passed 8 pgTAP assertions; full
+  `.\\node_modules\\.bin\\supabase.cmd test db --local` passed 9 files and 300
+  assertions. Focused `npm.cmd test -- src/features/notifications` passed 10
+  tests including private-channel subscription and invalidation behavior.
+- Quality: `npm.cmd run format:check`, `npm.cmd run lint`,
+  `npm.cmd run typecheck`, and `npm.cmd test` (21 files, 59 tests) passed.
+- Advisors: `.\\node_modules\\.bin\\supabase.cmd db lint --local --schema public,private --level warning --fail-on error`
+  passed with the existing non-failing `invite_age_seconds` warning in
+  `public.join_class_with_invite`; `.\\node_modules\\.bin\\supabase.cmd db advisors --local --type all --level warn --fail-on error`
+  reported no issues.
+
+- [x] **P2-04:** Build all required layouts and empty/offline/stale/deleted-target states.
+
+P2-04 status: complete and verified locally as of 2026-08-12. The slice adds a
+protected notification center and app unread badge using the existing durable
+notification APIs and P2-03 Realtime invalidation bridge. It covers all eight
+approved notification row layouts, read/unread filters, mark-one-read,
+mark-all-read, loading, empty, stale-refreshing, offline/error retry,
+permission-denied copy, deleted/expired-target presentation, pagination, and
+mobile-safe row actions. Deep-link destination implementation across later
+feature routes and browser persistence/restart coverage remain P2-05/P2-EXIT.
+
+Evidence:
+- Requirements: UI/state portions of `NOT-001`, `NOT-002`, `NOT-004`, and
+  `NOT-005`; D-032 and D-058.
+- Implementation:
+  `src/app/notifications/page.tsx`,
+  `src/features/notifications/client/notification-center.tsx`,
+  `src/features/notifications/client/notification-badge.tsx`, and the `/app`
+  header integration in `src/app/app/page.tsx`.
+- UI behavior: `/notifications` is protected by active identity checks, seeds
+  the first page server-side through recipient RLS, then uses TanStack Query for
+  authoritative refetches. The app badge fetches unread count and updates under
+  the same notification query namespace invalidated by private Realtime.
+- Tests: focused `npm.cmd test -- src/features/notifications` passed 4 files
+  and 13 tests, including all layout labels, deleted-target state, empty state,
+  offline/error retry state, unread badge refresh, pagination, and mark-read
+  mutation behavior. Full `npm.cmd test` passed 22 files and 62 tests.
+- Quality: `npm.cmd run format:check`, `npm.cmd run lint`,
+  `npm.cmd run typecheck`, and `npm.cmd run build` passed after the UI changes.
+
+- [x] **P2-05:** Pass recipient-isolation, persistence, signal/refetch, and deep-link tests.
+
+P2-05 status: complete and verified locally as of 2026-08-12. The slice adds a
+browser journey that exercises durable notification persistence across reload,
+recipient-only visibility and mutation, private database Broadcast delivery,
+authoritative refetch after the signal, deleted-target presentation, and
+destination reauthorization for generated deep links. It also hardens the
+Realtime receive policy to bind delivered rows to the requested private topic
+and accepts Supabase database Broadcast metadata/timestamps in the signal parser.
+Later feature routes still own their destination-specific notification producer
+coverage.
+
+Evidence:
+- Requirements: browser/integration coverage for `NOT-001` through `NOT-005`
+  and D-032.
+- Implementation:
+  `tests/e2e/notifications.spec.ts`,
+  `src/features/notifications/contracts.ts`,
+  `src/features/notifications/client/realtime.tsx`,
+  `src/features/notifications/client/realtime.test.ts`, and
+  `supabase/migrations/20260812041306_phase2_notification_realtime.sql`.
+- Authorization/security: the Playwright journey creates two local verified
+  users, proves the owner cannot see or mark the other user's notification,
+  proves notification deep-link possession does not authorize the destination,
+  and verifies the other user sees only their own durable row after sign-out and
+  sign-in.
+- Realtime/refetch: the test waits for the private
+  `user:{userId}:notifications` subscription, inserts a durable notification,
+  observes the `notification.created` Broadcast signal, and then requires the
+  refetched row to render in `/notifications`.
+- Tests: focused `npm.cmd run test -- src/features/notifications/client/realtime.test.ts`
+  passed 3 tests; focused
+  `.\\node_modules\\.bin\\supabase.cmd test db supabase/tests/phase2_notification_realtime_test.sql --local`
+  passed 9 pgTAP assertions; focused Playwright with local Supabase env
+  overrides passed
+  `npm.cmd run test:e2e -- tests/e2e/notifications.spec.ts --project=student-mobile-chromium --grep "notification center persists" --workers=1 --timeout=180000`.
+  Full notification E2E coverage also passed
+  `npm.cmd run test:e2e -- tests/e2e/notifications.spec.ts --project=student-mobile-chromium --workers=1 --timeout=180000`
+  with 2 tests.
+
+- [x] **P2-EXIT:** Notifications survive restart and only the recipient can read or mutate them.
+
+P2-EXIT status: complete and verified locally as of 2026-08-13. The exit
+coverage adds a focused browser journey that creates two verified local users,
+inserts durable notification rows for each recipient, restarts the local
+Supabase PostgreSQL container, signs in as each user, and proves the rows remain
+durable while list and mark-read operations stay recipient-scoped through the
+authoritative notification API.
+
+Evidence:
+- Requirements: exit coverage for `NOT-001`, `NOT-002`, and the durable-row
+  persistence guarantee in D-032.
+- Implementation: `tests/e2e/notifications.spec.ts` adds the `P2-EXIT`
+  restart journey and bounded local Docker database restart helper. No
+  application schema, API contract, RLS policy, or generated database type
+  changed.
+- Browser evidence: with local Supabase overrides,
+  `npm.cmd run test:e2e -- tests/e2e/notifications.spec.ts --project=student-mobile-chromium --grep "P2-EXIT" --workers=1 --timeout=240000`
+  passed 1 test. The test restarts `supabase_db_ai-escort-application`, waits
+  for Auth/API readiness, verifies the first recipient can list and mark only
+  its own notification, receives `404` when marking the other recipient's row,
+  and verifies the second recipient's authoritative list excludes the first
+  recipient's notification.
+- Quality: `npm.cmd exec prettier -- --check tests/e2e/notifications.spec.ts docs/ROADMAP.md docs/modules/02-notifications.md docs/TRACEABILITY_MATRIX.md`,
+  `npm.cmd run lint`, `npm.cmd run typecheck`,
+  `npm.cmd test -- src/features/notifications`, full `npm.cmd test` (22 files,
+  62 tests), and `npm.cmd run build` passed after the exit test was added.
+  After the restart browser test inserted local fixtures,
+  `.\\node_modules\\.bin\\supabase.cmd db reset --local` was run, then
+  `.\\node_modules\\.bin\\supabase.cmd test db --local` passed 9 files and 301
+  pgTAP assertions. Supabase db lint passed with the existing non-failing
+  `invite_age_seconds` warning, and db advisors reported no issues. A stale
+  generated `.next/dev/types/validator.ts` file from the Playwright dev server
+  caused one transient typecheck parse error; removing `.next/dev/types`
+  regenerated clean Next types and the rerun passed.
 
 ## Phase 3 — Atomic student group creation
 
 Requirements: `GRP-001`–`GRP-006`, `GRP-010`.
 
-- [ ] **P3-01:** Add group, membership, leader, creation-claim, and history constraints/migrations.
+- [x] **P3-01:** Add group, membership, leader, creation-claim, and history constraints/migrations.
+
+P3-01 status: complete and verified locally as of 2026-08-13. The slice adds
+the group formation schema foundation only; student creation RPC, group board
+read model, private class-group Realtime signal, final-slot race harness, and UI
+states remain P3-02 through P3-05.
+
+Evidence:
+- Requirements: schema and invariant foundations for `GRP-002`, `GRP-003`,
+  `GRP-005`, and `GRP-006`; supporting tables for `GRP-001` and `GRP-010`.
+- Migration:
+  `supabase/migrations/20260813050854_phase3_group_foundation.sql`, created
+  with the installed Supabase CLI migration command and applied by
+  `.\\node_modules\\.bin\\supabase.cmd db reset --local`.
+- Schema: `public.groups`, `public.group_members`,
+  `public.student_group_creation_claims`, and
+  `public.group_membership_history`; current-group indexes; composite
+  group/class foreign key enforcement; one-active-leader, one-active-group, and
+  one-unreset-creation-claim partial unique indexes; append-only membership
+  history protections; and private active-student/group-leader validation
+  helpers with fixed empty `search_path`.
+- Authorization/security: RLS is enabled on every new exposed table. Browser
+  roles receive SELECT only; no browser insert/update/delete grants exist.
+  Students can read current groups and active group memberships only inside
+  their authorized class, can read only their own creation-claim history, and
+  cannot read membership history directly. Teachers can read group and history
+  rows only for classes they teach. Direct browser writes are denied pending
+  trusted RPCs in later P3/P5 slices.
+- Tests: focused
+  `.\\node_modules\\.bin\\supabase.cmd test db supabase/tests/phase3_group_foundation_test.sql --local`
+  passed 37 pgTAP assertions. Full
+  `.\\node_modules\\.bin\\supabase.cmd test db --local` passed 10 files and 338
+  pgTAP assertions.
+- Advisors: `.\\node_modules\\.bin\\supabase.cmd db lint --local --schema public,private --level warning --fail-on error`
+  passed with the existing non-failing `invite_age_seconds` warning in
+  `public.join_class_with_invite`; `.\\node_modules\\.bin\\supabase.cmd db advisors --local --type all --level warn --fail-on error`
+  reported no issues.
+- Generated types: `src/lib/supabase/database.types.ts` was regenerated from
+  the local database with
+  `.\\node_modules\\.bin\\supabase.cmd gen types typescript --local --schema public`
+  and formatted.
+
 - [ ] **P3-02:** Implement and secure atomic `create_student_group`.
 - [ ] **P3-03:** Build group board and explanatory create-group availability states.
 - [ ] **P3-04:** Implement private class-group invalidation and refetch lifecycle.

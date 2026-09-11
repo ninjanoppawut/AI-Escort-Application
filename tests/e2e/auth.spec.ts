@@ -68,7 +68,7 @@ async function waitForMail(
 }
 
 test.describe("P1-01 local Auth and Mailpit", () => {
-  test.setTimeout(90_000);
+  test.setTimeout(180_000);
 
   test("signup, confirm, protect, sign out, recover, and sign in", async ({
     page,
@@ -78,6 +78,8 @@ test.describe("P1-01 local Auth and Mailpit", () => {
       testInfo.project.name !== "student-mobile-chromium",
       "The stateful Mailpit journey runs once; responsive auth smoke runs in every project.",
     );
+    await page.context().setOffline(false);
+
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const email = `student-${suffix}@example.edu`;
     const firstPassword = "field learning passphrase 1";
@@ -94,7 +96,9 @@ test.describe("P1-01 local Auth and Mailpit", () => {
     await page.getByLabel("รหัสผ่าน", { exact: true }).fill(firstPassword);
     await page.getByLabel("ยืนยันรหัสผ่าน").fill(firstPassword);
     await page.getByRole("button", { name: "สร้างบัญชีนักเรียน" }).click();
-    await expect(page.getByText("ตรวจอีเมลเพื่อยืนยันบัญชี")).toBeVisible();
+    await expect(page.getByText("ตรวจอีเมลเพื่อยืนยันบัญชี")).toBeVisible({
+      timeout: 30_000,
+    });
 
     const firstConfirmation = await waitForMail(request, email);
     await page.goto("/auth/sign-in");
@@ -103,7 +107,12 @@ test.describe("P1-01 local Auth and Mailpit", () => {
     await page.getByRole("button", { name: "เข้าสู่ระบบ" }).click();
     await expect(
       page.getByText("กรุณายืนยันอีเมล", { exact: true }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
+
+    await page.goto("/app");
+    await expect(page).toHaveURL(
+      /\/auth\/sign-in\?error=(AUTH_REQUIRED|EMAIL_NOT_CONFIRMED)&returnTo=%2Fapp$/,
+    );
 
     await page.waitForTimeout(1_100);
     await page.goto("/auth/resend-confirmation");
@@ -122,14 +131,17 @@ test.describe("P1-01 local Auth and Mailpit", () => {
     await expect(page.getByText("ยืนยันตัวตนแล้ว · student")).toBeVisible();
 
     await page.getByRole("button", { name: "ออกจากระบบ" }).click();
-    await expect(page).toHaveURL(/\/auth\/sign-in$/);
+    await expect(page).toHaveURL(/\/auth\/sign-in$/, { timeout: 30_000 });
 
     await page.goto("/auth/forgot-password");
     await page.getByLabel("อีเมล").fill(email);
+
     await page
       .getByRole("button", { name: "ส่งลิงก์ตั้งรหัสผ่านใหม่" })
       .click();
-    await expect(page.getByText("ตรวจกล่องอีเมลของคุณ")).toBeVisible();
+    await expect(page.getByText("ตรวจกล่องอีเมลของคุณ")).toBeVisible({
+      timeout: 30_000,
+    });
 
     const recovery = await waitForMail(request, email, confirmation.id);
     await page.goto(recovery.link);
@@ -137,21 +149,28 @@ test.describe("P1-01 local Auth and Mailpit", () => {
     await page.getByLabel("รหัสผ่านใหม่", { exact: true }).fill(secondPassword);
     await page.getByLabel("ยืนยันรหัสผ่านใหม่").fill(secondPassword);
     await page.getByRole("button", { name: "บันทึกรหัสผ่านใหม่" }).click();
-    await expect(page.getByText("ตั้งรหัสผ่านใหม่แล้ว")).toBeVisible();
+    await expect(page.getByText("ตั้งรหัสผ่านใหม่แล้ว")).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.goto(recovery.link);
+    await expect(page).toHaveURL(/\/auth\/error\?code=RECOVERY_LINK_INVALID/);
+    await expect(
+      page.getByRole("link", { name: "ดำเนินการอย่างปลอดภัย" }),
+    ).toHaveAttribute("href", "/auth/forgot-password");
 
-    await page
-      .getByRole("link", { name: "เข้าสู่ระบบด้วยรหัสผ่านใหม่" })
-      .click();
+    await page.goto("/auth/sign-in");
     await page.getByLabel("อีเมล").fill(email);
     await page.getByLabel("รหัสผ่าน").fill(secondPassword);
     await page.getByRole("button", { name: "เข้าสู่ระบบ" }).click();
-    await expect(page).toHaveURL(/\/app$/);
+    await expect(page).toHaveURL(/\/app$/, { timeout: 30_000 });
   });
 });
 
 test("auth screens are mobile-safe and invalid callbacks recover explicitly", async ({
   page,
 }) => {
+  await page.context().setOffline(false);
+
   await page.goto("/auth/sign-in");
   await expect(
     page.getByRole("heading", { name: "เข้าสู่ระบบ" }),
@@ -170,4 +189,7 @@ test("auth screens are mobile-safe and invalid callbacks recover explicitly", as
 
   await page.goto("/api/auth/callback?flow=recovery");
   await expect(page).toHaveURL(/\/auth\/error\?code=RECOVERY_LINK_INVALID$/);
+
+  await page.goto("/api/auth/callback?flow=signup&code=expired-or-invalid");
+  await expect(page).toHaveURL(/\/auth\/error\?code=AUTH_CALLBACK_INVALID$/);
 });

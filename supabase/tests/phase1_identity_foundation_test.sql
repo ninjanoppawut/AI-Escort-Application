@@ -289,10 +289,9 @@ select is(
     select count(*) from pg_policies
     where schemaname = 'public'
       and cmd = 'UPDATE'
-      and qual is not null
-      and with_check is not null
+      and (qual is null or with_check is null)
   ),
-  1::bigint,
+  0::bigint,
   'every identity update policy defines USING and WITH CHECK'
 );
 

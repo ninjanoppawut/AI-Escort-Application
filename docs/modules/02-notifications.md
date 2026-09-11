@@ -50,6 +50,45 @@ Unread/read, empty, loading, stale-refreshing, offline, reconnecting, deleted de
 
 AUTH identity and authorization; event producers in GRP, MGT, SES, REV, and MAP.
 
+## Implementation status
+
+- **P2-01 complete:** `public.notification_types`, upgraded
+  `public.notifications`, private target-population trigger, and hardened
+  `private.insert_notification` live in
+  `supabase/migrations/20260812021256_phase2_notification_foundation.sql`.
+- Typed client/server registry constants live in
+  `src/features/notifications/contracts.ts`; generated database types are in
+  `src/lib/supabase/database.types.ts`.
+- Verification lives in
+  `supabase/tests/phase2_notification_foundation_test.sql` and
+  `src/features/notifications/contracts.test.ts`.
+- **P2-02 complete:** list/unread count, mark-one-read, mark-all-read, cursor
+  pagination, and registry-based deep-link generation live in
+  `src/app/api/notifications/*`,
+  `src/features/notifications/server/operations.ts`, and
+  `src/features/notifications/deep-link.ts`.
+- **P2-03 complete:** private notification Broadcast authorization, durable-row
+  insert signal emission, and authoritative client query invalidation live in
+  `supabase/migrations/20260812041306_phase2_notification_realtime.sql`,
+  `src/features/notifications/client/realtime.tsx`, and
+  `src/app/app-providers.tsx`.
+- **P2-04 complete:** notification center layouts, unread badge, read filters,
+  mark-read controls, empty/loading/offline/stale/deleted-target states, and
+  pagination live in `src/app/notifications/page.tsx`,
+  `src/features/notifications/client/notification-center.tsx`,
+  `src/features/notifications/client/notification-badge.tsx`, and `/app`.
+- **P2-05 complete:** browser coverage for durable persistence across reload,
+  recipient isolation, cross-user mutation denial, private Broadcast
+  signal/refetch, deleted-target presentation, and destination reauthorization
+  lives in `tests/e2e/notifications.spec.ts`. The Realtime signal parser accepts
+  Supabase database Broadcast metadata and offset timestamps in
+  `src/features/notifications/contracts.ts`.
+- **P2-EXIT complete:** restart persistence and recipient-scoped read/mutation
+  authorization are verified by the focused `P2-EXIT` browser journey in
+  `tests/e2e/notifications.spec.ts`.
+- Later feature routes still own destination-specific producer coverage as
+  those modules ship.
+
 ## Definition of done
 
 All required notification types are persisted, private, accessible, deep-linkable, and verified under reconnect and stale-data conditions.

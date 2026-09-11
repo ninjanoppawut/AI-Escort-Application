@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(48);
+select plan(55);
 
 select has_table('public', 'audit_logs', 'audit_logs table exists');
 select has_table('public', 'research_events', 'research_events table exists');
@@ -209,6 +209,16 @@ select throws_ok(
   'an active admin without aal2 cannot issue a teacher invitation'
 );
 
+select throws_ok(
+  $$select * from public.revoke_platform_admin(
+    '00000000-0000-0000-0000-000000000202',
+    'Missing MFA revoke attempt'
+  )$$,
+  '42501',
+  'MFA_REQUIRED',
+  'an active admin without aal2 cannot revoke platform-admin authority'
+);
+
 reset role;
 select set_config(
   'request.jwt.claims',
@@ -275,6 +285,43 @@ select throws_ok(
   '42501',
   'ADMIN_REQUIRED',
   'a revoked platform admin cannot issue teacher invitations'
+);
+
+select throws_ok(
+  $$select * from public.revoke_platform_admin(
+    '00000000-0000-0000-0000-000000000202',
+    'Revoked admin attempt'
+  )$$,
+  '42501',
+  'ADMIN_REQUIRED',
+  'a revoked platform admin cannot revoke platform-admin authority on the next authoritative check'
+);
+
+reset role;
+update auth.users
+set raw_user_meta_data = '{"is_admin":true,"role":"admin"}'::jsonb
+where id = '00000000-0000-0000-0000-000000000203';
+
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', '00000000-0000-0000-0000-000000000203',
+    'role', 'authenticated',
+    'aal', 'aal2',
+    'user_metadata', jsonb_build_object('is_admin', true, 'role', 'admin')
+  )::text,
+  true
+);
+set local role authenticated;
+
+select throws_ok(
+  $$select * from public.grant_platform_admin(
+    '00000000-0000-0000-0000-000000000204',
+    'Metadata admin attempt'
+  )$$,
+  '42501',
+  'ADMIN_REQUIRED',
+  'user-editable metadata cannot satisfy platform-admin authorization'
 );
 
 reset role;
@@ -558,6 +605,28 @@ reset role;
 select set_config(
   'request.jwt.claims',
   jsonb_build_object(
+    'sub', '00000000-0000-0000-0000-000000000201',
+    'role', 'authenticated',
+    'aal', 'aal1'
+  )::text,
+  true
+);
+set local role authenticated;
+
+select throws_ok(
+  $$select * from public.revoke_teacher_invitation(
+    (select invitation_id from p102a_tokens where label = 'revoked'),
+    'Missing MFA invitation revoke attempt'
+  )$$,
+  '42501',
+  'MFA_REQUIRED',
+  'an active admin without aal2 cannot revoke teacher invitations'
+);
+
+reset role;
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
     'sub', '00000000-0000-0000-0000-000000000206',
     'role', 'authenticated',
     'aal', 'aal1'
@@ -565,6 +634,15 @@ select set_config(
   true
 );
 set local role authenticated;
+
+select throws_ok(
+  $$select * from public.preview_teacher_invitation(
+    (select token from p102a_tokens where label = 'revoked')
+  )$$,
+  '42501',
+  'TEACHER_INVITE_INVALID',
+  'a revoked teacher invitation cannot be previewed on the next authoritative check'
+);
 
 select throws_ok(
   $$select * from public.consume_teacher_invitation(
@@ -872,6 +950,27 @@ select throws_ok(
   '23505',
   'TEACHER_INVITE_INVALID',
   'issuing to an already provisioned teacher in the school is denied'
+);
+
+select results_eq(
+  $$select user_id, status from public.grant_platform_admin(
+    '00000000-0000-0000-0000-000000000202',
+    'Restore second admin after failed revoke coverage'
+  )$$,
+  $$values ('00000000-0000-0000-0000-000000000202'::uuid, 'active'::text)$$,
+  'an active admin can restore a previously active admin grant after denied revoke attempts caused no side effects'
+);
+
+reset role;
+
+select is(
+  (
+    select status
+    from public.platform_admins
+    where user_id = '00000000-0000-0000-0000-000000000202'
+  ),
+  'active',
+  'failed MFA and revoked-admin revoke attempts did not silently revoke the target admin'
 );
 
 select * from finish();

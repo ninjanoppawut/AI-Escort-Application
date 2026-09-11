@@ -1,8 +1,14 @@
 import { Leaf, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { ClassMemberBrowser } from "@/features/classes/components/class-member-browser";
 import { SignOutButton } from "@/features/auth/components/auth-forms";
 import { getActiveIdentity } from "@/features/auth/server/identity";
+import { listAuthorizedClasses } from "@/features/classes/server/operations";
+import { NotificationBadge } from "@/features/notifications/client/notification-badge";
+import { listNotifications } from "@/features/notifications/server/operations";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +29,15 @@ export default async function ProtectedHomePage() {
     redirect(`/auth/error?code=${result.error}`);
   }
 
+  const supabase = await createSupabaseServerClient();
+  const [classResult, notificationResult] = await Promise.all([
+    listAuthorizedClasses(supabase),
+    listNotifications(supabase, { status: "unread", limit: 1 }),
+  ]);
+  const classes = "data" in classResult ? classResult.data : [];
+  const unreadCount =
+    "data" in notificationResult ? notificationResult.data.unreadCount : 0;
+
   return (
     <main className="bg-background min-h-dvh px-4 py-6 sm:px-8">
       <div className="mx-auto max-w-3xl">
@@ -38,7 +53,10 @@ export default async function ProtectedHomePage() {
               </p>
             </div>
           </div>
-          <SignOutButton />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <NotificationBadge initialUnreadCount={unreadCount} />
+            <SignOutButton />
+          </div>
         </header>
 
         <section className="border-border bg-card mt-10 rounded-[1.75rem] border p-6 sm:p-9">
@@ -70,7 +88,21 @@ export default async function ProtectedHomePage() {
               </dd>
             </div>
           </dl>
+          {result.identity.account_type === "teacher" ? (
+            <Link
+              className="bg-primary text-primary-foreground mt-6 inline-flex min-h-11 items-center justify-center rounded-full px-5 text-sm font-semibold"
+              href="/teacher/classes"
+            >
+              จัดการชั้นเรียน
+            </Link>
+          ) : null}
         </section>
+
+        {result.identity.account_type === "student" ? (
+          <div className="mt-6">
+            <ClassMemberBrowser initialClasses={classes} mode="student" />
+          </div>
+        ) : null}
       </div>
     </main>
   );

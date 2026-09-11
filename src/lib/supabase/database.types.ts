@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -269,6 +269,375 @@ export type Database = {
           },
         ];
       };
+      group_members: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          group_id: string;
+          id: string;
+          invited_by: string | null;
+          joined_at: string;
+          left_at: string | null;
+          role: string;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          group_id: string;
+          id?: string;
+          invited_by?: string | null;
+          joined_at?: string;
+          left_at?: string | null;
+          role: string;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          group_id?: string;
+          id?: string;
+          invited_by?: string | null;
+          joined_at?: string;
+          left_at?: string | null;
+          role?: string;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "group_members_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_members_group_class_fk";
+            columns: ["group_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id", "class_id"];
+          },
+          {
+            foreignKeyName: "group_members_invited_by_fkey";
+            columns: ["invited_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      group_membership_history: {
+        Row: {
+          actor_id: string | null;
+          class_id: string;
+          created_at: string;
+          event_type: string;
+          group_id: string | null;
+          id: string;
+          payload: Json;
+          related_group_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          actor_id?: string | null;
+          class_id: string;
+          created_at?: string;
+          event_type: string;
+          group_id?: string | null;
+          id?: string;
+          payload?: Json;
+          related_group_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          actor_id?: string | null;
+          class_id?: string;
+          created_at?: string;
+          event_type?: string;
+          group_id?: string | null;
+          id?: string;
+          payload?: Json;
+          related_group_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "group_membership_history_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_membership_history_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_membership_history_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_membership_history_related_group_id_fkey";
+            columns: ["related_group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_membership_history_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      groups: {
+        Row: {
+          approved_at: string | null;
+          approved_by: string | null;
+          archived_at: string | null;
+          class_id: string;
+          created_at: string;
+          created_by: string;
+          creator_type: string;
+          deleted_at: string | null;
+          description: string | null;
+          icon_key: string | null;
+          id: string;
+          locked_at: string | null;
+          name: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          archived_at?: string | null;
+          class_id: string;
+          created_at?: string;
+          created_by: string;
+          creator_type: string;
+          deleted_at?: string | null;
+          description?: string | null;
+          icon_key?: string | null;
+          id?: string;
+          locked_at?: string | null;
+          name: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          archived_at?: string | null;
+          class_id?: string;
+          created_at?: string;
+          created_by?: string;
+          creator_type?: string;
+          deleted_at?: string | null;
+          description?: string | null;
+          icon_key?: string | null;
+          id?: string;
+          locked_at?: string | null;
+          name?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "groups_approved_by_fkey";
+            columns: ["approved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "groups_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "groups_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notification_types: {
+        Row: {
+          copy_key: string;
+          created_at: string;
+          deep_link_template: string;
+          icon: string;
+          layout: string;
+          schema_version: number;
+          status: string;
+          type: string;
+          updated_at: string;
+        };
+        Insert: {
+          copy_key: string;
+          created_at?: string;
+          deep_link_template: string;
+          icon: string;
+          layout: string;
+          schema_version?: number;
+          status?: string;
+          type: string;
+          updated_at?: string;
+        };
+        Update: {
+          copy_key?: string;
+          created_at?: string;
+          deep_link_template?: string;
+          icon?: string;
+          layout?: string;
+          schema_version?: number;
+          status?: string;
+          type?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          activity_id: string | null;
+          actor_id: string | null;
+          class_id: string | null;
+          created_at: string;
+          deep_link_path: string | null;
+          entity_id: string | null;
+          entity_type: string | null;
+          expires_at: string | null;
+          export_id: string | null;
+          group_id: string | null;
+          group_invitation_id: string | null;
+          id: string;
+          message: string;
+          observation_id: string | null;
+          payload: Json;
+          read_at: string | null;
+          recipient_id: string;
+          report_id: string | null;
+          request_id: string | null;
+          schema_version: number;
+          school_id: string | null;
+          session_id: string | null;
+          title: string;
+          type: string;
+        };
+        Insert: {
+          activity_id?: string | null;
+          actor_id?: string | null;
+          class_id?: string | null;
+          created_at?: string;
+          deep_link_path?: string | null;
+          entity_id?: string | null;
+          entity_type?: string | null;
+          expires_at?: string | null;
+          export_id?: string | null;
+          group_id?: string | null;
+          group_invitation_id?: string | null;
+          id?: string;
+          message: string;
+          observation_id?: string | null;
+          payload?: Json;
+          read_at?: string | null;
+          recipient_id: string;
+          report_id?: string | null;
+          request_id?: string | null;
+          schema_version?: number;
+          school_id?: string | null;
+          session_id?: string | null;
+          title: string;
+          type: string;
+        };
+        Update: {
+          activity_id?: string | null;
+          actor_id?: string | null;
+          class_id?: string | null;
+          created_at?: string;
+          deep_link_path?: string | null;
+          entity_id?: string | null;
+          entity_type?: string | null;
+          expires_at?: string | null;
+          export_id?: string | null;
+          group_id?: string | null;
+          group_invitation_id?: string | null;
+          id?: string;
+          message?: string;
+          observation_id?: string | null;
+          payload?: Json;
+          read_at?: string | null;
+          recipient_id?: string;
+          report_id?: string | null;
+          request_id?: string | null;
+          schema_version?: number;
+          school_id?: string | null;
+          session_id?: string | null;
+          title?: string;
+          type?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey";
+            columns: ["recipient_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_school_id_fkey";
+            columns: ["school_id"];
+            isOneToOne: false;
+            referencedRelation: "schools";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_type_fkey";
+            columns: ["type"];
+            isOneToOne: false;
+            referencedRelation: "notification_types";
+            referencedColumns: ["type"];
+          },
+        ];
+      };
       platform_admins: {
         Row: {
           granted_at: string;
@@ -504,6 +873,71 @@ export type Database = {
           },
         ];
       };
+      student_group_creation_claims: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          group_id: string | null;
+          id: string;
+          reset_at: string | null;
+          reset_by: string | null;
+          reset_reason: string | null;
+          status: string;
+          student_id: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          group_id?: string | null;
+          id?: string;
+          reset_at?: string | null;
+          reset_by?: string | null;
+          reset_reason?: string | null;
+          status?: string;
+          student_id: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          group_id?: string | null;
+          id?: string;
+          reset_at?: string | null;
+          reset_by?: string | null;
+          reset_reason?: string | null;
+          status?: string;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "student_group_creation_claims_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_group_creation_claims_group_class_fk";
+            columns: ["group_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id", "class_id"];
+          },
+          {
+            foreignKeyName: "student_group_creation_claims_reset_by_fkey";
+            columns: ["reset_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_group_creation_claims_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       teacher_invitations: {
         Row: {
           accepted_at: string | null;
@@ -593,12 +1027,69 @@ export type Database = {
           user_id: string;
         }[];
       };
+      create_class: {
+        Args: {
+          allow_student_group_creation: boolean;
+          class_academic_year: string;
+          class_description: string;
+          class_name: string;
+          class_semester: string;
+          class_subject: string;
+          initial_formation_status: string;
+          maximum_group_count: number;
+          maximum_group_size: number;
+          minimum_group_size: number;
+          target_school_id: string;
+        };
+        Returns: {
+          academic_year: string;
+          allow_student_groups: boolean;
+          class_id: string;
+          created_at: string;
+          created_by: string;
+          description: string;
+          group_formation_status: string;
+          max_group_size: number;
+          maximum_groups: number;
+          min_group_size: number;
+          name: string;
+          school_id: string;
+          semester: string;
+          status: string;
+          subject: string;
+        }[];
+      };
+      disable_class_invite: {
+        Args: { target_invite_id: string };
+        Returns: {
+          disabled_at: string;
+          invite_id: string;
+          status: string;
+        }[];
+      };
       grant_platform_admin: {
         Args: { reason: string; target_user_id: string };
         Returns: {
           granted_at: string;
           status: string;
           user_id: string;
+        }[];
+      };
+      issue_class_invite: {
+        Args: {
+          invitation_expires_at?: string;
+          maximum_uses?: number;
+          target_class_id: string;
+        };
+        Returns: {
+          code: string;
+          created_at: string;
+          expires_at: string;
+          invite_id: string;
+          max_uses: number;
+          status: string;
+          token: string;
+          used_count: number;
         }[];
       };
       issue_teacher_invitation: {
@@ -611,6 +1102,65 @@ export type Database = {
           expires_at: string;
           invitation_id: string;
           token: string;
+        }[];
+      };
+      join_class_with_invite: {
+        Args: { invitation_token?: string; invite_code?: string };
+        Returns: {
+          already_joined: boolean;
+          class_id: string;
+          class_name: string;
+          membership_id: string;
+          role: string;
+          school_id: string;
+          school_membership_id: string;
+          school_name: string;
+          used_count: number;
+        }[];
+      };
+      list_authorized_classes: {
+        Args: never;
+        Returns: {
+          academic_year: string;
+          active_member_count: number;
+          allow_student_groups: boolean;
+          caller_role: string;
+          class_id: string;
+          created_at: string;
+          description: string;
+          group_formation_status: string;
+          max_group_size: number;
+          maximum_groups: number;
+          min_group_size: number;
+          name: string;
+          school_id: string;
+          school_name: string;
+          semester: string;
+          status: string;
+          subject: string;
+        }[];
+      };
+      list_class_members: {
+        Args: {
+          cursor_display_name?: string;
+          cursor_member_id?: string;
+          page_limit?: number;
+          role_filter?: string;
+          status_filter?: string;
+          target_class_id: string;
+        };
+        Returns: {
+          class_id: string;
+          current_group_id: string;
+          current_group_name: string;
+          display_name: string;
+          email: string;
+          joined_at: string;
+          left_at: string;
+          member_id: string;
+          role: string;
+          status: string;
+          user_id: string;
         }[];
       };
       preview_teacher_invitation: {
@@ -637,6 +1187,43 @@ export type Database = {
           id: string;
           revoked_at: string;
           status: string;
+        }[];
+      };
+      rotate_class_invite: {
+        Args: {
+          invitation_expires_at?: string;
+          maximum_uses?: number;
+          target_invite_id: string;
+        };
+        Returns: {
+          code: string;
+          created_at: string;
+          expires_at: string;
+          invite_id: string;
+          max_uses: number;
+          status: string;
+          superseded_invite_id: string;
+          token: string;
+          used_count: number;
+        }[];
+      };
+      update_class_group_settings: {
+        Args: {
+          allow_student_group_creation: boolean;
+          formation_status: string;
+          maximum_group_count: number;
+          maximum_group_size: number;
+          minimum_group_size: number;
+          target_class_id: string;
+        };
+        Returns: {
+          allow_student_groups: boolean;
+          class_id: string;
+          group_formation_status: string;
+          max_group_size: number;
+          maximum_groups: number;
+          min_group_size: number;
+          updated_at: string;
         }[];
       };
     };

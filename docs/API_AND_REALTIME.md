@@ -49,6 +49,7 @@ POST /api/classes
 PUT  /api/classes/:id/group-settings
 POST /api/classes/:id/invites
 POST /api/classes/:id/invites/:inviteId/disable
+POST /api/classes/:id/invites/:inviteId/rotate
 POST /api/classes/join
 POST /api/classes/:id/group-formation/open
 POST /api/classes/:id/group-formation/close
@@ -289,6 +290,16 @@ Paginated response:
 
 The authenticated user must have trusted teacher capability and an active teacher membership in `schoolId`. The teacher becomes an active class teacher member in the same transaction.
 
+P1-03 class operations are implemented as authenticated route handlers backed by trusted PostgreSQL RPCs:
+
+- `create_class` validates active confirmed teacher capability and school membership, locks the school row, creates the class and creator class-teacher membership atomically, and emits `class_created`.
+- `update_class_group_settings` validates active class-teacher membership, locks the class row, updates minimum/maximum group size, maximum group count, student-creation flag, and formation status, and emits `class_group_settings_updated`.
+- `issue_class_invite` validates active class-teacher membership, creates one code and one raw link token, stores only the token hash, returns the raw token once for link/QR display, and emits `class_invitation_issued`.
+- `disable_class_invite` is idempotent for an already disabled invite and emits `class_invitation_disabled` only for the first state change.
+- `rotate_class_invite` locks the source invite, disables it, creates a replacement invite, returns the replacement token once, and emits `class_invitation_rotated`.
+
+Teacher invite-management routes reject URL class/invite mismatches before invoking mutation RPCs.
+
 ## 5. Join class
 
 ```json
@@ -297,7 +308,27 @@ The authenticated user must have trusted teacher capability and an active teache
 }
 ```
 
-The server validates confirmed email, active student account capability, class/school status, expiry, disabled state, usage count, and existing membership. The resulting role is always `student`; the same transaction creates an active student school membership when one does not already exist.
+Link/QR landing submits the opaque bearer token instead:
+
+```json
+{
+  "token": "opaque-link-token"
+}
+```
+
+P1-04 implements `POST /api/classes/join` as a same-origin authenticated route
+backed by `join_class_with_invite(text,text)`. The server validates confirmed
+email, active student account capability, active class/school status, invite
+lookup by code or token hash, expiry, disabled state, usage count, and existing
+membership. The resulting role is always `student`; the same transaction creates
+or reactivates an active student school membership and active class membership
+when needed.
+
+Replay by an already active student class member is idempotent and returns
+`already_joined=true` without incrementing `used_count` or duplicating join
+events. First successful joins emit `class_joined` audit/research events plus
+`class_joined` and `student_joined_class` notification rows. Research payloads
+exclude invite codes, raw tokens, token hashes, emails, and free text.
 
 ## 6. Group board
 
@@ -706,6 +737,19 @@ GET /api/classes/:id/members?role=student&status=active&limit=50&cursor=opaque
 ```
 
 Teacher results include permitted email/join/group fields. Student results omit email and expose only active classmates plus permitted group assignment. Stable order is `(display_name asc, id asc)` with the full tuple encoded in the cursor.
+
+P1-05 implements `GET /api/classes` and
+`GET /api/classes/:id/members?role=&status=&limit=&cursor=` as authenticated
+read routes backed by `list_authorized_classes()` and
+`list_class_members(uuid,text,text,integer,text,uuid)`. Student class lists
+include only active authorized classes. Teacher class lists include authorized
+classes, including archived classes so the UI can show the class-not-active
+state. Teacher member rows include display name, email, role, status, joined
+date, and the current group placeholder. Student member rows include active
+student classmates only, omit email, and return `currentGroup=null` until group
+tables ship in later phases. The member cursor is an opaque encoding of
+`(display_name asc, member_id asc)`; default page size is 50 and the route caps
+requests at 100.
 
 Eligible classmates return only active, unassigned student members who are not already pending for the same group and whose acceptance would not exceed current capacity. The response is advisory; send/accept mutations revalidate.
 

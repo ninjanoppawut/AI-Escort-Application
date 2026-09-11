@@ -53,6 +53,21 @@ Formation closed, creation disabled, no slot, final-slot loss, already in group,
 
 AUTH memberships/settings and NOT delivery.
 
+## Implementation status
+
+- **P3-01 complete:** group schema, current membership schema, student creation
+  claims, append-only membership history, RLS, validation triggers, and core
+  partial unique indexes live in
+  `supabase/migrations/20260813050854_phase3_group_foundation.sql`.
+- Verification lives in `supabase/tests/phase3_group_foundation_test.sql` and
+  covers one active leader, one current group per student/class, one unreset
+  creation claim, class/group consistency, append-only history, RLS isolation,
+  browser write denial, helper hardening, FK indexes, and generated type
+  refresh.
+- `create_student_group`, group-board read models, private class-group
+  Realtime invalidation, final-slot concurrency, invitation flows, and mobile UI
+  remain P3-02 through P4.
+
 ## Definition of done
 
 All invariants hold under concurrent clients, every mutation is authorized and audited, and mobile screens explain rather than hide unavailable actions.
