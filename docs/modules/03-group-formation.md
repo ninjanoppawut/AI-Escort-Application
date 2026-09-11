@@ -74,9 +74,17 @@ AUTH memberships/settings and NOT delivery.
 - Verification lives in `supabase/tests/phase3_create_student_group_test.sql`,
   `supabase/tests/phase3_create_student_group_concurrency.ps1`, and
   `src/features/groups/*.test.ts`.
-- Group-board read models, private class-group Realtime invalidation, the
-  browser final-slot journey, invitation flows, and mobile UI remain P3-03
-  through P4.
+- **P3-03 complete:** `public.get_class_group_board(uuid)` in
+  `supabase/migrations/20260911191650_phase3_group_board_read_model.sql`,
+  `GET /api/classes/:id/group-board`, and the mobile `/classes/[classId]/groups`
+  board (`src/features/groups/components/group-board.tsx`) implement GRP-001
+  and every create-availability state. Create Group stays visible and is
+  disabled with its reason; offline disables it because cached UI never
+  reserves a slot. Verification: `phase3_group_board_test.sql`,
+  `src/features/groups/**/*.test.ts(x)`, and the `P3-03` journey in
+  `tests/e2e/group-formation.spec.ts`.
+- Private class-group Realtime invalidation, the browser final-slot race, and
+  invitation flows remain P3-04 through P4.
 
 ## Definition of done
 

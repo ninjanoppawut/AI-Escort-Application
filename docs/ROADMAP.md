@@ -928,7 +928,57 @@ Evidence:
 - Commit: `Implement P3-02 atomic student group creation` on `main`.
 - Remaining risk: the race harness is a local PowerShell script and is not run
   by hosted CI; the pgTAP suite is.
-- [ ] **P3-03:** Build group board and explanatory create-group availability states.
+- [x] **P3-03:** Build group board and explanatory create-group availability states.
+
+P3-03 status: complete as of 2026-09-12. Database, browser, and generated-type
+verification ran in hosted CI because the local Docker engine stopped
+responding during the slice; unit, lint, and typecheck ran locally.
+
+Evidence:
+- Requirements: `GRP-001`; create-availability states for `GRP-002`–`GRP-006`;
+  D-035, D-041, D-047, D-053, D-059 (member list current group).
+- Migration:
+  `supabase/migrations/20260911191650_phase3_group_board_read_model.sql`.
+- Read model: `public.get_class_group_board(uuid)` returns authoritative slot
+  counts, formation settings, current (non-deleted, non-archived) groups with
+  leader, members, capacity, minimum-size and accepting state, unassigned
+  students, and the viewer eligibility reason in the same precedence as
+  `create_student_group`. It never returns emails. Teachers read it with
+  `cannotCreateReason=FORBIDDEN`. `list_class_members` now fills the current
+  group.
+- Server/UI: `GET /api/classes/:id/group-board`
+  (`src/app/api/classes/[id]/group-board/route.ts`,
+  `src/features/groups/server/board.ts`), Zod database-boundary schema in
+  `src/features/groups/board.ts`, `/classes/[classId]/groups` page, and
+  `GroupBoardScreen` with loading, empty, offline (create disabled because
+  cached data cannot reserve a slot), stale refresh failure, permission denied,
+  class not active, network retry, disabled-with-reason for every creation
+  code, final-slot race-loss (informational, not error-toned), and success
+  states. Group status tokens (label, icon, shape, color) live in
+  `group-status-badge.tsx`. The class member browser links to the board and
+  `/classes/{uuid}/groups` is an allowlisted sign-in return path. D-050
+  request-to-invite and teacher over-quota creation from the design artifacts
+  were not implemented.
+- Tests: `supabase/tests/phase3_group_board_test.sql`;
+  `src/features/groups/board.test.ts`,
+  `src/features/groups/components/group-board.test.tsx`,
+  `src/features/groups/components/group-status-badge.test.tsx`,
+  `src/features/auth/redirect.test.ts`; Playwright
+  `tests/e2e/group-formation.spec.ts` (`P3-03 student group board`: signed-out
+  deep link returns after sign-in, create at 390 px, leader state, classmate
+  disabled slot-limit reason via the member-browser link, no overflow, no
+  email disclosure).
+- Commands: local `npm run lint`, `npm run typecheck`, and `npm test`
+  (27 files). Hosted CI run `34640286482` on `c97ac8a` passed `quality`
+  (Vitest 27 files/82 tests, build, audit), `database` (`supabase test db`
+  12 files/413 assertions, db lint with the existing `invite_age_seconds`
+  warning only, advisors "No issues found", generated-type diff), and
+  `browser-smoke` (20 passed, 10 project-scoped skips) including the P3-03
+  journey and the repaired P2-EXIT restart journey:
+  https://github.com/ninjanoppawut/AI-Escort-Application/actions/runs/34640286482.
+- Commit: `c97ac8a` (`Add P3-03 group board read model and student board UI`).
+- Remaining risk: `database.types.ts` was restored and extended by hand while
+  local generation was unavailable; the CI generated-type diff confirmed it.
 - [ ] **P3-04:** Implement private class-group invalidation and refetch lifecycle.
 - [ ] **P3-05:** Pass final-slot race, one-leader, one-group, creation-claim, RLS, and Realtime tests.
 - [ ] **P3-EXIT:** Two students racing for the last slot produce exactly one success and immediate authoritative UI refresh.

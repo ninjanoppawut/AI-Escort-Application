@@ -363,6 +363,22 @@ exclude invite codes, raw tokens, token hashes, emails, and free text.
 
 When all slots are occupied, return `canCreateGroup=false` and `cannotCreateReason="GROUP_LIMIT_REACHED"`. The UI disables the button and explains why.
 
+P3-03 implements `GET /api/classes/:id/group-board` backed by
+`get_class_group_board(uuid)`. Additive fields beyond the example: `className`,
+`allowStudentGroups`, `viewer.userId`, `viewer.role`, `viewer.isLeader`,
+per-group `description`, `creatorType`, `availableSeats`, `meetsMinimumSize`,
+`members` (`id`, `displayName`, `role`), `createdAt`, top-level
+`unassignedStudents` (`id`, `displayName`), and `refreshedAt`. Groups are
+ordered by `(createdAt, id)`; soft-deleted and archived groups are excluded.
+`cannotCreateReason` follows the `create_student_group` precedence
+(`STUDENT_GROUP_CREATION_DISABLED`, `GROUP_FORMATION_CLOSED`,
+`STUDENT_ALREADY_IN_GROUP`, `STUDENT_GROUP_ALREADY_CREATED`,
+`GROUP_LIMIT_REACHED`) and is `FORBIDDEN` for a teacher viewer. The response is
+advisory: creation revalidates under the class row lock. Only active class
+members may read it; no email is returned. Errors: `AUTH_REQUIRED` `401`;
+`ACCOUNT_DISABLED`/`FORBIDDEN` `403`; `CLASS_NOT_ACTIVE` `409`; malformed class
+ID `404`.
+
 ## 7. Atomic student group creation
 
 ```json
