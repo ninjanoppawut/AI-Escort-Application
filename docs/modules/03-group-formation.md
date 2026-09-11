@@ -92,7 +92,26 @@ AUTH memberships/settings and NOT delivery.
 - **P3-05 and P3-EXIT complete:** the browser race journey in
   `tests/e2e/group-formation.spec.ts` proves one success under a concurrent
   final-slot race and an observer refresh from the private signal.
-- Invitation flows, readiness, and leadership transfer remain P4.
+- **P4-01:** `public.group_invitations`
+  (`supabase/migrations/20260911195642_phase4_group_invitations_foundation.sql`)
+  with one pending invitation per group and invitee, 24-hour default expiry,
+  immutable identity and terminal states, participant-only RLS, and
+  `group.invitation_changed` signals.
+- **P4-02 and P4-03:** send, cancel, accept, and decline RPCs plus eligible
+  classmate, group detail, and invitation detail read models
+  (`20260911200509_phase4_group_invitation_operations.sql`), typed routes, the
+  group detail invite panel (`group-detail.tsx`), and the invitation screen
+  (`group-invitation.tsx`). Acceptance locks the invitee's class membership,
+  the group, and the invitation before revalidating (GRP-008).
+- **P4-04:** `mark_group_ready`, `transfer_group_leadership`, and
+  `remove_group_member` (`20260911202704_phase4_group_leadership_operations.sql`)
+  with the leader actions panel (`group-leader-actions.tsx`).
+- **P4-06:** `supabase/tests/phase4_group_concurrency_test.sql` runs real
+  concurrent sessions through `dblink` for the final-seat acceptance race, one
+  student accepting two groups, and simultaneous leadership transfers; browser
+  coverage is `tests/e2e/group-invitations.spec.ts`.
+- Invitation-lifetime, formation-closed, and seat-counting choices are listed
+  for owner confirmation in `docs/OWNER_QUESTIONS_PENDING.md`.
 
 ## Definition of done
 

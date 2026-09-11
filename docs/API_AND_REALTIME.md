@@ -442,6 +442,47 @@ Notification payload:
 
 Acceptance revalidates current membership and capacity. Stale invitations never bypass constraints.
 
+P4-02 and P4-03 implement these operations as authenticated routes backed by
+trusted RPCs:
+
+- `POST /api/groups/:id/invitations` → `send_group_invitation(uuid,uuid)`.
+  Locks the group row; the caller must be the active leader or a class teacher
+  (`NOT_GROUP_LEADER` for other classmates, `FORBIDDEN` otherwise). The invitee
+  must be an active student of the class. Returns `sent` (`201`) or replays an
+  existing pending invitation as `already_pending` (`200`). Committed denials:
+  `GROUP_LOCKED`, `GROUP_FORMATION_CLOSED` (students only), `STUDENT_ALREADY_IN_GROUP`,
+  and `GROUP_FULL` when active members plus unexpired pending invitations
+  already fill `max_group_size`. Invitations expire after 24 hours.
+- `GET /api/groups/:id/eligible-classmates` → `list_group_eligible_classmates(uuid)`.
+  Leader or class teacher only. Returns `availableSeats`, `canInvite`,
+  `cannotInviteReason`, and every other active student with `state`
+  `eligible`, `pending` (with `invitationId`, `expiresAt`), or `in_group` (with
+  `groupName`). Advisory only; sending revalidates.
+- `POST /api/group-invitations/:id/cancel` → `cancel_group_invitation(uuid)`.
+  Leader or teacher; idempotent for cancelled invitations; `INVITATION_NOT_PENDING`,
+  `INVITATION_EXPIRED`, or `GROUP_LOCKED` (leaders of a locked group) otherwise.
+- `POST /api/group-invitations/:id/accept` → `accept_group_invitation(uuid)`.
+  Invitee only. Locks the invitee's class membership, the group, then the
+  invitation; revalidates pending state, expiry (marking `expired`), group state
+  (`DESTINATION_GROUP_INVALID`, `GROUP_LOCKED`), formation, one current group,
+  and capacity (`GROUP_FULL`). Success creates or reactivates the member row,
+  cancels the invitee's other pending invitations in the class, and notifies the
+  leader (`group_invitation_accepted`) and, on reaching minimum size, class
+  teachers (`group_minimum_reached`). Replay returns `accepted` again.
+- `POST /api/group-invitations/:id/decline` → `decline_group_invitation(uuid)`.
+  Invitee only; idempotent for declined invitations; notifies the leader.
+- `GET /api/group-invitations/:id` → `get_group_invitation(uuid)` (additive):
+  invitee, current leader, or class teacher. Returns effective `status`
+  (`expired` once past expiry), group summary with leader, members, and seats,
+  inviter, and `viewer.canRespond`/`cannotRespondReason`.
+- `GET /api/classes/:id/groups/:groupId` → `get_group_detail(uuid)`: active class
+  members; pending invitations are included only for the leader and class
+  teachers. A group ID under the wrong class URL returns `404`.
+
+The group board additionally returns `viewer.pendingInvitations`
+(`id`, `groupId`, `groupName`, `inviterName`, `expiresAt`). Invitation rows emit
+`group.invitation_changed` on the class-group channel without invitee IDs.
+
 ## 9. Leadership and teacher movement
 
 Transfer leadership:
@@ -467,6 +508,33 @@ Teacher move:
 ```
 
 Validate teacher role, same class, destination capacity, active-session restrictions, and successor requirement. Historical session snapshots remain unchanged. Success creates notification, audit history, and group-change signal.
+
+P4-04 implements the student-leader operations:
+
+- `POST /api/groups/:id/transfer-leadership` with `{ "newLeaderId": "uuid" }` →
+  `transfer_group_leadership(uuid,uuid)`. The current leader or a class teacher
+  may transfer to an active member of the same group. The RPC locks the group
+  row and rechecks leadership after the lock, so a concurrent or stale transfer
+  by the former leader raises `NOT_GROUP_LEADER`; it demotes before promoting and
+  never commits zero or two leaders. `expectedGroupVersion` is not accepted in
+  this slice because the post-lock leadership check provides the stale-write
+  protection. Committed denials: `GROUP_LOCKED` and `INVALID_STATUS_TRANSITION`
+  (target not an active member). Transferring to the current leader is a no-op.
+  Notifications: `leadership_assigned` to the new leader and
+  `leadership_transferred` to other active members; research event
+  `group_leader_changed` with `reason_category` `leader_transfer` or
+  `teacher_change`.
+- `POST /api/groups/:id/ready` → `mark_group_ready(uuid)`. Leader only; a
+  `forming` group at or above minimum size with open formation becomes `ready`
+  and class teachers receive `group_approval_requested`. Replay returns `ready`.
+  Denials: `GROUP_LOCKED`, `GROUP_FORMATION_CLOSED`, `INVALID_STATUS_TRANSITION`.
+- `DELETE /api/groups/:id/members/:studentId` → `remove_group_member(uuid,uuid)`.
+  Leader or class teacher; a leader cannot be removed (`LEADER_SUCCESSOR_REQUIRED`).
+  Denials: `GROUP_LOCKED`, `GROUP_FORMATION_CLOSED` (students only). A `ready` group
+  that falls below minimum size returns to `forming`. Replay is idempotent.
+
+Active-session restrictions (`GROUP_IN_ACTIVE_SESSION`) apply once sessions exist
+in Phase 6–7; teacher moves between groups remain Phase 5.
 
 ## 10. Delete or archive group
 

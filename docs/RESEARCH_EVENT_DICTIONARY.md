@@ -93,6 +93,16 @@ P3-02 producer note: `create_student_group(uuid,text,text)` emits
 they produce no event. Group names and descriptions are never copied into event
 payloads.
 
+P4 producer note: `send_group_invitation` emits `group_invitation_sent`
+(`group_member_count` before the invitation); `accept_group_invitation` emits
+`group_invitation_accepted` (`invite_age_s`, `group_member_count` after joining);
+`decline_group_invitation` emits `group_invitation_declined` (`invite_age_s`);
+`transfer_group_leadership` emits `group_leader_changed` (`reason_category`
+`leader_transfer` or `teacher_change`). Each sets the relational `group_id`.
+Cancellations, readiness, and removals write audit rows only because the
+dictionary defines no research event for them. Payloads never include invitee
+IDs, names, or free text.
+
 ## 4. Timing and retry semantics
 
 - Business events are written in the same transaction as the authoritative change when possible.

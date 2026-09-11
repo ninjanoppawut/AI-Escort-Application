@@ -45,6 +45,10 @@ Status: P0-01 through P0-08 are implemented and verified locally and in hosted
 CI as of 2026-08-06. P0-09 and P0-EXIT remain open for environment-owner custom
 SMTP and deployed redirect verification.
 
+Status: blocked — P0-09 and P0-EXIT need hosted Supabase and deployment
+account access for custom SMTP, redirect allowlists, and staging email
+evidence; tracked in `OWNER_QUESTIONS_PENDING.md` (2026-09-12).
+
 Evidence:
 - Requirements: Phase 0 engineering foundation; no product requirement behavior shipped.
 - Implementation: `package.json`, `src/app`, `src/features`, `src/lib/env`,
@@ -84,6 +88,10 @@ Status: implemented locally and verified in hosted CI as of 2026-08-06. Keep
 this item unchecked until environment-owner evidence for custom SMTP and
 deployed Auth redirect allowlists exists. No hosted Auth setting, external
 email, hosted user, or hosted migration was changed for this slice.
+
+Status: blocked — hosted custom SMTP, deployed redirect allowlists, and
+CAPTCHA/rate policy need environment-owner access; tracked in
+`OWNER_QUESTIONS_PENDING.md` (2026-09-12).
 
 Evidence to date:
 - Requirements: `AUTH-001`, `AUTH-009`-`AUTH-012` (student/default-account and
