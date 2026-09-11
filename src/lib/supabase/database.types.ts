@@ -1320,6 +1320,18 @@ export type Database = {
         Args: { target_group_id: string };
         Returns: Json;
       };
+      mark_group_ready: {
+        Args: { target_group_id: string };
+        Returns: {
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          member_count: number;
+          minimum_size: number;
+          outcome: string;
+          status: string;
+        }[];
+      };
       preview_teacher_invitation: {
         Args: { invitation_token: string };
         Returns: {
@@ -1328,6 +1340,17 @@ export type Database = {
           invitation_id: string;
           school_id: string;
           school_name: string;
+        }[];
+      };
+      remove_group_member: {
+        Args: { target_group_id: string; target_student_id: string };
+        Returns: {
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          member_count: number;
+          outcome: string;
+          status: string;
         }[];
       };
       revoke_platform_admin: {
@@ -1375,6 +1398,17 @@ export type Database = {
           invitation_id: string;
           invitee_id: string;
           outcome: string;
+        }[];
+      };
+      transfer_group_leadership: {
+        Args: { target_group_id: string; target_new_leader_id: string };
+        Returns: {
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          leader_id: string;
+          outcome: string;
+          previous_leader_id: string;
         }[];
       };
       update_class_group_settings: {

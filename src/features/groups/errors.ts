@@ -15,9 +15,11 @@ export const GROUP_UI_ERROR_CODES = [
   "GROUP_FULL",
   "GROUP_LOCKED",
   "NOT_GROUP_LEADER",
+  "LEADER_SUCCESSOR_REQUIRED",
   "INVITATION_NOT_PENDING",
   "INVITATION_EXPIRED",
   "DESTINATION_GROUP_INVALID",
+  "INVALID_STATUS_TRANSITION",
   "RATE_LIMITED",
 ] as const satisfies readonly ApiErrorCode[];
 
@@ -48,6 +50,17 @@ export const GROUP_INVITATION_DENIAL_CODES = [
 
 export type GroupInvitationDenialCode =
   (typeof GROUP_INVITATION_DENIAL_CODES)[number];
+
+/** Denial codes returned by readiness, leadership transfer, and removal. */
+export const GROUP_LEADERSHIP_DENIAL_CODES = [
+  "GROUP_FORMATION_CLOSED",
+  "GROUP_LOCKED",
+  "INVALID_STATUS_TRANSITION",
+  "LEADER_SUCCESSOR_REQUIRED",
+] as const satisfies readonly GroupUiErrorCode[];
+
+export type GroupLeadershipDenialCode =
+  (typeof GROUP_LEADERSHIP_DENIAL_CODES)[number];
 
 // Titles and primary actions follow UI_CONTRACTS.md §5.
 export const GROUP_ERROR_PRESENTATIONS: Record<
@@ -119,6 +132,11 @@ export const GROUP_ERROR_PRESENTATIONS: Record<
     description: "หัวหน้ากลุ่มอาจเปลี่ยนไปแล้ว รีเฟรชข้อมูลกลุ่ม",
     action: "กลับหน้ากลุ่ม",
   },
+  LEADER_SUCCESSOR_REQUIRED: {
+    title: "ต้องเลือกหัวหน้าคนใหม่ก่อน",
+    description: "โอนหัวหน้ากลุ่มให้สมาชิกคนอื่นก่อนนำหัวหน้าออกจากกลุ่ม",
+    action: "เลือกผู้สืบทอด",
+  },
   INVITATION_NOT_PENDING: {
     title: "คำเชิญนี้ดำเนินการแล้ว",
     description: "คำเชิญถูกตอบรับ ปฏิเสธ หรือยกเลิกไปแล้ว",
@@ -133,6 +151,12 @@ export const GROUP_ERROR_PRESENTATIONS: Record<
     title: "ย้ายไปกลุ่มนี้ไม่ได้",
     description: "กลุ่มนี้ถูกลบหรือเก็บถาวรแล้ว",
     action: "เลือกกลุ่มใหม่",
+  },
+  INVALID_STATUS_TRANSITION: {
+    title: "สถานะเปลี่ยนไปแล้ว",
+    description:
+      "ข้อมูลกลุ่มเปลี่ยนไปแล้วหรือยังไม่ครบเงื่อนไข รีเฟรชแล้วลองอีกครั้ง",
+    action: "รีเฟรชข้อมูล",
   },
   RATE_LIMITED: {
     title: "ทำรายการบ่อยเกินไป",
@@ -156,6 +180,15 @@ export function isGroupInvitationDenialCode(
   return (
     typeof value === "string" &&
     GROUP_INVITATION_DENIAL_CODES.includes(value as GroupInvitationDenialCode)
+  );
+}
+
+export function isGroupLeadershipDenialCode(
+  value: unknown,
+): value is GroupLeadershipDenialCode {
+  return (
+    typeof value === "string" &&
+    GROUP_LEADERSHIP_DENIAL_CODES.includes(value as GroupLeadershipDenialCode)
   );
 }
 
@@ -191,9 +224,11 @@ const CONFLICT_CODES = new Set<GroupUiErrorCode>([
   "STUDENT_GROUP_ALREADY_CREATED",
   "GROUP_FULL",
   "GROUP_LOCKED",
+  "LEADER_SUCCESSOR_REQUIRED",
   "INVITATION_NOT_PENDING",
   "INVITATION_EXPIRED",
   "DESTINATION_GROUP_INVALID",
+  "INVALID_STATUS_TRANSITION",
 ]);
 
 export function httpStatusForGroupError(code: GroupUiErrorCode) {

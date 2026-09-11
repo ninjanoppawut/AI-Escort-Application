@@ -218,9 +218,11 @@ function BoardFreshness({
 }
 
 function GroupCard({
+  classId,
   group,
   isMine,
 }: {
+  classId: string;
   group: GroupBoardGroup;
   isMine: boolean;
 }) {
@@ -233,7 +235,14 @@ function GroupCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="font-semibold break-words">{group.name}</h3>
+          <h3 className="font-semibold break-words">
+            <Link
+              className="underline-offset-4 hover:underline focus-visible:underline"
+              href={`/classes/${classId}/groups/${group.id}`}
+            >
+              {group.name}
+            </Link>
+          </h3>
           {isMine ? (
             <p className="text-primary mt-0.5 text-[13px] font-medium">
               กลุ่มของคุณ
@@ -491,6 +500,45 @@ export function GroupBoardScreen({
 
             <BoardSummary board={board} />
 
+            {board.viewer.pendingInvitations.length ? (
+              <section
+                aria-labelledby="board-invitations-heading"
+                className="border-border bg-card rounded-xl border p-4"
+              >
+                <h2 className="font-semibold" id="board-invitations-heading">
+                  คำเชิญที่ได้รับ ({board.viewer.pendingInvitations.length})
+                </h2>
+                <ul className="divide-border mt-2 divide-y">
+                  {board.viewer.pendingInvitations.map((invitation) => (
+                    <li
+                      className="flex flex-wrap items-center justify-between gap-2 py-3"
+                      key={invitation.id}
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium break-words">
+                          {invitation.groupName}
+                        </p>
+                        <p className="text-muted-foreground text-[13px]">
+                          {invitation.inviterName} เชิญคุณ · หมดอายุ{" "}
+                          {new Date(invitation.expiresAt).toLocaleString(
+                            "th-TH",
+                            { dateStyle: "medium", timeStyle: "short" },
+                          )}
+                        </p>
+                      </div>
+                      <Link
+                        aria-label={`ดูคำเชิญจาก ${invitation.groupName}`}
+                        className="bg-primary text-primary-foreground inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold"
+                        href={`/group-invitations/${invitation.id}`}
+                      >
+                        ดูคำเชิญ
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             {mutationErrorCode === "GROUP_LIMIT_REACHED" ? (
               <section
                 className="flex gap-3 rounded-xl border border-[#BFD0F5] bg-[#EEF3FF] p-4 text-sm text-[#1E3A8A]"
@@ -558,6 +606,7 @@ export function GroupBoardScreen({
                 <ul className="grid gap-3">
                   {board.groups.map((group) => (
                     <GroupCard
+                      classId={board.classId}
                       group={group}
                       isMine={group.id === board.viewer.currentGroupId}
                       key={group.id}

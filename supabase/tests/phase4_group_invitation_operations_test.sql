@@ -75,7 +75,7 @@ values
   ('20000000-0000-0000-0000-000000004202', '00000000-0000-0000-0000-000000004208', 'student');
 
 create temporary table p4_results (label text primary key, row jsonb not null);
-grant all on table p4_results to authenticated;
+grant all on table p4_results to authenticated, anon;
 
 create function pg_temp.act_as(actor uuid)
 returns void

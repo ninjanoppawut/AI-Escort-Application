@@ -67,9 +67,11 @@ export function useClassGroupRealtime(classId: string): GroupRealtimeStatus {
     let cancelled = false;
     let pending = Promise.resolve();
 
+    // Board, group detail, invitation candidates, and invitation detail all
+    // derive from class-group state, so every group query refetches.
     function invalidateBoard() {
       void queryClient.invalidateQueries({
-        queryKey: groupQueryKeys.board(classId),
+        queryKey: groupQueryKeys.all,
       });
     }
 

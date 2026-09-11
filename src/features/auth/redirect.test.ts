@@ -13,6 +13,16 @@ describe("auth redirect validation", () => {
     expect(
       safeReturnPath("/classes/20000000-0000-4000-8000-000000003201/groups"),
     ).toBe("/classes/20000000-0000-4000-8000-000000003201/groups");
+    expect(
+      safeReturnPath(
+        "/classes/20000000-0000-4000-8000-000000003201/groups/30000000-0000-4000-8000-000000003201",
+      ),
+    ).toBe(
+      "/classes/20000000-0000-4000-8000-000000003201/groups/30000000-0000-4000-8000-000000003201",
+    );
+    expect(
+      safeReturnPath("/group-invitations/60000000-0000-4000-8000-000000003201"),
+    ).toBe("/group-invitations/60000000-0000-4000-8000-000000003201");
   });
 
   it.each([

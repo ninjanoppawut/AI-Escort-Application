@@ -174,7 +174,8 @@ select is(
     'isLeader', true,
     'hasCreatedStudentGroup', true,
     'canCreateGroup', false,
-    'cannotCreateReason', 'STUDENT_ALREADY_IN_GROUP'
+    'cannotCreateReason', 'STUDENT_ALREADY_IN_GROUP',
+    'pendingInvitations', '[]'::jsonb
   ),
   'leader viewer sees current group, leadership, claim, and the already-in-group reason'
 );

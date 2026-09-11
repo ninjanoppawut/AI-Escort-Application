@@ -136,7 +136,7 @@ describe("P3-04 class-group realtime contract", () => {
     mock.emitStatus("SUBSCRIBED");
     expect(await screen.findByText("live")).toBeVisible();
     expect(invalidateQueries).toHaveBeenLastCalledWith({
-      queryKey: groupQueryKeys.board(classId),
+      queryKey: groupQueryKeys.all,
     });
     const afterSubscribe = invalidateQueries.mock.calls.length;
 

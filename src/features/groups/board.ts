@@ -30,6 +30,14 @@ export const cannotCreateReasonSchema = z.enum([
   "FORBIDDEN",
 ]);
 
+export const boardPendingInvitationSchema = z.object({
+  id: z.uuid(),
+  groupId: z.uuid(),
+  groupName: z.string(),
+  inviterName: z.string(),
+  expiresAt: z.string(),
+});
+
 export const groupBoardSchema = z.object({
   classId: z.uuid(),
   className: z.string(),
@@ -48,6 +56,8 @@ export const groupBoardSchema = z.object({
     hasCreatedStudentGroup: z.boolean(),
     canCreateGroup: z.boolean(),
     cannotCreateReason: cannotCreateReasonSchema.nullable(),
+    // Added in P4-02; older payloads without it read as no invitations.
+    pendingInvitations: z.array(boardPendingInvitationSchema).default([]),
   }),
   groups: z.array(groupBoardGroupSchema),
   unassignedStudents: z.array(personSchema),
@@ -56,6 +66,9 @@ export const groupBoardSchema = z.object({
 
 export type GroupBoard = z.infer<typeof groupBoardSchema>;
 export type GroupBoardGroup = z.infer<typeof groupBoardGroupSchema>;
+export type BoardPendingInvitation = z.infer<
+  typeof boardPendingInvitationSchema
+>;
 export type CannotCreateReason = z.infer<typeof cannotCreateReasonSchema>;
 
 export const groupQueryKeys = {
@@ -69,4 +82,16 @@ export function parseGroupBoard(
 ): GroupOperationResult<GroupBoard> {
   const parsed = groupBoardSchema.safeParse(value);
   return parsed.success ? { data: parsed.data } : groupFailure("FORBIDDEN");
+}
+
+/** Remaining invitation lifetime relative to the read model's refresh time. */
+export function invitationTimeLeftLabel(
+  expiresAt: string,
+  referenceAt: string,
+) {
+  const remainingMs = Date.parse(expiresAt) - Date.parse(referenceAt);
+  if (!Number.isFinite(remainingMs) || remainingMs <= 0) return "หมดอายุแล้ว";
+  const hours = Math.floor(remainingMs / 3_600_000);
+  if (hours >= 1) return `หมดอายุใน ${hours} ชั่วโมง`;
+  return `หมดอายุใน ${Math.max(1, Math.ceil(remainingMs / 60_000))} นาที`;
 }

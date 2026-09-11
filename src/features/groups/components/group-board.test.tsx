@@ -37,6 +37,7 @@ function makeBoard(overrides: Partial<GroupBoard> = {}): GroupBoard {
       hasCreatedStudentGroup: false,
       canCreateGroup: true,
       cannotCreateReason: null,
+      pendingInvitations: [],
     },
     groups: [
       {
@@ -329,5 +330,40 @@ describe("GroupBoardScreen", () => {
     expect(
       screen.getByText("สร้างไม่ได้ขณะออฟไลน์ ต้องเชื่อมต่อเพื่อจองช่องกลุ่ม"),
     ).toBeVisible();
+  });
+
+  it("links pending invitations and group cards to their detail screens", () => {
+    const invitationId = "60000000-0000-4000-8000-000000003301";
+    renderBoard(
+      <GroupBoardScreen
+        classId={classId}
+        initialBoard={makeBoard({
+          viewer: {
+            ...makeBoard().viewer,
+            pendingInvitations: [
+              {
+                id: invitationId,
+                groupId: "30000000-0000-4000-8000-000000003302",
+                groupName: "Bark Team",
+                inviterName: "Ada Leader",
+                expiresAt: "2026-09-13T01:00:00.000Z",
+              },
+            ],
+          },
+        })}
+        initialErrorCode={null}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "คำเชิญที่ได้รับ (1)" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "ดูคำเชิญจาก Bark Team" }),
+    ).toHaveAttribute("href", `/group-invitations/${invitationId}`);
+    expect(screen.getByRole("link", { name: "Bark Team" })).toHaveAttribute(
+      "href",
+      `/classes/${classId}/groups/30000000-0000-4000-8000-000000003302`,
+    );
   });
 });

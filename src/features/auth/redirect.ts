@@ -10,10 +10,10 @@ function isAllowedPath(pathname: string) {
     return /^[A-Za-z0-9_-]{8,256}$/.test(token);
   }
 
+  const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
   if (
-    /^\/classes\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/groups$/i.test(
-      pathname,
-    )
+    new RegExp(`^/classes/${uuid}/groups(/${uuid})?$`, "i").test(pathname) ||
+    new RegExp(`^/group-invitations/${uuid}$`, "i").test(pathname)
   ) {
     return true;
   }
