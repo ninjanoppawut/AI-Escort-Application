@@ -1764,6 +1764,10 @@ export type Database = {
           status: string;
         }[];
       };
+      get_activity_detail: {
+        Args: { target_activity_id: string };
+        Returns: Json;
+      };
       get_class_group_board: {
         Args: { target_class_id: string };
         Returns: Json;
@@ -1846,6 +1850,10 @@ export type Database = {
           subject: string;
         }[];
       };
+      list_class_activities: {
+        Args: { target_class_id: string };
+        Returns: Json;
+      };
       list_class_creation_claims: {
         Args: { target_class_id: string };
         Returns: Json;
@@ -1926,6 +1934,17 @@ export type Database = {
           school_name: string;
         }[];
       };
+      publish_activity: {
+        Args: { expected_version_number: number; target_activity_id: string };
+        Returns: {
+          activity_id: string;
+          activity_version_id: string;
+          error_code: string;
+          error_details: Json;
+          outcome: string;
+          version_number: number;
+        }[];
+      };
       remove_group_member: {
         Args: { target_group_id: string; target_student_id: string };
         Returns: {
@@ -1982,6 +2001,22 @@ export type Database = {
           superseded_invite_id: string;
           token: string;
           used_count: number;
+        }[];
+      };
+      save_activity_draft: {
+        Args: {
+          draft: Json;
+          expected_version_number?: number;
+          target_activity_id?: string;
+          target_class_id?: string;
+        };
+        Returns: {
+          activity_id: string;
+          activity_version_id: string;
+          error_code: string;
+          error_details: Json;
+          outcome: string;
+          version_number: number;
         }[];
       };
       send_group_invitation: {

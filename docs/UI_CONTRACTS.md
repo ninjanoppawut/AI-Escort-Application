@@ -180,6 +180,18 @@ All errors show an accessible title, explanation, and safe action. Developer det
 | `SESSION_PAUSED` | กิจกรรมหยุดชั่วคราว | บันทึกร่างและรอครู |
 | `RATE_LIMITED` | ทำรายการบ่อยเกินไป | รอตามเวลาที่แสดงแล้วลองใหม่ |
 
+### Activity and session setup errors
+
+| Code | Thai title | Primary action |
+|---|---|---|
+| `VALIDATION_FAILED` | ข้อมูลกิจกรรมยังไม่ถูกต้อง | แก้ไขข้อมูล |
+| `ACTIVITY_GEOMETRY_INVALID` | ขอบเขต เส้นทาง หรือจุดตรวจไม่ถูกต้อง | แก้ไขพื้นที่ |
+| `ACTIVITY_VERSION_CONFLICT` | กิจกรรมถูกแก้ไขจากที่อื่นแล้ว | โหลดฉบับล่าสุด |
+| `ACTIVITY_NOT_PUBLISHED` | กิจกรรมยังไม่เผยแพร่ | ไปเผยแพร่กิจกรรม |
+| `SESSION_ALREADY_RUNNING` | มีรอบสำรวจที่เปิดอยู่แล้ว | ดูรอบที่เปิดอยู่ |
+
+Validation and geometry errors keep the teacher's unsaved form values. A version conflict never overwrites another save; reloading replaces the form only after the teacher chooses to.
+
 `RATE_LIMITED` disables repeat action until `Retry-After` expires. `CLASS_NOT_ACTIVE` preserves no mutation retry and routes to the class list. This completes D-060.
 
 ## 6. Required additional screen contracts

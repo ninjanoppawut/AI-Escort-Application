@@ -543,6 +543,13 @@ export function TeacherClassManager({
                 จัดการกลุ่มของ {selectedClass.name}
                 <span aria-hidden="true">→</span>
               </Link>
+              <Link
+                className="border-border bg-card hover:bg-secondary flex min-h-11 items-center justify-between gap-3 rounded-lg border p-4 font-semibold xl:col-span-2"
+                href={`/teacher/classes/${selectedClass.id}/activities`}
+              >
+                กิจกรรมและพื้นที่สำรวจของ {selectedClass.name}
+                <span aria-hidden="true">→</span>
+              </Link>
               <form
                 className="border-border bg-card grid gap-4 rounded-lg border p-4"
                 onSubmit={settingsForm.handleSubmit(submitSettings)}

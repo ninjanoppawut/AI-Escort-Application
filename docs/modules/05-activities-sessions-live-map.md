@@ -66,6 +66,18 @@ AUTH, NOT, GRP/MGT, Mapbox adapter, PostGIS, and event logging.
   Phase 5 stubs now read session snapshots: a snapshotted group has history,
   and it is in an active session while its snapshot is uncompleted in an open or
   paused session.
+- **P6-02:** `20260911214029_phase6_activity_authoring.sql` adds
+  `save_activity_draft`, `publish_activity`, `list_class_activities`, and
+  `get_activity_detail`. Saves convert GeoJSON to SRID 4326 atomically and
+  return `ACTIVITY_GEOMETRY_INVALID` with the failing field, or
+  `ACTIVITY_VERSION_CONFLICT` when the editor's base version is stale. Publishing
+  requires a boundary, a route that intersects it, and at least one checkpoint
+  covered by it, supersedes the previous version, and is audited. Teacher routes
+  `GET/POST /api/activities`, `GET/PUT /api/activities/:id`, and
+  `POST /api/activities/:id/publish` back `/teacher/classes/[classId]/activities`
+  and a five-step editor (details, boundary, route, checkpoints, review/publish)
+  with GeoJSON paste/import, a coordinate sketch, dirty/saved state, conflict
+  reload, and publish readiness.
 - **Mapbox:** map drawing and tiles are blocked on a Mapbox token
   (`OWNER_QUESTIONS_PENDING.md`). Geometry authoring accepts GeoJSON and every
   map view keeps an equivalent list view.

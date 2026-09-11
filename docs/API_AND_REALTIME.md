@@ -240,6 +240,20 @@ SESSION_PAUSED
 RATE_LIMITED
 ```
 
+Stable activity and session setup errors (added in P6, additive):
+
+```text
+VALIDATION_FAILED
+ACTIVITY_GEOMETRY_INVALID
+ACTIVITY_VERSION_CONFLICT
+ACTIVITY_NOT_PUBLISHED
+SESSION_ALREADY_RUNNING
+```
+
+`VALIDATION_FAILED` and `ACTIVITY_GEOMETRY_INVALID` return `422` with safe
+details naming only the failing field (`fields`, `field`, or a publish
+`reason` with `sequenceNumber`); the other three return `409`.
+
 Every code above requires a defined UI state before the feature that raises it ships. `UI_CONTRACTS.md` defines the required mappings, including `RATE_LIMITED` and `CLASS_NOT_ACTIVE` (D-060).
 
 `OBSERVATION_VERSION_CONFLICT` blocks the second writer, states the reason, and returns the refreshed record with a repeat action (D-052).
@@ -936,6 +950,35 @@ Activity write model:
 ```
 
 All GeoJSON coordinates are `[longitude, latitude]` in WGS84/SRID 4326. Boundary must be a valid non-empty Polygon, route a valid LineString, checkpoint sequence unique, and complexity within documented database limits. Publishing creates an immutable published version; sessions reference that version. Editing after publish creates a new draft version.
+
+P6-02 implements the activity write and read models:
+
+- `POST /api/activities` with `classId` plus the write model (without
+  `expectedVersion`) → `save_activity_draft(draft, target_class_id)`; returns
+  `201` with `activityId`, `activityVersionId`, and `versionNumber` 1.
+- `PUT /api/activities/:id` with `expectedVersion` → `save_activity_draft(draft,
+  null, target_activity_id, expected_version_number)`. `expectedVersion` is the
+  version number the editor loaded (the draft, or the published version when no
+  draft exists). Saving replaces the single draft's content atomically, or starts
+  the next draft version after a publish. Denials: `ACTIVITY_VERSION_CONFLICT`
+  (`currentVersionNumber`, `currentStatus`), `ACTIVITY_GEOMETRY_INVALID`
+  (`field`: `boundary`, `route`, or `checkpoints`, including invalid or
+  self-intersecting shapes the browser cannot detect), and `VALIDATION_FAILED`.
+- `POST /api/activities/:id/publish` with `{ "expectedVersion": n }` →
+  `publish_activity`. Requires a boundary, a route that intersects it, and at
+  least one checkpoint, all checkpoints covered by the boundary; otherwise
+  `ACTIVITY_GEOMETRY_INVALID` with `reason` `boundary_required`,
+  `route_required`, `checkpoint_required`, `route_outside_boundary`, or
+  `checkpoint_outside_boundary` (`sequenceNumber`). Replaying the published
+  version returns `published`. Supersedes the previous version and writes an
+  `activity_published` audit row.
+- `GET /api/activities?classId=` → `list_class_activities`: teachers see drafts
+  and `draftVersionNumber`; students see published activities only. Capped at
+  100 items ordered by `(updated_at desc, id desc)`.
+- `GET /api/activities/:id` → `get_activity_detail`: activity summary,
+  `published` and teacher-only `draft` versions with GeoJSON geometry (7 decimal
+  places), plugin config, and `summary` (`boundaryAreaM2`, `routeLengthM`,
+  `checkpointCount`).
 
 Session detail returns activity version, queue order, authorized participant summary, current session/group status, route/boundary/checkpoints, state freshness, and allowed actions. Waiting students never receive peer live locations. Teacher live read models may include named current positions but not unrestricted historical tracks.
 

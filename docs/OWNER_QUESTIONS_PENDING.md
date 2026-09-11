@@ -83,6 +83,17 @@ contract was silent. Each can be changed without data loss.
 16. **Activity and session rows restrict class deletion** instead of cascading as
     sketched in `DATABASE_DESIGN.md` §14A, so historical sessions cannot vanish
     with a class. Classes are archived rather than deleted today.
+17. **Publish containment rule:** the route must intersect the boundary and every
+    checkpoint must lie inside it. `DATABASE_DESIGN.md` §14A leaves the exact
+    "inside or intersect" rule to the activity; a stricter route-inside rule is a
+    one-line change.
+18. **Geometry is authored as GeoJSON until Mapbox is configured.** Teachers paste
+    or import GeoJSON (Feature and FeatureCollection accepted) and see a
+    coordinate sketch; drawing on a base map waits for the Mapbox token.
+19. **New stable error codes** `VALIDATION_FAILED`, `ACTIVITY_GEOMETRY_INVALID`,
+    `ACTIVITY_VERSION_CONFLICT`, `ACTIVITY_NOT_PUBLISHED`, and
+    `SESSION_ALREADY_RUNNING` extend `API_AND_REALTIME.md` §3 additively, with
+    Thai copy in `UI_CONTRACTS.md` §5.
 
 ## Local environment note
 
