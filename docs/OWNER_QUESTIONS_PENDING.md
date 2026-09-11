@@ -55,6 +55,26 @@ contract was silent. Each can be changed without data loss.
 8. **Design items not implemented because accepted decisions reject them:**
    student "ask the leader to invite me" (D-050) and teacher group creation
    above the maximum with confirmation (D-047).
+9. **Teachers unlock a group before moving students into or out of it or
+   changing its leader.** Lock means membership is frozen for everyone;
+   `move_student_between_groups` returns `GROUP_LOCKED`.
+10. **A creation claim can be reset only after the claimed group is resolved:**
+    deleted, archived, or the student is no longer an active member of it, and
+    the group is not in an active session. Resets record the reason on the
+    claim, a `claim_reset` history row, and an audit log whose ID is shown to
+    the teacher. No student notification is sent because no claim-reset
+    notification type exists in `UI_CONTRACTS.md` §4.
+11. **Returning a student to unassigned sends no notification**, matching
+    leader removal (item 6). Moves between groups notify the student.
+12. **Delete-or-archive is one endpoint.** `DELETE /api/groups/:id` archives
+    when the group has session history and deletes otherwise; members always
+    return to unassigned, so explicit re-homing happens beforehand with the
+    move dialog. The separate `POST /api/groups/:id/archive` route and the
+    `memberHandling`/`moves` body in `API_AND_REALTIME.md` §10 were not added.
+13. **Phase 6/7 must replace two stubs.** `private.group_has_session_history`
+    and `private.group_in_active_session` return false until session tables
+    exist, so archive and active-session denials are verified in pgTAP by
+    overriding the stubs inside the test transaction.
 
 ## Local environment note
 

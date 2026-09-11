@@ -13,6 +13,7 @@ function isAllowedPath(pathname: string) {
   const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
   if (
     new RegExp(`^/classes/${uuid}/groups(/${uuid})?$`, "i").test(pathname) ||
+    new RegExp(`^/teacher/classes/${uuid}/groups$`, "i").test(pathname) ||
     new RegExp(`^/group-invitations/${uuid}$`, "i").test(pathname)
   ) {
     return true;

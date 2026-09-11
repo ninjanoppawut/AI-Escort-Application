@@ -550,6 +550,47 @@ in Phase 6–7; teacher moves between groups remain Phase 5.
 - Affected active session: return `GROUP_IN_ACTIVE_SESSION`.
 - Notify affected users.
 
+P5 implements teacher group management as authenticated routes backed by
+trusted RPCs. Every RPC authorizes `auth.uid()` as a teacher of the group's
+class (`FORBIDDEN` otherwise) and locks the class or group row first.
+
+- `POST /api/classes/:id/groups` → `create_teacher_group(...)` with `name`,
+  optional `description`, `leaderStudentId`, and `memberStudentIds`. Uses the
+  same class-row lock and absolute `maximum_groups` as student creation
+  (`GROUP_LIMIT_REACHED`, D-047); `GROUP_FULL`, `STUDENT_ALREADY_IN_GROUP`.
+- `POST /api/classes/:id/groups/move-student` → `move_student_between_groups(...)`
+  with `studentId`, `destinationGroupId` (null returns the student to
+  unassigned), and `successorLeaderId`. `sourceGroupId` is derived under lock.
+  Denials: `LEADER_SUCCESSOR_REQUIRED`, `GROUP_FULL`, `GROUP_LOCKED`,
+  `DESTINATION_GROUP_INVALID`, `GROUP_IN_ACTIVE_SESSION`. Returns `moved` or
+  `unchanged` with `leaderChanged`.
+- `POST /api/groups/:id/change-leader` → the P4-04 transfer RPC, recorded as
+  `teacher_change`.
+- `POST /api/groups/:id/approve` → `approve_group(uuid)`: `forming` or `ready`
+  at minimum size becomes `approved`; replay returns `approved`. Denials:
+  `GROUP_LOCKED`, `INVALID_STATUS_TRANSITION`, `DESTINATION_GROUP_INVALID`.
+  Notifies members (`group_approved`).
+- `POST /api/groups/:id/lock` → `lock_group(uuid)`: cancels pending invitations
+  and returns `cancelledInvitations`; notifies members (`group_locked`).
+- `POST /api/groups/:id/unlock` → `unlock_group(uuid)`: restores `approved` when
+  previously approved, otherwise `forming`; `GROUP_IN_ACTIVE_SESSION` while a
+  session runs; notifies members (`group_unlocked`).
+- `DELETE /api/groups/:id` → `delete_or_archive_group(uuid)`: archives when the
+  group has session history, otherwise soft-deletes. Both cancel invitations,
+  notify then release active members to unassigned, and return
+  `releasedMembers` and `remainingGroupSlots`. The database decides between
+  delete and archive, so no separate archive route or `memberHandling` body is
+  accepted; explicit re-homing uses move-student first.
+- `GET /api/classes/:id/group-creation-claims` → `list_class_creation_claims(uuid)`:
+  unreset claims with student, claimed group name and state
+  (`current`/`deleted`/`archived`), `canReset`, and `cannotResetReason`.
+- `POST /api/classes/:id/group-creation-claims/:studentId/reset` with
+  `{ "reason": "..." }` (1–1000 characters) → `reset_group_creation_claim(...)`.
+  Allowed only when the claimed group is deleted, archived, or no longer
+  contains the student, and no active session blocks it
+  (`INVALID_STATUS_TRANSITION`, `GROUP_IN_ACTIVE_SESSION`). Returns `claimId`
+  and `auditLogId`; writes a `claim_reset` history row.
+
 ## 11. Notifications
 
 ```json

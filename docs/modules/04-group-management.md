@@ -49,6 +49,27 @@ Destination full, last leader, successor required, active session, stale members
 
 AUTH, NOT, GRP, and session-history lookup from SES.
 
+## Implementation status
+
+- **P5-01/P5-02:** `create_teacher_group` and `move_student_between_groups` in
+  `20260911204736_phase5_teacher_group_management.sql` share the class-row lock
+  and absolute maximum with student creation, lock the student's class
+  membership then groups by id, require a successor for a populated leader
+  move, and notify moved students.
+- **P5-03/P5-04:** `approve_group`, `lock_group`, `unlock_group`,
+  `list_class_creation_claims`, `reset_group_creation_claim`, and
+  `delete_or_archive_group` in `20260911205557_phase5_group_review_and_lifecycle.sql`.
+  Lock cancels pending invitations; unlock restores `approved` or `forming`;
+  claim reset requires a resolved prior group and a reason and returns the audit
+  log ID; delete archives instead when session history exists.
+- **UI:** `/teacher/classes/[classId]/groups` combines the teacher board,
+  create form, move and leader dialogs, lock/unlock/delete confirmations, and
+  claim resets, with the same Realtime refetch pattern as the student board.
+- **Session dependency:** `private.group_has_session_history` and
+  `private.group_in_active_session` are stubs returning false. Phase 6 and
+  Phase 7 must replace them; pgTAP overrides them inside a transaction to prove
+  the archive and `GROUP_IN_ACTIVE_SESSION` paths.
+
 ## Definition of done
 
 Every teacher operation preserves current invariants and immutable history under success, failure, and concurrent execution.

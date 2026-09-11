@@ -14,6 +14,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
+import Link from "next/link";
 import QRCode from "qrcode";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -535,6 +536,13 @@ export function TeacherClassManager({
 
           {selectedClass ? (
             <div className="grid gap-5 xl:grid-cols-2">
+              <Link
+                className="border-border bg-card hover:bg-secondary flex min-h-11 items-center justify-between gap-3 rounded-lg border p-4 font-semibold xl:col-span-2"
+                href={`/teacher/classes/${selectedClass.id}/groups`}
+              >
+                จัดการกลุ่มของ {selectedClass.name}
+                <span aria-hidden="true">→</span>
+              </Link>
               <form
                 className="border-border bg-card grid gap-4 rounded-lg border p-4"
                 onSubmit={settingsForm.handleSubmit(submitSettings)}

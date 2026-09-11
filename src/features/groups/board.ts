@@ -75,6 +75,8 @@ export const groupQueryKeys = {
   all: ["groups"] as const,
   boards: () => [...groupQueryKeys.all, "board"] as const,
   board: (classId: string) => [...groupQueryKeys.boards(), classId] as const,
+  creationClaims: (classId: string) =>
+    [...groupQueryKeys.all, "creation-claims", classId] as const,
 };
 
 export function parseGroupBoard(

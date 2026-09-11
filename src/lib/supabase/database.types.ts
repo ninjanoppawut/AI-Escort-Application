@@ -1118,6 +1118,16 @@ export type Database = {
           outcome: string;
         }[];
       };
+      approve_group: {
+        Args: { target_group_id: string };
+        Returns: {
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          outcome: string;
+          status: string;
+        }[];
+      };
       cancel_group_invitation: {
         Args: { target_invitation_id: string };
         Returns: {
@@ -1222,6 +1232,17 @@ export type Database = {
           status: string;
         }[];
       };
+      delete_or_archive_group: {
+        Args: { target_group_id: string };
+        Returns: {
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          outcome: string;
+          released_members: number;
+          remaining_group_slots: number;
+        }[];
+      };
       disable_class_invite: {
         Args: { target_invite_id: string };
         Returns: {
@@ -1312,6 +1333,10 @@ export type Database = {
           subject: string;
         }[];
       };
+      list_class_creation_claims: {
+        Args: { target_class_id: string };
+        Returns: Json;
+      };
       list_class_members: {
         Args: {
           cursor_display_name?: string;
@@ -1338,6 +1363,17 @@ export type Database = {
       list_group_eligible_classmates: {
         Args: { target_group_id: string };
         Returns: Json;
+      };
+      lock_group: {
+        Args: { target_group_id: string };
+        Returns: {
+          cancelled_invitations: number;
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          outcome: string;
+          status: string;
+        }[];
       };
       mark_group_ready: {
         Args: { target_group_id: string };
@@ -1386,6 +1422,19 @@ export type Database = {
           member_count: number;
           outcome: string;
           status: string;
+        }[];
+      };
+      reset_group_creation_claim: {
+        Args: {
+          reset_reason_text: string;
+          target_class_id: string;
+          target_student_id: string;
+        };
+        Returns: {
+          audit_log_id: string;
+          claim_id: string;
+          error_code: string;
+          outcome: string;
         }[];
       };
       revoke_platform_admin: {
@@ -1444,6 +1493,16 @@ export type Database = {
           leader_id: string;
           outcome: string;
           previous_leader_id: string;
+        }[];
+      };
+      unlock_group: {
+        Args: { target_group_id: string };
+        Returns: {
+          class_id: string;
+          error_code: string;
+          group_id: string;
+          outcome: string;
+          status: string;
         }[];
       };
       update_class_group_settings: {

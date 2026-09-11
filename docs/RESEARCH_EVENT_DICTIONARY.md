@@ -103,6 +103,17 @@ Cancellations, readiness, and removals write audit rows only because the
 dictionary defines no research event for them. Payloads never include invitee
 IDs, names, or free text.
 
+P5 producer note: `create_teacher_group` emits `group_created` with
+`creator_type` `teacher` and `group_creation_failed` for committed denials;
+`move_student_between_groups` emits `student_moved_between_groups`
+(`leader_changed`, `reason_category` `teacher_move` or `teacher_remove`) on the
+destination group, or the source group when returning a student to unassigned;
+`lock_group` emits `group_locked` (`member_count`); `delete_or_archive_group`
+emits `group_deleted` (`member_count`, `had_pending_invites`) or
+`group_archived` (`session_count`, `0` until Phase 6 supplies session history).
+Approve, unlock, and creation-claim reset write audit rows only; claim-reset
+reasons stay on the claim row and never enter research payloads.
+
 ## 4. Timing and retry semantics
 
 - Business events are written in the same transaction as the authoritative change when possible.

@@ -42,13 +42,13 @@ as $$
   );
 $$;
 
+-- dblink_exec refuses statements that return rows, so claims are applied with
+-- SET rather than set_config().
 create function pg_temp.claims_sql(key_value text)
 returns text
 language sql
 as $$
-  select format(
-    'select set_config(%L, %L, true)',
-    'request.jwt.claims',
+  select 'set local request.jwt.claims to ' || quote_literal(
     jsonb_build_object('sub', pg_temp.id(key_value), 'role', 'authenticated', 'aal', 'aal1')::text
   );
 $$;
@@ -57,9 +57,7 @@ create function pg_temp.autocommit_claims_sql(key_value text)
 returns text
 language sql
 as $$
-  select format(
-    'select set_config(%L, %L, false)',
-    'request.jwt.claims',
+  select 'set request.jwt.claims to ' || quote_literal(
     jsonb_build_object('sub', pg_temp.id(key_value), 'role', 'authenticated', 'aal', 'aal1')::text
   );
 $$;
