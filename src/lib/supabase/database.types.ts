@@ -1651,6 +1651,17 @@ export type Database = {
           outcome: string;
         }[];
       };
+      activate_session_group: {
+        Args: { target_group_id: string; target_session_id: string };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          outcome: string;
+          queue_position: number;
+          session_group_id: string;
+          status: string;
+        }[];
+      };
       approve_group: {
         Args: { target_group_id: string };
         Returns: {
@@ -1669,6 +1680,25 @@ export type Database = {
           group_id: string;
           invitation_id: string;
           outcome: string;
+          status: string;
+        }[];
+      };
+      complete_exploration_session: {
+        Args: { target_session_id: string };
+        Returns: {
+          completed_groups: number;
+          error_code: string;
+          outcome: string;
+          status: string;
+        }[];
+      };
+      complete_session_group: {
+        Args: { target_group_id: string; target_session_id: string };
+        Returns: {
+          error_code: string;
+          next_ready_group_id: string;
+          outcome: string;
+          session_group_id: string;
           status: string;
         }[];
       };
@@ -1809,6 +1839,14 @@ export type Database = {
       get_group_detail: { Args: { target_group_id: string }; Returns: Json };
       get_group_invitation: {
         Args: { target_invitation_id: string };
+        Returns: Json;
+      };
+      get_session_live: {
+        Args: { target_session_id: string };
+        Returns: Json;
+      };
+      get_session_participant_view: {
+        Args: { target_session_id: string };
         Returns: Json;
       };
       get_session_setup: {
@@ -1977,6 +2015,10 @@ export type Database = {
           session_id: string;
         }[];
       };
+      pause_exploration_session: {
+        Args: { target_session_id: string };
+        Returns: { error_code: string; outcome: string; status: string }[];
+      };
       preview_teacher_invitation: {
         Args: { invitation_token: string };
         Returns: {
@@ -2021,6 +2063,10 @@ export type Database = {
           error_code: string;
           outcome: string;
         }[];
+      };
+      resume_exploration_session: {
+        Args: { target_session_id: string };
+        Returns: { error_code: string; outcome: string; status: string }[];
       };
       revoke_platform_admin: {
         Args: { reason: string; target_user_id: string };

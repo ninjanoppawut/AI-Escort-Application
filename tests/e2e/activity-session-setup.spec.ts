@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 
 import {
@@ -45,6 +45,17 @@ function asUserSql(userEmail: string, statement: string) {
     ${statement}
     select set_config('request.jwt.claims', '', false);
   `;
+}
+
+/** Saves the draft and reports the on-screen error when the save is refused. */
+async function saveDraft(page: Page, expectedNotice: string) {
+  await page.getByRole("button", { name: "บันทึกร่าง" }).click();
+  const notice = page.getByText(expectedNotice);
+  const failure = page.getByRole("alert").first();
+  await expect(notice.or(failure)).toBeVisible({ timeout: 120_000 });
+  if (!(await notice.isVisible())) {
+    throw new Error(`save was refused: ${await failure.innerText()}`);
+  }
 }
 
 test.describe("P6 activity authoring and session snapshot", () => {
@@ -145,17 +156,26 @@ test.describe("P6 activity authoring and session snapshot", () => {
     await expect(
       page.getByRole("heading", { name: "กิจกรรม" }).first(),
     ).toBeVisible({
-      timeout: 60_000,
+      timeout: 120_000,
     });
     const createActivityForm = page.getByRole("form", { name: "สร้างกิจกรรม" });
     await createActivityForm.getByLabel("ชื่อกิจกรรม").fill("Garden survey");
     await createActivityForm
       .getByRole("button", { name: "สร้างกิจกรรม" })
       .click();
-    await page.waitForURL(/\/activities\/[0-9a-f-]{36}$/, { timeout: 60_000 });
+    await page.waitForURL(/\/activities\/[0-9a-f-]{36}$/, { timeout: 120_000 });
     await expect(
       page.getByRole("heading", { name: "แก้ไขกิจกรรม" }),
     ).toBeVisible();
+
+    // next dev compiles each route on first use; warm the ones this journey
+    // needs so a single action never waits for a cold compile.
+    const activityId = page.url().split("/").pop();
+    await Promise.all([
+      page.request.get(`/api/activities/${activityId}`),
+      page.request.get(`/api/activities/${activityId}/publish`),
+      page.request.get(`/api/sessions?classId=${classId}`),
+    ]);
 
     // Boundary, route, and two checkpoints, one of them outside the boundary.
     await page
@@ -181,10 +201,7 @@ test.describe("P6 activity authoring and session snapshot", () => {
       await row.getByLabel("ลองจิจูด").fill(checkpoint.longitude);
     }
 
-    await page.getByRole("button", { name: "บันทึกร่าง" }).click();
-    await expect(page.getByText("บันทึกร่างแล้ว · ฉบับที่ 1")).toBeVisible({
-      timeout: 60_000,
-    });
+    await saveDraft(page, "บันทึกร่างแล้ว · ฉบับที่ 1");
 
     // Publishing is refused while a checkpoint sits outside the boundary.
     await page
@@ -192,7 +209,7 @@ test.describe("P6 activity authoring and session snapshot", () => {
       .click();
     await page.getByRole("button", { name: "เผยแพร่กิจกรรม" }).click();
     await expect(page.getByText("จุดตรวจที่ 2 อยู่นอกขอบเขตสำรวจ")).toBeVisible(
-      { timeout: 60_000 },
+      { timeout: 120_000 },
     );
 
     await page.getByRole("button", { name: "จุดตรวจ", exact: true }).click();
@@ -201,10 +218,7 @@ test.describe("P6 activity authoring and session snapshot", () => {
       .last();
     await secondCheckpoint.getByLabel("ละติจูด").fill("13.7570");
     await secondCheckpoint.getByLabel("ลองจิจูด").fill("100.5070");
-    await page.getByRole("button", { name: "บันทึกร่าง" }).click();
-    await expect(page.getByText("บันทึกร่างแล้ว · ฉบับที่ 1")).toBeVisible({
-      timeout: 60_000,
-    });
+    await saveDraft(page, "บันทึกร่างแล้ว · ฉบับที่ 1");
     await page
       .getByRole("button", { name: "ตรวจและเผยแพร่", exact: true })
       .click();
@@ -213,14 +227,14 @@ test.describe("P6 activity authoring and session snapshot", () => {
       page.getByText(
         "เผยแพร่ฉบับที่ 1 แล้ว นักเรียนในชั้นเรียนเห็นกิจกรรมนี้ได้",
       ),
-    ).toBeVisible({ timeout: 60_000 });
+    ).toBeVisible({ timeout: 120_000 });
 
     // Schedule a session on the published version.
     await page.goto(`/teacher/classes/${classId}/sessions`);
     await expect(
       page.getByRole("heading", { name: "รอบสำรวจ" }).first(),
     ).toBeVisible({
-      timeout: 60_000,
+      timeout: 120_000,
     });
     const createSessionForm = page.getByRole("form", {
       name: "ตั้งรอบสำรวจใหม่",
@@ -232,7 +246,7 @@ test.describe("P6 activity authoring and session snapshot", () => {
     await createSessionForm
       .getByRole("button", { name: "ตั้งรอบสำรวจ" })
       .click();
-    await page.waitForURL(/\/sessions\/[0-9a-f-]{36}$/, { timeout: 60_000 });
+    await page.waitForURL(/\/sessions\/[0-9a-f-]{36}$/, { timeout: 120_000 });
     await expect(
       page.getByRole("heading", { name: "ตั้งค่ารอบสำรวจ" }),
     ).toBeVisible();
@@ -255,7 +269,7 @@ test.describe("P6 activity authoring and session snapshot", () => {
       .click();
     await expect(
       page.getByText("เปิดรอบสำรวจแล้ว · บันทึก 2 กลุ่ม นักเรียน 3 คน"),
-    ).toBeVisible({ timeout: 60_000 });
+    ).toBeVisible({ timeout: 120_000 });
     await expect(
       page.getByRole("region", { name: "1. Root" }).getByText("Cy Leader"),
     ).toBeVisible();
@@ -276,7 +290,7 @@ test.describe("P6 activity authoring and session snapshot", () => {
     await moveDialog.getByRole("button", { name: "ย้ายไป Root" }).click();
     await expect(
       moveDialog.getByText("เปลี่ยนกลุ่มไม่ได้ระหว่างกิจกรรม"),
-    ).toBeVisible({ timeout: 60_000 });
+    ).toBeVisible({ timeout: 120_000 });
 
     // A change made outside the RPCs still leaves the snapshot intact.
     runLocalSql(`
@@ -298,7 +312,7 @@ test.describe("P6 activity authoring and session snapshot", () => {
     await page.getByRole("link", { name: "Morning round" }).click();
     await expect(
       page.getByRole("region", { name: "2. Leaf" }).getByText("Bo Member"),
-    ).toBeVisible({ timeout: 60_000 });
+    ).toBeVisible({ timeout: 120_000 });
     await expect(
       page.getByText("รายชื่อนี้บันทึกไว้ตอนเปิดรอบ", { exact: false }),
     ).toBeVisible();

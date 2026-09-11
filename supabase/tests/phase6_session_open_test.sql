@@ -121,6 +121,15 @@ set local role authenticated;
 select * from public.create_teacher_group('20000000-0000-0000-0000-000000006301', 'Empty');
 reset role;
 
+-- Groups created in one transaction share created_at, so make the queue order
+-- deterministic for the read model.
+update public.groups
+set created_at = now() - interval '2 minutes'
+where class_id = '20000000-0000-0000-0000-000000006301' and name = 'Leaf';
+update public.groups
+set created_at = now() - interval '1 minute'
+where class_id = '20000000-0000-0000-0000-000000006301' and name = 'Root';
+
 -- Activities: one published, one draft only.
 insert into public.activities (id, class_id, title, status, created_by)
 values
