@@ -979,9 +979,76 @@ Evidence:
 - Commit: `c97ac8a` (`Add P3-03 group board read model and student board UI`).
 - Remaining risk: `database.types.ts` was restored and extended by hand while
   local generation was unavailable; the CI generated-type diff confirmed it.
-- [ ] **P3-04:** Implement private class-group invalidation and refetch lifecycle.
-- [ ] **P3-05:** Pass final-slot race, one-leader, one-group, creation-claim, RLS, and Realtime tests.
-- [ ] **P3-EXIT:** Two students racing for the last slot produce exactly one success and immediate authoritative UI refresh.
+- [x] **P3-04:** Implement private class-group invalidation and refetch lifecycle.
+
+P3-04 status: complete as of 2026-09-12, verified in hosted CI.
+
+Evidence:
+- Requirements: `GRP-010`; D-006, D-041.
+- Migration:
+  `supabase/migrations/20260911194231_phase3_class_group_realtime.sql`.
+- Signals: row triggers on `groups`, `group_members`, `classes` (formation,
+  capacity, and status columns only), and creation-claim updates call
+  `private.send_class_group_signal`, which sends a private Broadcast on
+  `class:{classId}:groups` carrying only `type`, `version`, `classId`,
+  `groupId`, and `changedAt`. Events: `group.created`, `group.updated`,
+  `group.deleted`, `group.archived`, `group.locked`, `group.unlocked`,
+  `group.member_joined`, `group.member_left`, `group.member_moved`,
+  `group.leader_changed`, `group.capacity_changed`, `group.formation_changed`.
+- Authorization: `class_group_realtime_receive_member_broadcasts` on
+  `realtime.messages` requires the strict topic parsed by
+  `private.class_group_topic_class_id` and active class membership via
+  `private.current_user_is_class_member`. No insert policy exists, so browsers
+  cannot publish into class-group topics. Signal functions are private
+  SECURITY DEFINER with empty `search_path` and no browser execute grant.
+- Client: `useClassGroupRealtime` in `src/features/groups/client/realtime.tsx`
+  subscribes privately, validates signals with Zod against the subscribed
+  class, invalidates only the authoritative board query on signals and on
+  `SUBSCRIBED`/`CHANNEL_ERROR`/`TIMED_OUT`/`CLOSED`, serializes auth-session
+  changes, and removes the channel on unmount. The board uses
+  `refetchOnWindowFocus: "always"`, `refetchOnReconnect: "always"`, mutation
+  completion invalidation, and a 60-second fallback poll, and shows
+  live/reconnecting state.
+- Tests: `supabase/tests/phase3_class_group_realtime_test.sql` (22 assertions:
+  topic parsing, function/grant posture, triggers, receive policy, no publish
+  policy, emitted events per transition, payload minimization, class isolation,
+  member/teacher receipt, cross-class/other-topic/left-member denial);
+  `src/features/groups/client/realtime.test.tsx`.
+- Commands: local `npm run lint`, `npm run typecheck`, `npm test` (28 files).
+  Hosted CI run `34641284802` on `7acf3ae` passed `quality` (Vitest 28 files),
+  `database` (13 files/435 assertions, advisors "No issues found",
+  generated-type diff), and `browser-smoke` (21 passed, 11 project-scoped
+  skips): https://github.com/ninjanoppawut/AI-Escort-Application/actions/runs/34641284802.
+- Commit: `7acf3ae`.
+
+- [x] **P3-05:** Pass final-slot race, one-leader, one-group, creation-claim, RLS, and Realtime tests.
+
+P3-05 status: complete as of 2026-09-12. Evidence:
+- Final-slot race: `supabase/tests/phase3_create_student_group_concurrency.ps1`
+  (10 local rounds, P3-02) and the browser race in
+  `tests/e2e/group-formation.spec.ts` (`P3-05 final group slot race and live
+  board refresh`, CI run `34641284802`), which asserts one success, one
+  race-loss state, one current group, one leader, and one
+  `group_creation_failed` event.
+- One leader, one current group, and creation claim:
+  `phase3_group_foundation_test.sql`, `phase3_create_student_group_test.sql`,
+  and `phase3_group_board_test.sql`.
+- RLS: foundation, creation, board, and realtime suites cover member, teacher,
+  cross-class, left-member, anon, and browser-write denial.
+- Realtime: `phase3_class_group_realtime_test.sql`, `realtime.test.tsx`, and
+  the browser observer refresh.
+- Remaining risk: the multi-round database race harness runs locally only;
+  hosted CI covers the browser race.
+
+- [x] **P3-EXIT:** Two students racing for the last slot produce exactly one success and immediate authoritative UI refresh.
+
+P3-EXIT status: complete as of 2026-09-12. The `P3-05 final group slot race
+and live board refresh` journey signs in two racers and an idle observer at
+390 px, waits for live Realtime state, submits both creates together, verifies
+exactly one winner and one informational race-loss state, verifies database
+state, and verifies that the observer board shows `เหลือ 0 กลุ่ม` and a disabled
+Create Group within 15 seconds without reload or interaction (well inside the
+60-second fallback poll). Passed in hosted CI run `34641284802` on `7acf3ae`.
 
 ## Phase 4 — Invitations and leadership
 

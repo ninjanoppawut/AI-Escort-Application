@@ -83,8 +83,16 @@ AUTH memberships/settings and NOT delivery.
   reserves a slot. Verification: `phase3_group_board_test.sql`,
   `src/features/groups/**/*.test.ts(x)`, and the `P3-03` journey in
   `tests/e2e/group-formation.spec.ts`.
-- Private class-group Realtime invalidation, the browser final-slot race, and
-  invitation flows remain P3-04 through P4.
+- **P3-04 complete:** `supabase/migrations/20260911194231_phase3_class_group_realtime.sql`
+  emits pointer-only private Broadcast signals on `class:{classId}:groups` and
+  restricts receipt to active class members; `useClassGroupRealtime`
+  (`src/features/groups/client/realtime.tsx`) invalidates the authoritative
+  board on signals and Realtime reconnect. Verification:
+  `phase3_class_group_realtime_test.sql` and `realtime.test.tsx`.
+- **P3-05 and P3-EXIT complete:** the browser race journey in
+  `tests/e2e/group-formation.spec.ts` proves one success under a concurrent
+  final-slot race and an observer refresh from the private signal.
+- Invitation flows, readiness, and leadership transfer remain P4.
 
 ## Definition of done
 

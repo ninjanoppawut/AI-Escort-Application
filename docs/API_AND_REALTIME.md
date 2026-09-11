@@ -567,6 +567,18 @@ initial fetch
 
 Also refetch on foreground, network reconnect, Realtime reconnect, and mutation completion. Five-second polling is not the primary mechanism. Optional slow fallback polling is acceptable.
 
+P3-04 implements `class:{classId}:groups` as private Broadcast sent by database
+triggers through `private.send_class_group_signal`. The payload is exactly
+`type`, `version`, `classId`, `groupId` (null for class-setting changes), and
+`changedAt`; names, members, and invitees are never included. Membership
+changes map to `group.member_joined`/`group.member_left`/`group.member_moved`/
+`group.leader_changed`; group rows map to `group.created`/`group.updated`/
+`group.deleted`/`group.archived`/`group.locked`/`group.unlocked`; class formation
+or status changes send `group.formation_changed`; size or maximum-count changes
+send `group.capacity_changed`; teacher claim resets send `group.updated`.
+Receipt requires active membership in the class named by the topic. The student
+board polls every 60 seconds only as a fallback.
+
 ## 13. Start observation
 
 ```json
