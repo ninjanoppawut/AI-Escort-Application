@@ -123,7 +123,10 @@ test.describe("P5 teacher group management", () => {
     const signInResponse = await page.request.post("/api/auth/sign-in", {
       data: { email: teacherEmail, password, returnTo: path },
     });
-    expect(signInResponse.ok()).toBe(true);
+    expect(
+      signInResponse.status(),
+      `sign-in failed: ${await signInResponse.text()}`,
+    ).toBe(200);
     expect((await signInResponse.json()).data.destination).toBe(path);
     await page.goto(path);
 

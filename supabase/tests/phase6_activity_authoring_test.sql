@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(22);
+select plan(23);
 
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
 values
@@ -196,6 +196,17 @@ select pg_temp.call('bowtie', format(
     '[]'::jsonb
   )
 ));
+-- Captured immediately: later saves in this transaction change the activity.
+insert into p6b_results
+select 'after_bowtie', jsonb_build_object(
+  'title', (select activity.title from public.activities as activity where activity.id = pg_temp.activity_id()),
+  'boundaryCount', (
+    select count(*)
+    from public.activity_boundaries as boundary_row
+    join public.activity_versions as version on version.id = boundary_row.activity_version_id
+    where version.activity_id = pg_temp.activity_id()
+  )
+);
 select pg_temp.call('wrong_type', format(
   $$select * from public.save_activity_draft(%2$L::jsonb, null, %1$L, 1)$$,
   pg_temp.activity_id(),
@@ -277,13 +288,9 @@ select is(
   'an invalid boundary is refused with the failing field'
 );
 
-select ok(
-  (select title from public.activities where id = pg_temp.activity_id()) = 'Garden survey'
-    and exists (
-      select 1 from public.activity_boundaries as boundary_row
-      join public.activity_versions as version on version.id = boundary_row.activity_version_id
-      where version.activity_id = pg_temp.activity_id()
-    ),
+select is(
+  pg_temp.result('after_bowtie', '{title}') || ':' || pg_temp.result('after_bowtie', '{boundaryCount}'),
+  'Garden survey:1',
   'a refused save changes nothing'
 );
 
