@@ -32,6 +32,10 @@ import {
   type GroupBoardGroup,
 } from "../board";
 import {
+  useClassGroupRealtime,
+  type GroupRealtimeStatus,
+} from "../client/realtime";
+import {
   GROUP_DESCRIPTION_MAX_LENGTH,
   GROUP_NAME_MAX_LENGTH,
   type CreatedStudentGroup,
@@ -159,6 +163,58 @@ function seatLabel(group: GroupBoardGroup) {
   if (group.isAcceptingMembers) return `ว่าง ${group.availableSeats} ที่`;
   if (group.availableSeats === 0) return "เต็มแล้ว";
   return "ไม่รับสมาชิกเพิ่ม";
+}
+
+const REALTIME_LABELS: Record<GroupRealtimeStatus, string> = {
+  connecting: "กำลังเชื่อมต่ออัปเดตสด",
+  live: "อัปเดตสดอยู่",
+  reconnecting: "กำลังเชื่อมต่อใหม่ · ดึงข้อมูลล่าสุดแล้ว",
+};
+
+function BoardFreshness({
+  isFetching,
+  realtime,
+  updatedAt,
+}: {
+  isFetching: boolean;
+  realtime: GroupRealtimeStatus;
+  updatedAt: number;
+}) {
+  return (
+    <div
+      className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]"
+      role="status"
+    >
+      <span className="inline-flex items-center gap-1.5">
+        <RefreshCw
+          aria-hidden="true"
+          className={cn("size-3.5", isFetching && "animate-spin")}
+        />
+        {isFetching
+          ? "กำลังอัปเดตข้อมูลกลุ่ม..."
+          : `อัปเดตล่าสุด ${formatUpdatedAt(updatedAt)}`}
+      </span>
+      <span
+        className="inline-flex items-center gap-1.5"
+        data-realtime={realtime}
+      >
+        {realtime === "reconnecting" ? (
+          <WifiOff aria-hidden="true" className="size-3.5" />
+        ) : (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "size-2 rounded-full",
+              realtime === "live"
+                ? "bg-success"
+                : "border border-current bg-transparent",
+            )}
+          />
+        )}
+        {REALTIME_LABELS[realtime]}
+      </span>
+    </div>
+  );
 }
 
 function GroupCard({
@@ -295,6 +351,7 @@ export function GroupBoardScreen({
 }: GroupBoardScreenProps) {
   const queryClient = useQueryClient();
   const online = useOnlineStatus();
+  const realtime = useClassGroupRealtime(classId);
   const [formOpen, setFormOpen] = useState(false);
   const [created, setCreated] = useState<CreatedStudentGroup | null>(null);
 
@@ -304,6 +361,10 @@ export function GroupBoardScreen({
     ...(initialBoard ? { initialData: initialBoard } : {}),
     // Optional slow fallback (D-041); the class-group signal is the primary refresh.
     refetchInterval: 60_000,
+    // The formation board refreshes on foreground and reconnect immediately:
+    // a stale slot count would cause a failed create.
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
     retry: false,
   });
 
@@ -406,21 +467,11 @@ export function GroupBoardScreen({
 
         {board ? (
           <>
-            <p
-              className="text-muted-foreground flex items-center gap-2 text-[13px]"
-              role="status"
-            >
-              <RefreshCw
-                aria-hidden="true"
-                className={cn(
-                  "size-3.5",
-                  boardQuery.isFetching && "animate-spin",
-                )}
-              />
-              {boardQuery.isFetching
-                ? "กำลังอัปเดตข้อมูลกลุ่ม..."
-                : `อัปเดตล่าสุด ${formatUpdatedAt(boardQuery.dataUpdatedAt)}`}
-            </p>
+            <BoardFreshness
+              isFetching={boardQuery.isFetching}
+              realtime={realtime}
+              updatedAt={boardQuery.dataUpdatedAt}
+            />
 
             {boardQuery.error ? (
               <section

@@ -8,6 +8,11 @@ import type { GroupBoard } from "../board";
 import { GROUP_STATUS_TOKENS } from "./group-status-badge";
 import { GroupBoardScreen } from "./group-board";
 
+// Realtime subscription behavior is covered in client/realtime.test.tsx.
+vi.mock("../client/realtime", () => ({
+  useClassGroupRealtime: () => "live",
+}));
+
 const classId = "20000000-0000-4000-8000-000000003301";
 const viewerId = "00000000-0000-4000-8000-000000003304";
 const groupId = "30000000-0000-4000-8000-000000003301";
