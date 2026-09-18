@@ -14,6 +14,7 @@ const liveLocations = vi.hoisted(() => ({
   value: {
     snapshot: undefined as SessionLiveLocations | undefined,
     positions: {} as Record<string, LivePosition>,
+    deviceStatuses: {} as Record<string, "denied" | "unavailable">,
     realtime: "live" as SessionRealtimeStatus,
     error: null as unknown,
   },
@@ -178,6 +179,7 @@ describe("TeacherSessionLive", () => {
     liveLocations.value = {
       snapshot: snapshot([]),
       positions: {},
+      deviceStatuses: {},
       realtime: "live",
       error: null,
     };
@@ -455,6 +457,7 @@ describe("TeacherSessionLive", () => {
           seq: 9,
         },
       },
+      deviceStatuses: {},
       realtime: "reconnecting",
       error: null,
     };
@@ -501,6 +504,60 @@ describe("TeacherSessionLive", () => {
     expect(screen.getByText("กำลังเชื่อมต่อใหม่")).toBeInTheDocument();
     // Coordinates stay off the page; the list is the accessible equivalent.
     expect(container.textContent).not.toMatch(/13\.75|100\.50/);
+  });
+
+  it("shows device-reported location problems and flags low accuracy (P7-05)", () => {
+    const now = Date.now();
+    liveLocations.value = {
+      snapshot: snapshot([
+        {
+          userId: ada,
+          displayName: "Ada Leader",
+          roleAtStart: "leader",
+          latestSample: {
+            lat: 13.7551,
+            lng: 100.5051,
+            accuracyM: 80,
+            recordedAt: new Date(now - 3_000).toISOString(),
+            receivedAt: new Date(now - 3_000).toISOString(),
+          },
+        },
+        {
+          userId: bo,
+          displayName: "Bo Member",
+          roleAtStart: "member",
+          latestSample: null,
+        },
+        {
+          userId: cy,
+          displayName: "Cy Waiting",
+          roleAtStart: "member",
+          latestSample: null,
+        },
+      ]),
+      positions: {},
+      deviceStatuses: { [bo]: "denied", [cy]: "unavailable" },
+      realtime: "live",
+      error: null,
+    };
+
+    renderLive(
+      <TeacherSessionLive
+        classId={classId}
+        initialErrorCode={null}
+        initialLive={makeLive("open", ["active", "ready", "waiting"])}
+        sessionId={sessionId}
+      />,
+    );
+
+    const rows = within(
+      screen.getByRole("list", { name: "รายชื่อตำแหน่งนักเรียน" }),
+    ).getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("ความแม่นยำต่ำ");
+    expect(rows[0]).toHaveTextContent("±80 ม.");
+    expect(rows[1]).toHaveTextContent("ปิดสิทธิ์ตำแหน่ง");
+    expect(rows[1]).toHaveTextContent("ให้นักเรียนเปิดสิทธิ์แล้วโหลดหน้าใหม่");
+    expect(rows[2]).toHaveTextContent("หาตำแหน่งไม่ได้");
   });
 
   it("refetches the queue on a session signal from the teachers topic", async () => {

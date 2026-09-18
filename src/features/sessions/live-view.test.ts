@@ -178,6 +178,13 @@ describe("live location rows", () => {
     expect(liveLocationRows(undefined, {})).toEqual([]);
   });
 
+  it("carries device-reported location problems per student", () => {
+    const rows = liveLocationRows(snapshot, {}, { [userB]: "denied" });
+    expect(rows[0]?.deviceStatus).toBeNull();
+    expect(rows[1]?.deviceStatus).toBe("denied");
+    expect(liveLocationRows(snapshot, {})[1]?.deviceStatus).toBeNull();
+  });
+
   it("marks positions stale after the working threshold", () => {
     const recordedAt = "2026-09-19T02:00:00.000Z";
     const base = Date.parse(recordedAt);

@@ -10,7 +10,8 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    exclude: [...configDefaults.exclude, "tests/e2e/**"],
+    // Agent worktrees under .claude/ carry their own node_modules.
+    exclude: [...configDefaults.exclude, "tests/e2e/**", ".claude/**"],
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     coverage: {

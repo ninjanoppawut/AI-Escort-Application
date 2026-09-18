@@ -10,6 +10,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   liveLocationQueryKeys,
   locationSampleMessageSchema,
+  locationStatusMessageSchema,
   sessionLiveLocationsSchema,
   sessionLocationTopic,
   sessionTeachersTopic,
@@ -19,6 +20,8 @@ import {
   useSessionSignals,
   type SessionRealtimeStatus,
 } from "./use-session-signals";
+
+export type DeviceLocationStatus = "denied" | "unavailable";
 
 export interface LivePosition {
   lat: number;
@@ -51,12 +54,16 @@ export function useTeacherLiveLocations(
 ): {
   snapshot: SessionLiveLocations | undefined;
   positions: Record<string, LivePosition>;
+  deviceStatuses: Record<string, DeviceLocationStatus>;
   realtime: SessionRealtimeStatus;
   error: unknown;
 } {
   const queryClient = useQueryClient();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [positions, setPositions] = useState<Record<string, LivePosition>>({});
+  const [deviceStatuses, setDeviceStatuses] = useState<
+    Record<string, DeviceLocationStatus>
+  >({});
   const { onSignal: onCallerSignal } = options;
   const onCallerSignalRef = useRef(onCallerSignal);
 
@@ -75,6 +82,7 @@ export function useTeacherLiveLocations(
 
   const onSignal = useCallback(() => {
     setPositions({});
+    setDeviceStatuses({});
     void queryClient.invalidateQueries({ queryKey: liveLocationQueryKeys.all });
     onCallerSignalRef.current?.();
   }, [queryClient]);
@@ -114,6 +122,13 @@ export function useTeacherLiveLocations(
             );
             if (!parsed.success || parsed.data.sessionId !== sessionId) return;
             const sample = parsed.data;
+            // A fresh fix supersedes an earlier device problem report.
+            setDeviceStatuses((current) => {
+              if (!current[userId]) return current;
+              const next = { ...current };
+              delete next[userId];
+              return next;
+            });
             setPositions((current) => {
               const previous = current[userId];
               if (previous && previous.seq >= sample.seq) return current;
@@ -128,6 +143,18 @@ export function useTeacherLiveLocations(
                 },
               };
             });
+          })
+          .on("broadcast", { event: "location.status" }, (message) => {
+            const parsed = locationStatusMessageSchema.safeParse(
+              message.payload,
+            );
+            if (!parsed.success || parsed.data.sessionId !== sessionId) return;
+            const status = parsed.data.status;
+            setDeviceStatuses((current) =>
+              current[userId] === status
+                ? current
+                : { ...current, [userId]: status },
+            );
           })
           .subscribe();
         channels.push(channel);
@@ -154,6 +181,7 @@ export function useTeacherLiveLocations(
   return {
     snapshot: query.data,
     positions: publishing ? positions : {},
+    deviceStatuses: publishing ? deviceStatuses : {},
     realtime,
     error: query.error,
   };

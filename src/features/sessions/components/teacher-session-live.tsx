@@ -9,6 +9,7 @@ import {
   History,
   Loader2,
   LocateFixed,
+  LocateOff,
   MapPinOff,
   Pause,
   Play,
@@ -51,6 +52,7 @@ import {
   activationBlock,
   currentQueueEntry,
   isPositionStale,
+  LOW_ACCURACY_M,
   liveLocationRows,
   nextQueueEntry,
   positionAgeLabel,
@@ -811,7 +813,11 @@ function LiveLocationPanel({
   onRetry: () => void;
 }) {
   const now = useNow(1_000);
-  const rows = liveLocationRows(locations.snapshot, locations.positions);
+  const rows = liveLocationRows(
+    locations.snapshot,
+    locations.positions,
+    locations.deviceStatuses,
+  );
   const activeGroup = locations.snapshot?.activeGroupId
     ? live.queue.find(
         (entry) => entry.groupId === locations.snapshot?.activeGroupId,
@@ -970,11 +976,28 @@ function LiveLocationListItem({
           </span>
         ) : (
           <span className="text-muted-foreground block text-[13px]">
-            ยังไม่ได้รับตำแหน่ง
+            {row.deviceStatus === "denied"
+              ? "เครื่องนักเรียนปิดสิทธิ์ตำแหน่ง · ให้นักเรียนเปิดสิทธิ์แล้วโหลดหน้าใหม่"
+              : row.deviceStatus === "unavailable"
+                ? "เครื่องนักเรียนหาตำแหน่งไม่ได้ · ให้ออกไปที่โล่งแล้วรอสักครู่"
+                : "ยังไม่ได้รับตำแหน่ง"}
           </span>
         )}
+        {row.position && row.position.accuracyM > LOW_ACCURACY_M ? (
+          <span className="block text-[13px] font-medium text-[#7A4B00]">
+            ความแม่นยำต่ำ · ตำแหน่งจริงอาจห่างได้ถึง{" "}
+            {accuracyLabel(row.position.accuracyM)}
+          </span>
+        ) : null}
       </span>
-      {!row.position ? (
+      {row.deviceStatus && (!row.position || stale) ? (
+        <span className="inline-flex min-h-7 items-center gap-1 rounded-full border border-[#E8C48A] bg-[#FFF6E5] px-2.5 text-[13px] font-medium text-[#7A4B00]">
+          <LocateOff aria-hidden="true" className="size-3.5" />
+          {row.deviceStatus === "denied"
+            ? "ปิดสิทธิ์ตำแหน่ง"
+            : "หาตำแหน่งไม่ได้"}
+        </span>
+      ) : !row.position ? (
         <span className="border-border text-muted-foreground inline-flex min-h-7 items-center gap-1 rounded-full border px-2.5 text-[13px]">
           <MapPinOff aria-hidden="true" className="size-3.5" />
           ยังไม่มีตำแหน่ง

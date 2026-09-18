@@ -114,7 +114,12 @@ export interface LiveLocationRow {
   displayName: string;
   roleAtStart: "leader" | "member";
   position: LivePositionView | null;
+  /** Device-reported problem (permission denied or no fix), if any. */
+  deviceStatus: "denied" | "unavailable" | null;
 }
+
+/** Fixes less precise than this are flagged for the teacher; never hidden. */
+export const LOW_ACCURACY_M = 50;
 
 function recordedAtMs(value: string) {
   const parsed = Date.parse(value);
@@ -129,6 +134,7 @@ function recordedAtMs(value: string) {
 export function liveLocationRows(
   snapshot: SessionLiveLocations | undefined,
   positions: Record<string, LivePositionView>,
+  deviceStatuses: Record<string, "denied" | "unavailable"> = {},
 ): LiveLocationRow[] {
   if (!snapshot?.publishing) return [];
   return snapshot.items.map((item) => {
@@ -159,6 +165,7 @@ export function liveLocationRows(
       displayName: item.displayName,
       roleAtStart: item.roleAtStart,
       position,
+      deviceStatus: deviceStatuses[item.userId] ?? null,
     };
   });
 }
