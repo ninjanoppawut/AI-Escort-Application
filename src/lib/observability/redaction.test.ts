@@ -52,6 +52,15 @@ describe("telemetry redaction", () => {
     });
   });
 
+  it("redacts image storage paths (P9)", () => {
+    expect(
+      redactTelemetry({
+        storagePath: "class/session/obs/media.webp",
+        category: "leaf",
+      }),
+    ).toEqual({ storagePath: "[REDACTED]", category: "leaf" });
+  });
+
   it("redacts live-location sample fields (P7-03)", () => {
     expect(
       redactTelemetry({

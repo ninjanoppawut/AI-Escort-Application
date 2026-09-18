@@ -181,6 +181,54 @@ Implementation choices to confirm:
 43. `research_events.observation_id` restricts deletion, so P14 retention must
     transform events before deleting observations.
 
+### Phase 9 observation images
+
+Owner decisions (conservative defaults are implemented):
+
+44. **Every image is re-encoded**, which removes EXIF, GPS, device, and
+    timestamp metadata; capture time and place come only from the observation
+    (PRD §16, PRIVACY §4). Confirm this more private default (DEC-Q001).
+45. **Gallery photos are allowed** (roadmap P9-04) with no photo-age check and
+    no stored camera-versus-gallery flag. A camera-only rule would affect
+    grading and integrity.
+46. **Images reserved before the group completes but not yet uploaded are
+    refused afterwards**, matching items 34 and 38.
+47. **Smaller display versions** (256/512/1,200 px) need either paid Storage
+    image transformations or client-made copies that double objects and
+    retention work. P9 serves the processed image (at most 2,048 px); P13
+    marker previews depend on this choice.
+48. **Deleting a draft image removes the private object immediately** and
+    writes no event, because teachers never see drafts.
+49. **Signed display URLs last 10 minutes**; hosted CDN behaviour after a delete
+    still needs checking on the hosted project.
+
+Implementation choices to confirm:
+
+50. Observations stay `draft` while images upload; `images_uploading` is left
+    for P10 to set when analysis is requested with images still pending.
+51. Output is WebP when the browser can encode it, otherwise JPEG (iOS Safari),
+    and the object extension follows the stored type.
+52. Every image is re-encoded, even small ones; the design's "compress only
+    above 8 MB" conflicts with D-021, so the decision wins.
+53. The server assigns positions 1–10 and never compacts them. The design's
+    root category, caption, scale reference, and set-primary are not built;
+    the documents define exactly eight categories.
+54. The "keep at least one whole-plant image" delete guard is in the UI only;
+    submission (P11) enforces the rule on the server.
+55. New code `IMAGE_UPLOAD_INCOMPLETE`; dimension violations use
+    `IMAGE_TOO_LARGE` with `reason: "dimensions"`.
+56. `photo_captured` is written by the server when the slot is reserved until
+    P14 adds client-event ingestion; `attempt_count` is reported by the client
+    and bounded.
+57. Media rows restrict deletion of their observation instead of cascading.
+58. Image changes do not bump the observation version, so they never conflict
+    with the notes form.
+59. Browser-to-Storage upload failures never reach the server; the P15
+    flow-health view will need a redacted client error endpoint.
+60. The P10 worker (service role) should re-verify SHA-256, decodability,
+    dimensions, and absence of EXIF before any Gemini call, because the RPCs
+    can be called directly.
+
 ## Local environment note
 
 During the 2026-09-12 run the local Docker engine stopped responding.

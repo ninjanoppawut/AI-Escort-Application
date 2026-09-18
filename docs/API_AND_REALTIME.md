@@ -227,6 +227,7 @@ OBSERVATION_VERSION_CONFLICT
 IMAGE_LIMIT_EXCEEDED
 IMAGE_TOO_LARGE
 INVALID_IMAGE_TYPE
+IMAGE_UPLOAD_INCOMPLETE
 LOCATION_UNAVAILABLE
 ANALYSIS_ALREADY_QUEUED
 AI_ANALYSIS_FAILED
@@ -764,6 +765,44 @@ category: whole_plant | leaf | leaf_underside | stem_trunk | flower | fruit | ha
 ```
 
 At least one `whole_plant` image is required before submission.
+
+P9 implements the upload flow (OBS-005 to OBS-008). The browser processes each
+image (orientation, resize to 2,048 px, re-encode to WebP or JPEG at quality
+0.85–0.82 so EXIF/GPS metadata is dropped, at most 5 MB, SHA-256), reserves a
+slot, uploads straight to the private `observation-images` bucket with the
+student's own session, and then confirms:
+
+- `POST /api/observations/:id/media` with `{ clientMediaId, category,
+  mimeType, byteSize, width, height, sha256, preprocessingVersion, capturedAt }`
+  → `register_observation_media`. Returns `201 created` or `200 existing` (the
+  client media ID is the idempotency key) with the reservation and its upload
+  target `observation-images/{classId}/{sessionId}/{observationId}/{mediaId}.{ext}`.
+  Denials: `IMAGE_LIMIT_EXCEEDED` (409, ten images), `IMAGE_TOO_LARGE` (422,
+  `reason` `bytes` or `dimensions`), `INVALID_IMAGE_TYPE` (422),
+  `VALIDATION_FAILED` (422), `IDEMPOTENCY_KEY_REUSE` (409), and
+  `INVALID_STATUS_TRANSITION` (409) once the group or session completes.
+  Writes one `photo_captured` event.
+- The object upload is allowed by Storage RLS only for the owner, only at a
+  path that exactly matches a pending reservation, and only while the draft is
+  editable; confirmed images cannot be overwritten.
+- `POST /api/observations/:id/media/:mediaId/complete` with `{ attemptCount }`
+  → `complete_observation_media_upload`: verifies the stored object's owner,
+  size, and type, marks the image uploaded, and writes one `image_uploaded`
+  event. A missing or different object returns `IMAGE_UPLOAD_INCOMPLETE` (409,
+  retryable, `reason` `missing` or `mismatch`).
+- `DELETE /api/observations/:id/media/:mediaId` withdraws the image, removes the
+  object with the owner's session, and deletes the row: `200 deleted`, or
+  `202 deleting` when the object removal must be retried.
+- `PATCH /api/observations/:id/media/:mediaId` with `{ category }` changes the
+  category (`updated` or `unchanged`).
+- `GET /api/observations/:id/media` returns the owner's images in position
+  order with `permissions`, `limits`, `summary { uploadedCount, pendingCount,
+  hasWholePlant }`, and a 10-minute signed URL for each uploaded image. Storage
+  paths never appear in list responses or error details.
+
+Images of a draft are visible only to their owner; teachers, classmates, and
+anonymous callers are refused. Observations stay `draft` and keep their version
+while images change.
 
 ## 15. Queue Gemini analysis
 

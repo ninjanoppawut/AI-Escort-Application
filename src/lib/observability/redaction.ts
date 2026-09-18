@@ -2,7 +2,7 @@ const REDACTED = "[REDACTED]";
 const MAX_DEPTH = 12;
 
 const prohibitedKey =
-  /(^|_)(access|refresh)?_?token$|authorization|cookie|password|secret|signed_?url|private_?image|evidence|latitude|longitude|coordinates|live_?location|^(lat|lng|lon|accuracy_?m|heading_?deg|speed_?mps)$|latest_?sample|location_?samples?/i;
+  /(^|_)(access|refresh)?_?token$|authorization|cookie|password|secret|signed_?url|private_?image|evidence|latitude|longitude|coordinates|live_?location|^(lat|lng|lon|accuracy_?m|heading_?deg|speed_?mps)$|latest_?sample|location_?samples?|storage_?path/i;
 
 const jwtLike = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g;
 const sensitiveQuery =

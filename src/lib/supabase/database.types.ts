@@ -1164,6 +1164,91 @@ export type Database = {
           },
         ];
       };
+      observation_media: {
+        Row: {
+          byte_size: number;
+          captured_at: string;
+          category: string;
+          class_id: string;
+          client_media_id: string;
+          created_at: string;
+          height_px: number;
+          id: string;
+          image_hash: string;
+          mime_type: string;
+          observation_id: string;
+          observer_id: string;
+          position: number;
+          preprocessing_version: string;
+          session_id: string;
+          status: string;
+          storage_path: string | null;
+          updated_at: string;
+          upload_attempt_count: number | null;
+          uploaded_at: string | null;
+          width_px: number;
+        };
+        Insert: {
+          byte_size: number;
+          captured_at: string;
+          category: string;
+          class_id: string;
+          client_media_id: string;
+          created_at?: string;
+          height_px: number;
+          id?: string;
+          image_hash: string;
+          mime_type: string;
+          observation_id: string;
+          observer_id: string;
+          position: number;
+          preprocessing_version: string;
+          session_id: string;
+          status?: string;
+          storage_path?: string | null;
+          updated_at?: string;
+          upload_attempt_count?: number | null;
+          uploaded_at?: string | null;
+          width_px: number;
+        };
+        Update: {
+          byte_size?: number;
+          captured_at?: string;
+          category?: string;
+          class_id?: string;
+          client_media_id?: string;
+          created_at?: string;
+          height_px?: number;
+          id?: string;
+          image_hash?: string;
+          mime_type?: string;
+          observation_id?: string;
+          observer_id?: string;
+          position?: number;
+          preprocessing_version?: string;
+          session_id?: string;
+          status?: string;
+          storage_path?: string | null;
+          updated_at?: string;
+          upload_attempt_count?: number | null;
+          uploaded_at?: string | null;
+          width_px?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observation_media_observation_fk";
+            columns: [
+              "observation_id",
+              "observer_id",
+              "class_id",
+              "session_id",
+            ];
+            isOneToOne: false;
+            referencedRelation: "observations";
+            referencedColumns: ["id", "observer_id", "class_id", "session_id"];
+          },
+        ];
+      };
       observation_status_history: {
         Row: {
           changed_by: string | null;
@@ -1912,6 +1997,19 @@ export type Database = {
           status: string;
         }[];
       };
+      complete_observation_media_upload: {
+        Args: {
+          attempt_count: number;
+          target_media_id: string;
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          media: Json;
+          outcome: string;
+        }[];
+      };
       complete_session_group: {
         Args: { target_group_id: string; target_session_id: string };
         Returns: {
@@ -2027,6 +2125,15 @@ export type Database = {
           invitation_id: string;
           outcome: string;
           status: string;
+        }[];
+      };
+      delete_observation_media: {
+        Args: { target_media_id: string; target_observation_id: string };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          media: Json;
+          outcome: string;
         }[];
       };
       delete_or_archive_group: {
@@ -2188,6 +2295,10 @@ export type Database = {
         Args: { target_session_id: string };
         Returns: Json;
       };
+      list_observation_media: {
+        Args: { target_observation_id: string };
+        Returns: Json;
+      };
       lock_group: {
         Args: { target_group_id: string };
         Returns: {
@@ -2282,6 +2393,26 @@ export type Database = {
           outcome: string;
           retry_after_s: number;
           sample_id: string;
+        }[];
+      };
+      register_observation_media: {
+        Args: {
+          media_byte_size: number;
+          media_captured_at: string;
+          media_category: string;
+          media_hash: string;
+          media_height: number;
+          media_mime_type: string;
+          media_preprocessing_version: string;
+          media_width: number;
+          target_client_media_id: string;
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          media: Json;
+          outcome: string;
         }[];
       };
       remove_group_member: {
@@ -2450,6 +2581,19 @@ export type Database = {
           error_code: string;
           error_details: Json;
           observation_version: number;
+          outcome: string;
+        }[];
+      };
+      update_observation_media_category: {
+        Args: {
+          media_category: string;
+          target_media_id: string;
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          media: Json;
           outcome: string;
         }[];
       };

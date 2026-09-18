@@ -168,6 +168,7 @@ All errors show an accessible title, explanation, and safe action. Developer det
 | `IMAGE_LIMIT_EXCEEDED` | เพิ่มรูปได้สูงสุด 10 รูป | ลบรูปก่อนเพิ่ม |
 | `IMAGE_TOO_LARGE` | รูปยังมีขนาดใหญ่เกินไป | ประมวลผล/เลือกรูปใหม่ |
 | `INVALID_IMAGE_TYPE` | ไม่รองรับไฟล์รูปนี้ | เลือกรูปใหม่ |
+| `IMAGE_UPLOAD_INCOMPLETE` | ภาพยังส่งไม่ครบ | ส่งภาพนี้อีกครั้ง |
 | `LOCATION_UNAVAILABLE` | ยังหาตำแหน่งไม่ได้ | รอ/ลองใหม่/บันทึกแบบมีธง |
 | `ANALYSIS_ALREADY_QUEUED` | ส่งให้ AI วิเคราะห์แล้ว | ดูสถานะการวิเคราะห์ |
 | `AI_ANALYSIS_FAILED` | AI วิเคราะห์ไม่สำเร็จ | ลองใหม่ / กรอกเอง |
