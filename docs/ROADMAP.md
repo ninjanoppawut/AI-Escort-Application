@@ -5,8 +5,10 @@
 - Product, architecture, database, API, decision, module, and design specifications exist.
 - The pinned Next.js/Supabase foundation is implemented locally.
 - The CLI is linked to the dedicated hosted project `rhntelxdmuvldrxyceqx`.
-- Phase 1 identity and provisioning foundations are in progress; the first
-  migration is deployed to the linked hosted development project.
+- Phases 1–6 and P7-01 to P7-03 are verified locally and in hosted CI except
+  the owner-blocked P0-09, P0-EXIT, and P1-01; only
+  the first identity migration is deployed to the linked hosted development
+  project (later migrations await owner approval).
 
 ## How to use this roadmap
 
@@ -1062,44 +1064,132 @@ Create Group within 15 seconds without reload or interaction (well inside the
 
 Requirements: `GRP-007`–`GRP-009` plus relevant NOT requirements.
 
-- [ ] **P4-01:** Add group invitation schema, expiry/status rules, RLS, and history.
-- [ ] **P4-02:** Implement eligible-classmate search and send/cancel actions for the current leader.
-- [ ] **P4-03:** Implement atomic accept/decline with capacity and membership revalidation.
-- [ ] **P4-04:** Implement readiness and atomic leadership transfer.
-- [ ] **P4-05:** Deliver invitation/group notifications and handle stale/race states.
-- [ ] **P4-06:** Pass invitation acceptance race, capacity, one-leader, and one-group tests.
-- [ ] **P4-EXIT:** Consent-based invitation and transfer flows cannot violate membership or leadership invariants.
+- [x] **P4-01:** Add group invitation schema, expiry/status rules, RLS, and history.
+- [x] **P4-02:** Implement eligible-classmate search and send/cancel actions for the current leader.
+- [x] **P4-03:** Implement atomic accept/decline with capacity and membership revalidation.
+- [x] **P4-04:** Implement readiness and atomic leadership transfer.
+- [x] **P4-05:** Deliver invitation/group notifications and handle stale/race states.
+- [x] **P4-06:** Pass invitation acceptance race, capacity, one-leader, and one-group tests.
+- [x] **P4-EXIT:** Consent-based invitation and transfer flows cannot violate membership or leadership invariants.
+
+P4 status: complete as of 2026-09-19. Evidence:
+- Implementation: `3abb1df` (P4-01 schema, RLS, signals), `79ea488`
+  (P4-02/P4-03 invitation operations), `83a98e3` and `4d33401` (invitation
+  screens, readiness and leadership operations, leader actions UI, concurrency
+  suite), `608c3da` and `8584673` (race capacity and event-count fixes);
+  contracts and owner-confirmation items in `e89075d`.
+- Tests: `phase4_group_invitations_foundation_test.sql` (30),
+  `phase4_group_invitation_operations_test.sql` (50),
+  `phase4_group_leadership_operations_test.sql` (30),
+  `phase4_group_concurrency_test.sql` (12, dblink acceptance and capacity
+  races, one leader, one current group); `src/features/groups/invitations.test.ts`,
+  `leadership.test.ts`, and the group detail, invitation, and leader-action
+  component tests; Playwright `tests/e2e/group-invitations.spec.ts` (leader
+  invites, invitee races two acceptances, exactly one join commits).
+- Commands: `npm run format:check`; `npm run lint`; `npm run typecheck`;
+  `npm test`; `npm run build`; `npx supabase test db --local`;
+  `npx playwright test --project=database-restart`.
+- CI: every run from P4-01 to `937687d` was red; the fixes in `4e195c4`,
+  `b87ab73`, and `fb76faf` made the suite green: hosted CI run `35378306046` on `fb76faf` passed `quality`, `database`, and `browser-smoke` on 2026-09-19.
+- Remaining risk: invitation lifetime, closed-formation behavior, and
+  notification gaps are listed for owner confirmation in
+  `OWNER_QUESTIONS_PENDING.md` items 1–8.
 
 ## Phase 5 — Teacher group management
 
 Requirements: `MGT-001`–`MGT-009`.
 
-- [ ] **P5-01:** Build group/unassigned-student board and manual group creation within the absolute limit.
-- [ ] **P5-02:** Implement atomic member move/remove with successor selection.
-- [ ] **P5-03:** Implement approve, lock/unlock, leader change, and audited creation-claim reset.
-- [ ] **P5-04:** Implement delete-unused versus archive-historical behavior and invitation cancellation.
-- [ ] **P5-05:** Emit histories, events, notifications, and Realtime invalidation after commit.
-- [ ] **P5-06:** Pass capacity, cross-class, leader, active-session, delete/archive, and concurrency tests.
-- [ ] **P5-EXIT:** Teachers reorganize groups without corrupting current invariants or session history.
+- [x] **P5-01:** Build group/unassigned-student board and manual group creation within the absolute limit.
+- [x] **P5-02:** Implement atomic member move/remove with successor selection.
+- [x] **P5-03:** Implement approve, lock/unlock, leader change, and audited creation-claim reset.
+- [x] **P5-04:** Implement delete-unused versus archive-historical behavior and invitation cancellation.
+- [x] **P5-05:** Emit histories, events, notifications, and Realtime invalidation after commit.
+- [x] **P5-06:** Pass capacity, cross-class, leader, active-session, delete/archive, and concurrency tests.
+- [x] **P5-EXIT:** Teachers reorganize groups without corrupting current invariants or session history.
+
+P5 status: complete as of 2026-09-19. Evidence:
+- Implementation: `e18085d` (teacher group creation within the absolute
+  limit, atomic moves with successor), `c187a1f` (approve, lock/unlock,
+  leader change, audited claim reset, delete-or-archive, teacher board UI),
+  `8584673` and `3948a02` (race and journey fixes).
+- Tests: `phase5_teacher_group_operations_test.sql` (25),
+  `phase5_group_review_and_lifecycle_test.sql` (27),
+  `phase5_group_management_concurrency_test.sql` (9, teacher-versus-student
+  final-slot and final-seat move races); active-session refusals are covered
+  again by `phase6_session_open_test.sql` now that real sessions exist;
+  `src/features/groups/teacher.test.ts`, `teacher-actions.test.ts`,
+  `lifecycle.test.ts`; Playwright `tests/e2e/teacher-group-management.spec.ts`.
+- Histories, audit rows, research events, notifications, and class-group
+  signals after commit are asserted in the lifecycle suite and
+  `phase3_class_group_realtime_test.sql`.
+- CI: hosted CI run `35378306046` on `fb76faf` passed `quality`, `database`, and `browser-smoke` on 2026-09-19.
+- Remaining risk: lock, claim-reset, and delete-or-archive choices are listed
+  in `OWNER_QUESTIONS_PENDING.md` items 9–13.
 
 ## Phase 6 — Activities, geometry, and snapshots
 
 Requirements: `SES-001`–`SES-003`.
 
-- [ ] **P6-01:** Add PostGIS extension/migrations and activity, geometry, session, and participant-snapshot schema/RLS.
-- [ ] **P6-02:** Implement activity and geometry authoring with Zod/PostGIS validation.
-- [ ] **P6-03:** Implement session creation/open with an immutable membership/leadership snapshot.
-- [ ] **P6-04:** Build activity/session setup flows and invalid-geometry/failure states.
-- [ ] **P6-05:** Pass geometry, authorization, and snapshot-preservation tests.
-- [ ] **P6-EXIT:** Later group changes cannot alter an opened session's participant history.
+- [x] **P6-01:** Add PostGIS extension/migrations and activity, geometry, session, and participant-snapshot schema/RLS.
+- [x] **P6-02:** Implement activity and geometry authoring with Zod/PostGIS validation.
+- [x] **P6-03:** Implement session creation/open with an immutable membership/leadership snapshot.
+- [x] **P6-04:** Build activity/session setup flows and invalid-geometry/failure states.
+- [x] **P6-05:** Pass geometry, authorization, and snapshot-preservation tests.
+- [x] **P6-EXIT:** Later group changes cannot alter an opened session's participant history.
+
+P6 status: complete as of 2026-09-19. Evidence:
+- Implementation: `f2d48cf` (PostGIS, activities, immutable versions,
+  boundary/route/checkpoint tables, sessions, snapshot tables, RLS),
+  `9276ba9` (GeoJSON authoring, Zod/PostGIS validation, publish), `deee24f`
+  (session scheduling and the immutable open snapshot), `937687d` (ordering
+  and journey fixes).
+- Tests: `phase6_activity_session_foundation_test.sql` (30),
+  `phase6_activity_authoring_test.sql` (23), `phase6_session_open_test.sql`
+  (22, snapshot contents, replay, running-session refusal, snapshot
+  preservation after later group changes); `src/features/activities/*.test.ts`,
+  `src/features/sessions/contracts.test.ts`; Playwright
+  `tests/e2e/activity-session-setup.spec.ts` (publish, open, snapshot survives
+  later group changes).
+- P6-04 builds the setup flows with GeoJSON paste/import and a coordinate
+  sketch; drawing on a base map waits for the Mapbox token
+  (`OWNER_QUESTIONS_PENDING.md` item 18).
+- CI: hosted CI run `35378306046` on `fb76faf` passed `quality`, `database`, and `browser-smoke` on 2026-09-19.
 
 ## Phase 7 — Session control and live map
 
 Requirements: `SES-004`–`SES-010`.
 
-- [ ] **P7-01:** Add session-group state constraints and partial unique index for one active group.
-- [ ] **P7-02:** Implement secure open/activate/pause/resume/group-complete/session-complete operations.
-- [ ] **P7-03:** Implement private Presence/Broadcast authorization and location lifecycle.
+- [x] **P7-01:** Add session-group state constraints and partial unique index for one active group.
+- [x] **P7-02:** Implement secure open/activate/pause/resume/group-complete/session-complete operations.
+- [x] **P7-03:** Implement private Presence/Broadcast authorization and location lifecycle.
+
+P7-01 to P7-03 status: complete as of 2026-09-19. Evidence:
+- P7-01/P7-02: `937687d` (partial unique index, activate/pause/resume/
+  complete RPCs, read models), `4e195c4` (next group promoted and notified on
+  activation), `fb76faf` (typed routes `activate-group`, `pause`, `resume`,
+  `groups/:groupId/complete`, `complete`, `group-queue`, `participant`).
+  Tests: `phase7_session_control_test.sql` (23),
+  `src/features/sessions/session-control.test.ts`.
+- P7-03: `fb76faf` (`20260918020000_phase7_live_location_realtime.sql`:
+  private group/teachers/location topics, publish rule, six
+  `realtime.messages` policies, signal triggers, append-only
+  `location_events`, `record_live_location_sample`,
+  `get_session_live_locations`; client publisher and teacher hooks;
+  redaction of coordinate keys). Tests:
+  `phase7_live_location_realtime_test.sql` (41),
+  `phase7_location_samples_test.sql` (19),
+  `src/features/sessions/live-location/live-location.test.ts`,
+  `src/lib/observability/redaction.test.ts`, and Playwright
+  `tests/e2e/live-location-channels.spec.ts` against local Realtime (teacher
+  receives the owner's broadcast, a groupmate and a waiting student are
+  refused, pause signals the teachers topic and refuses a fresh join).
+- Commands: `npx supabase test db --local` (26 files, 776 tests);
+  `npx supabase db lint --local --schema public,private --level warning
+  --fail-on error`; `npx supabase db advisors --local --type all --level warn
+  --fail-on error` (no issues); `npm test` (42 files, 183 tests).
+- CI: hosted CI run `35378306046` on `fb76faf` passed `quality`, `database`, and `browser-smoke` on 2026-09-19.
+- Remaining risk: owner confirmation items 22–33 in
+  `OWNER_QUESTIONS_PENDING.md`; the student and teacher screens are P7-04.
 - [ ] **P7-04:** Build student waiting/field shells and teacher queue/live-map controls.
 - [ ] **P7-05:** Add location freshness/accuracy, offline/reconnect, and activation-race states.
 - [ ] **P7-06:** Pass active-group concurrency, channel isolation, publish-stop, and map tests.
