@@ -38,6 +38,7 @@ import {
   type ObservationDraft,
 } from "../contracts";
 import { draftAfterSave } from "../draft-form";
+import { ObservationMediaSection } from "../media/components/observation-media-section";
 import {
   OBSERVATION_BLOCKED_REASON_LABELS,
   OBSERVATION_ERROR_PRESENTATIONS,
@@ -256,6 +257,8 @@ export function ObservationDraftScreen({
         ) : null}
 
         <CaptureCard capture={draft.capture} />
+
+        <ObservationMediaSection observationId={observationId} />
 
         <DraftNotesForm
           observation={draft}
