@@ -5,7 +5,7 @@
 - Product, architecture, database, API, decision, module, and design specifications exist.
 - The pinned Next.js/Supabase foundation is implemented locally.
 - The CLI is linked to the dedicated hosted project `rhntelxdmuvldrxyceqx`.
-- Phases 1–7 and P8-01 to P8-03 are verified locally and in hosted CI except
+- Phases 1–8 are verified locally and in hosted CI except
   the owner-blocked P0-09, P0-EXIT, and P1-01; only
   the first identity migration is deployed to the linked hosted development
   project (later migrations await owner approval).
@@ -1253,9 +1253,28 @@ browser evidence pending). Evidence:
   `4368efd`.
 - Remaining risk: owner decisions 34–38 and confirmations 39–43 in
   `OWNER_QUESTIONS_PENDING.md`.
-- [ ] **P8-04:** Build private draft, GPS warning/retry, conflict, and permission states.
-- [ ] **P8-05:** Pass ownership, activity-state, idempotency, GPS, and version-conflict tests.
-- [ ] **P8-EXIT:** One student owns a recoverable private draft with authoritative capture metadata.
+- [x] **P8-04:** Build private draft, GPS warning/retry, conflict, and permission states.
+- [x] **P8-05:** Pass ownership, activity-state, idempotency, GPS, and version-conflict tests.
+- [x] **P8-EXIT:** One student owns a recoverable private draft with authoritative capture metadata.
+
+P8-04 to P8-EXIT status: complete as of 2026-09-19. Evidence:
+- P8-04: `9869942` (session observations panel in the student shell; capture
+  sheet with locating, good, weak, denied, unavailable, offline, and resend
+  states; owner draft page with private badge, capture card, versioned notes
+  form, and conflict dialog). Tests: `capture-and-draft.test.ts`,
+  `start-observation-sheet.test.tsx`, `session-observations-panel.test.tsx`,
+  `observation-draft-screen.test.tsx`, `observation-status-badge.test.tsx`,
+  and Playwright `tests/e2e/observation-draft.spec.ts` at 390 px (start,
+  reload keeps the draft, weak fix still creates a draft, two-tab conflict,
+  teacher denied, waiting group blocked).
+- P8-05: ownership, activity-state, idempotency, GPS, and version-conflict
+  coverage across `phase8_observation_test.sql`,
+  `phase8_observation_concurrency_test.sql`, the unit suites, and the browser
+  journey.
+- P8-EXIT: one student owns a private draft that survives reload, with
+  immutable server-validated capture metadata.
+- CI: hosted CI run `35389698322` on `9869942` passed `quality`,
+  `database`, and `browser-smoke` on 2026-09-19.
 
 ## Phase 9 — Image and Storage pipeline
 
