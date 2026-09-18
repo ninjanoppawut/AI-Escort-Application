@@ -6,7 +6,7 @@ existing documents that the owner should confirm. It does not replace
 `DECISIONS_AND_QUESTIONS.md`; accepted answers move there with the affected
 module, traceability, and roadmap updates in the same change.
 
-Last updated: 2026-09-12.
+Last updated: 2026-09-19.
 
 ## Blocked on external access or environment ownership
 
@@ -14,7 +14,7 @@ Last updated: 2026-09-12.
 |---|---|---|
 | P0-09, P0-EXIT | Production custom SMTP, deployed Auth redirect allowlists, and the environment matrix need the hosted Supabase and deployment accounts. | An environment owner configures custom SMTP and redirect allowlists on the dedicated hosted project, then records staging email delivery evidence. |
 | P1-01 | Same hosted Auth configuration as P0-09 (SMTP, redirect allowlists, CAPTCHA/rate policy). | Same as above; local and CI Auth flows already pass against local Supabase and Mailpit. |
-| Hosted migrations | Phase 1–4 migrations after the first identity migration are verified locally and in CI but not applied to hosted project `rhntelxdmuvldrxyceqx`. | Owner approval to push migrations to the hosted development project (`supabase db push`). |
+| Hosted migrations | Phase 1–7 migrations after the first identity migration are verified locally and in CI but not applied to hosted project `rhntelxdmuvldrxyceqx`. | Owner approval to push migrations to the hosted development project (`supabase db push`). |
 | P10 (Gemini) | Requires a Gemini API key, model choice, and budget (DEC-Q003). | Owner provides server-only credentials and approves model and limits. |
 | Mapbox map screens (P6, P7, P13) | Requires a Mapbox access token. | Owner provides a restricted public token for development. |
 
@@ -101,6 +101,39 @@ contract was silent. Each can be changed without data loss.
     silently snapshotting a stale roster.
 21. **Session lists are visible to the whole class**, but only teachers read the
     setup screen, and participants read only their own session roster.
+22. **The next group is promoted when the current group starts.** Activation
+    marks the next waiting group `ready` ("กลุ่มถัดไป") and sends
+    `session_group_next`; completing a group reports the ready group and
+    promotes one only if none is waiting in line.
+23. **Live positions use a per-student topic**
+    `session:{sessionId}:location:{userId}` (additive to API §19). Realtime
+    cannot verify a client sender and delivers to every reader, so this is the
+    only way to keep named coordinates visible to just the student and the
+    class teacher.
+24. **Every active teacher of the class sees named live locations**, not only
+    the teacher who opened the session.
+25. **While paused, the teacher sees no last-known positions**; the live read
+    model returns an empty list until the group is active again.
+26. **Publishing stops when the page is hidden** and nothing is queued
+    offline. Background tracking inside a session is not built.
+27. **Working cadences**: broadcast about every 3 s while moving (3 m minimum
+    movement) with a 15 s heartbeat; durable sample every 15 s; the database
+    accepts at most one sample per 8 s and capture times within ±120 s; the
+    teacher read model shows samples from the last 10 minutes.
+28. **Design T-09 per-session live-tracking toggle is not built.** It is not in
+    the PRD, API, or database documents and is a privacy/consent choice tied to
+    DEC-Q001.
+29. **Thai copy for the field-mode location notice** (PRIVACY §3) is missing
+    from `UI_CONTRACTS.md`; P7-04 needs it before the student shell ships.
+30. **Boundary-warning and checkpoint events** (`location_events` types and the
+    `location_session_warning` producer) are deferred to P7-05 or later; their
+    thresholds and throttling are undecided.
+31. **Stale-location threshold** differs between the design brief (30 s) and the
+    wireframes (2 min); P7-05 needs one value.
+32. **Hosted Realtime "Allow public access" must be off** for GATE-03; this is
+    an environment-owner setting.
+33. **Realtime capacity**: roughly 85 messages/s at the 50-session envelope
+    needs a check against the Supabase plan limits and the pilot budget.
 
 ## Local environment note
 
@@ -109,3 +142,8 @@ Database, generated-type, and browser verification continued in hosted CI.
 Docker Desktop was not force-restarted because other local projects share it;
 restarting Docker Desktop restores local `supabase test db`, the PowerShell
 race harnesses, and local Playwright runs.
+
+On 2026-09-19 the recurring browser failures were traced to the P2-EXIT
+durability test, which restarts the local database container while other
+browser tests run in parallel. It now runs in its own `database-restart`
+Playwright project after the other projects finish.

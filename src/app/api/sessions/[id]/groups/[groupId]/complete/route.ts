@@ -1,0 +1,32 @@
+import { NextRequest } from "next/server";
+
+import { activityApiError } from "@/features/activities/errors";
+import { hasSafeRequestOrigin } from "@/features/auth/server/request";
+import { sessionGroupParamSchema } from "@/features/sessions/contracts";
+import { completeSessionGroup } from "@/features/sessions/server/operations";
+import { createRequestContext } from "@/lib/http/request-context";
+import { jsonError, jsonSuccess } from "@/lib/http/route-response";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ id: string; groupId: string }> },
+) {
+  const { requestId } = createRequestContext(request.headers);
+  if (!hasSafeRequestOrigin(request)) {
+    return jsonError(activityApiError("FORBIDDEN"), requestId, 403);
+  }
+
+  const params = sessionGroupParamSchema.safeParse(await context.params);
+  if (!params.success) {
+    return jsonError(activityApiError("FORBIDDEN"), requestId, 404);
+  }
+
+  const result = await completeSessionGroup(
+    await createSupabaseServerClient(),
+    params.data.id,
+    params.data.groupId,
+  );
+  if (result.error) return jsonError(result.error, requestId, result.status);
+  return jsonSuccess(result.data, requestId);
+}

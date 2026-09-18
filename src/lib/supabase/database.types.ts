@@ -954,6 +954,63 @@ export type Database = {
           },
         ];
       };
+      location_events: {
+        Row: {
+          accuracy_m: number | null;
+          class_id: string;
+          client_sample_id: string;
+          device_context: Json;
+          event_type: string;
+          id: string;
+          location: unknown;
+          received_at: string;
+          recorded_at: string;
+          session_id: string;
+          session_participant_id: string;
+        };
+        Insert: {
+          accuracy_m?: number | null;
+          class_id: string;
+          client_sample_id: string;
+          device_context?: Json;
+          event_type?: string;
+          id?: string;
+          location?: unknown;
+          received_at?: string;
+          recorded_at: string;
+          session_id: string;
+          session_participant_id: string;
+        };
+        Update: {
+          accuracy_m?: number | null;
+          class_id?: string;
+          client_sample_id?: string;
+          device_context?: Json;
+          event_type?: string;
+          id?: string;
+          location?: unknown;
+          received_at?: string;
+          recorded_at?: string;
+          session_id?: string;
+          session_participant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "location_events_participant_session_fk";
+            columns: ["session_participant_id", "session_id"];
+            isOneToOne: false;
+            referencedRelation: "session_participants";
+            referencedColumns: ["id", "session_id"];
+          },
+          {
+            foreignKeyName: "location_events_session_class_fk";
+            columns: ["session_id", "class_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_sessions";
+            referencedColumns: ["id", "class_id"];
+          },
+        ];
+      };
       notification_types: {
         Row: {
           copy_key: string;
@@ -1842,6 +1899,10 @@ export type Database = {
         Returns: Json;
       };
       get_session_live: { Args: { target_session_id: string }; Returns: Json };
+      get_session_live_locations: {
+        Args: { target_session_id: string };
+        Returns: Json;
+      };
       get_session_participant_view: {
         Args: { target_session_id: string };
         Returns: Json;
@@ -2033,6 +2094,23 @@ export type Database = {
           error_details: Json;
           outcome: string;
           version_number: number;
+        }[];
+      };
+      record_live_location_sample: {
+        Args: {
+          sample_accuracy_m: number;
+          sample_lat: number;
+          sample_lng: number;
+          sample_recorded_at: string;
+          target_client_sample_id: string;
+          target_session_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          outcome: string;
+          retry_after_s: number;
+          sample_id: string;
         }[];
       };
       remove_group_member: {

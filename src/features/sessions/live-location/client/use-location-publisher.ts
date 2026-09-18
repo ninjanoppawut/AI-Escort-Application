@@ -1,0 +1,269 @@
+"use client";
+
+import { useQueryClient } from "@tanstack/react-query";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+
+import { sessionQueryKeys } from "@/features/sessions/contracts";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+import {
+  sessionGroupTopic,
+  sessionLocationTopic,
+  type LocationSampleMessage,
+} from "../contracts";
+import {
+  fixFromPosition,
+  isPublishStopStatus,
+  shouldBroadcast,
+  shouldPublish,
+  shouldRecordDurable,
+  type SentFix,
+} from "../publisher";
+import { useSessionSignals } from "./use-session-signals";
+
+export type LocationPublisherStatus =
+  "off" | "starting" | "publishing" | "denied" | "unavailable";
+
+function subscribeVisibility(onChange: () => void) {
+  document.addEventListener("visibilitychange", onChange);
+  return () => document.removeEventListener("visibilitychange", onChange);
+}
+
+function usePageVisible() {
+  return useSyncExternalStore(
+    subscribeVisibility,
+    () => document.visibilityState === "visible",
+    () => false,
+  );
+}
+
+function subscribeNothing() {
+  return () => {};
+}
+
+function subscribeOnline(onChange: () => void) {
+  window.addEventListener("online", onChange);
+  window.addEventListener("offline", onChange);
+  return () => {
+    window.removeEventListener("online", onChange);
+    window.removeEventListener("offline", onChange);
+  };
+}
+
+function useOnline() {
+  return useSyncExternalStore(
+    subscribeOnline,
+    () => navigator.onLine,
+    () => false,
+  );
+}
+
+export interface LocationPublisherOptions {
+  sessionId: string;
+  userId: string;
+  groupId: string;
+  /** canPublishLocation from the latest authoritative participant view. */
+  canPublish: boolean;
+  /** refreshedAt of that view; a new value lifts a signal-driven suspension. */
+  viewRefreshedAt: string;
+  noticeAcknowledged: boolean;
+}
+
+/**
+ * Publishes the student's own position on their private location topic and
+ * keeps a throttled durable sample. Any session signal, reconnect, hidden
+ * page, or refused durable sample stops publishing immediately; it restarts
+ * only after a newer participant view still allows it. Nothing is queued
+ * offline and no position is stored on the device.
+ */
+export function useLocationPublisher(
+  options: LocationPublisherOptions,
+): LocationPublisherStatus {
+  const {
+    sessionId,
+    userId,
+    groupId,
+    canPublish,
+    viewRefreshedAt,
+    noticeAcknowledged,
+  } = options;
+  const queryClient = useQueryClient();
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const visible = usePageVisible();
+  const online = useOnline();
+  const [suspendedAt, setSuspendedAt] = useState<string | null>(null);
+  // Status reported by the current publishing run, keyed so a new run starts
+  // from "starting" without resetting state inside the effect.
+  const [runStatus, setRunStatus] = useState<{
+    key: string;
+    value: LocationPublisherStatus;
+  } | null>(null);
+  const geolocationSupported = useSyncExternalStore(
+    subscribeNothing,
+    () => "geolocation" in navigator,
+    () => true,
+  );
+
+  const refetchView = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: sessionQueryKeys.participant(sessionId),
+    });
+  }, [queryClient, sessionId]);
+
+  const suspend = useCallback(() => {
+    setSuspendedAt(viewRefreshedAt);
+    refetchView();
+  }, [refetchView, viewRefreshedAt]);
+
+  const suspendRef = useRef(suspend);
+  useEffect(() => {
+    suspendRef.current = suspend;
+  }, [suspend]);
+
+  useSessionSignals(sessionId, sessionGroupTopic(sessionId, groupId), suspend);
+
+  const active =
+    shouldPublish({ canPublish, noticeAcknowledged, visible, online }) &&
+    suspendedAt !== viewRefreshedAt &&
+    geolocationSupported;
+  const runKey = active ? `${sessionId}:${viewRefreshedAt}` : null;
+
+  useEffect(() => {
+    if (!runKey) return;
+    const key = runKey;
+    const setStatus = (value: LocationPublisherStatus) =>
+      setRunStatus({ key, value });
+
+    let cancelled = false;
+    let watchId: number | null = null;
+    let channel: RealtimeChannel | null = null;
+    let lastSent: SentFix | null = null;
+    let lastDurableAtMs: number | null = null;
+    let seq = 0;
+
+    function stop() {
+      cancelled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      lastSent = null;
+      if (channel) void supabase.removeChannel(channel);
+      channel = null;
+    }
+
+    async function recordDurable(message: LocationSampleMessage) {
+      try {
+        const response = await fetch(
+          `/api/sessions/${sessionId}/location-samples`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              clientSampleId: crypto.randomUUID(),
+              lat: message.lat,
+              lng: message.lng,
+              accuracyM: message.accuracyM,
+              recordedAt: message.recordedAt,
+            }),
+          },
+        );
+        if (!cancelled && isPublishStopStatus(response.status)) {
+          stop();
+          setStatus("off");
+          suspendRef.current();
+        }
+      } catch {
+        // Offline or aborted: the next interval tries again with a new fix.
+      }
+    }
+
+    function sendStatus(value: "denied" | "unavailable") {
+      void channel?.send({
+        type: "broadcast",
+        event: "location.status",
+        payload: {
+          type: "location.status",
+          version: 1,
+          sessionId,
+          status: value,
+        },
+      });
+    }
+
+    async function start() {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled || !data.session) return;
+      await supabase.realtime.setAuth(data.session.access_token);
+      if (cancelled) return;
+
+      channel = supabase
+        .channel(sessionLocationTopic(sessionId, userId), {
+          config: { private: true, broadcast: { self: false, ack: false } },
+        })
+        .subscribe((subscriptionStatus) => {
+          if (cancelled) return;
+          if (
+            subscriptionStatus === "CHANNEL_ERROR" ||
+            subscriptionStatus === "TIMED_OUT" ||
+            subscriptionStatus === "CLOSED"
+          ) {
+            // RLS refuses the join once publishing is no longer allowed.
+            stop();
+            setStatus("off");
+            suspendRef.current();
+          }
+        });
+
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          if (cancelled) return;
+          const fix = fixFromPosition(position);
+          if (!fix) return;
+          setStatus("publishing");
+          const nowMs = Date.now();
+          const message: LocationSampleMessage = {
+            type: "location.sample",
+            version: 1,
+            sessionId,
+            seq: seq++,
+            ...fix,
+          };
+          if (shouldBroadcast(lastSent, fix, nowMs)) {
+            lastSent = { lat: fix.lat, lng: fix.lng, sentAtMs: nowMs };
+            void channel?.send({
+              type: "broadcast",
+              event: "location.sample",
+              payload: message,
+            });
+          }
+          if (shouldRecordDurable(lastDurableAtMs, nowMs)) {
+            lastDurableAtMs = nowMs;
+            void recordDurable(message);
+          }
+        },
+        (error) => {
+          if (cancelled) return;
+          const next =
+            error.code === error.PERMISSION_DENIED ? "denied" : "unavailable";
+          setStatus(next);
+          sendStatus(next);
+        },
+        { enableHighAccuracy: true, maximumAge: 5_000, timeout: 20_000 },
+      );
+    }
+
+    void start();
+    return stop;
+  }, [runKey, sessionId, supabase, userId]);
+
+  if (!geolocationSupported && canPublish) return "unavailable";
+  if (!runKey) return "off";
+  return runStatus?.key === runKey ? runStatus.value : "starting";
+}

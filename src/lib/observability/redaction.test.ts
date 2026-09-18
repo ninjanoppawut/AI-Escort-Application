@@ -51,4 +51,25 @@ describe("telemetry redaction", () => {
       flow: "class-join",
     });
   });
+
+  it("redacts live-location sample fields (P7-03)", () => {
+    expect(
+      redactTelemetry({
+        route: "/api/sessions/:id/location-samples",
+        body: { lat: 13.75, lng: 100.5, accuracyM: 8, headingDeg: 90 },
+        latestSample: { lat: 13.75, lng: 100.5 },
+        queuePosition: 2,
+      }),
+    ).toEqual({
+      route: "/api/sessions/:id/location-samples",
+      body: {
+        lat: "[REDACTED]",
+        lng: "[REDACTED]",
+        accuracyM: "[REDACTED]",
+        headingDeg: "[REDACTED]",
+      },
+      latestSample: "[REDACTED]",
+      queuePosition: 2,
+    });
+  });
 });

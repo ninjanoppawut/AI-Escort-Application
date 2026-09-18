@@ -12,6 +12,10 @@ export const ACTIVITY_UI_ERROR_CODES = [
   "ACTIVITY_VERSION_CONFLICT",
   "ACTIVITY_NOT_PUBLISHED",
   "SESSION_ALREADY_RUNNING",
+  "SESSION_NOT_OPEN",
+  "SESSION_PAUSED",
+  "ACTIVE_GROUP_CONFLICT",
+  "GROUP_NOT_ACTIVE",
   "INVALID_STATUS_TRANSITION",
   "RATE_LIMITED",
 ] as const satisfies readonly ApiErrorCode[];
@@ -83,6 +87,28 @@ export const ACTIVITY_ERROR_PRESENTATIONS: Record<
     title: "มีรอบสำรวจที่เปิดอยู่แล้ว",
     description: "จบรอบสำรวจเดิมของชั้นเรียนนี้ก่อนเปิดรอบใหม่",
     action: "ดูรอบที่เปิดอยู่",
+  },
+  SESSION_NOT_OPEN: {
+    title: "กิจกรรมยังไม่เปิด",
+    description: "รอบสำรวจนี้ยังไม่เปิดหรือจบไปแล้ว รีเฟรชสถานะก่อนทำรายการ",
+    action: "กลับหน้ารอ",
+  },
+  SESSION_PAUSED: {
+    title: "กิจกรรมหยุดชั่วคราว",
+    description:
+      "ร่างที่บันทึกไว้ยังอยู่ ต้องเปิดรอบต่อก่อนจึงจะเริ่มกลุ่มหรือส่งงานได้",
+    action: "บันทึกร่างและรอครู",
+  },
+  ACTIVE_GROUP_CONFLICT: {
+    title: "มีกลุ่มอื่นเริ่มสำรวจก่อนแล้ว",
+    description:
+      "รอบสำรวจมีกลุ่มที่กำลังสำรวจได้ครั้งละหนึ่งกลุ่ม จบกลุ่มเดิมก่อนเริ่มกลุ่มใหม่",
+    action: "รีเฟรชสถานะ",
+  },
+  GROUP_NOT_ACTIVE: {
+    title: "ยังไม่ถึงรอบกลุ่มของคุณ",
+    description: "หยุดส่งตำแหน่งแล้ว รอครูเริ่มรอบของกลุ่มคุณ",
+    action: "กลับหน้ารอ",
   },
   INVALID_STATUS_TRANSITION: {
     title: "สถานะเปลี่ยนไปแล้ว",
@@ -182,6 +208,10 @@ export function httpStatusForActivityError(code: ActivityUiErrorCode) {
     case "ACTIVITY_VERSION_CONFLICT":
     case "ACTIVITY_NOT_PUBLISHED":
     case "SESSION_ALREADY_RUNNING":
+    case "SESSION_NOT_OPEN":
+    case "SESSION_PAUSED":
+    case "ACTIVE_GROUP_CONFLICT":
+    case "GROUP_NOT_ACTIVE":
     case "INVALID_STATUS_TRANSITION":
       return 409;
     default:

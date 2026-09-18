@@ -854,6 +854,67 @@ Observation marker signal:
 
 Drafts never appear on the teacher map. Session map and plant details use authorized read models and capture location.
 
+P7-03 live location (SES-008 to SES-010, D-006, D-054) adds one topic, additively:
+
+```text
+session:{sessionId}:location:{userId}
+```
+
+| Topic | Carries | Receive | Send |
+|---|---|---|---|
+| `session:{sessionId}:group:{groupId}` | database signals `session.status_changed`, `session.group_status_changed`, `session.participant_changed`; Presence `{version, onlineAt}` | Broadcast: class teacher and active participants of that session group. Presence: class teacher only | Presence track: active participants of that group while the session is open or paused. Broadcast: nobody |
+| `session:{sessionId}:teachers` | the same signals | active class teacher | nobody |
+| `session:{sessionId}:location:{userId}` | client `location.sample` and `location.status` | the owner and the class teacher, only while the owner may publish | the owner only, only while allowed to publish |
+
+The publish rule is enforced by `realtime.messages` RLS and the durable-sample
+RPC: session `open`, the participant's snapshotted group `active`,
+participation `active`, class membership `active`, and account active and
+verified. Realtime cannot verify a client sender, so named coordinates travel
+only on the per-student topic that just the owner and teacher can read.
+Database signals carry `{id, type, version, sessionId, sessionGroupId, groupId,
+changedAt}` only (`realtime.send` adds `id`) and never coordinates or names.
+
+Client sample, rounded to six decimals, with no user ID or name:
+
+```json
+{
+  "type": "location.sample",
+  "version": 1,
+  "sessionId": "uuid",
+  "seq": 12,
+  "lat": 13.755123,
+  "lng": 100.505988,
+  "accuracyM": 8,
+  "headingDeg": null,
+  "speedMps": 1.2,
+  "recordedAt": "2026-09-18T10:00:00.000Z"
+}
+```
+
+Lifecycle: a student publishes only when the latest participant view allows it,
+the page is visible, and the field-mode notice was acknowledged. Any session
+signal, reconnect, foreground, channel error, hidden page, or refused durable
+sample stops publishing at once; it restarts only after a fresh participant
+view still allows it. Nothing is queued offline. The teacher clears positions
+on every signal and leaves topics outside the active group.
+
+Durable samples and the teacher read model:
+
+- `POST /api/sessions/:id/location-samples` with `{ clientSampleId, lat, lng,
+  accuracyM, recordedAt }` → `record_live_location_sample`. Returns `recorded`
+  or `duplicate` (replayed `clientSampleId`). Denials: `SESSION_NOT_OPEN` and
+  `SESSION_PAUSED` and `GROUP_NOT_ACTIVE` (409), `VALIDATION_FAILED` with
+  `fields` (422; capture time must be within ±120 s), `RATE_LIMITED` (429 with
+  `Retry-After`; at most one sample per 8 s), `FORBIDDEN` (403) for anyone who
+  is not an active participant. No research, audit, or session event is
+  written for samples.
+- `GET /api/sessions/:id/live-locations` → `get_session_live_locations`
+  (teacher only): `{ sessionStatus, activeSessionGroupId, activeGroupId,
+  publishing, items: [{ userId, displayName, roleAtStart, latestSample }],
+  refreshedAt }`. Only the active group's participants appear, each with at
+  most one sample received since activation and within 10 minutes; while
+  paused or completed `items` is empty. No history or track is exposed.
+
 ## 20. Idempotency and concurrency
 
 - Class invite use is atomic.
@@ -1026,6 +1087,39 @@ P6-03 implements session scheduling and opening:
 Once a session is open or paused, teacher group moves, removals, deletions, and
 leadership changes for its snapshotted groups return `GROUP_IN_ACTIVE_SESSION`
 (D-045).
+
+P7-02 implements session control (teacher only unless noted; every operation is
+safe to repeat, so no `Idempotency-Key` is required):
+
+- `POST /api/sessions/:id/activate-group` with `{ groupId }` →
+  `activate_session_group`. Returns `{ outcome: "activated", sessionId,
+  groupId, sessionGroupId, status, queuePosition }`; repeating it for the active
+  group returns the same result. The next waiting group becomes `ready` and is
+  notified (`session_group_next`). Denials (409): `ACTIVE_GROUP_CONFLICT` with
+  `{ activeGroupId, activeSessionGroupId }`, `SESSION_PAUSED`,
+  `SESSION_NOT_OPEN`, `INVALID_STATUS_TRANSITION` with `reason`
+  (`group_not_in_session`, `group_completed`).
+- `POST /api/sessions/:id/pause` and `POST /api/sessions/:id/resume` return
+  `{ outcome, sessionId, status }`; `INVALID_STATUS_TRANSITION` (409) from any
+  other state.
+- `POST /api/sessions/:id/groups/:groupId/complete` returns `{ outcome:
+  "completed", sessionId, groupId, sessionGroupId, status,
+  nextReadySessionGroupId, nextReadyGroupId }`, naming the group now waiting in
+  line (promoted if none was ready).
+- `POST /api/sessions/:id/complete` completes every remaining group and returns
+  `completedGroups`.
+- `GET /api/sessions/:id/group-queue` → `get_session_live`: queue order and
+  current statuses for the teacher. Named live positions come from
+  `GET /api/sessions/:id/live-locations` (§19).
+- `GET /api/sessions/:id/participant` (additive) → `get_session_participant_view`
+  for a participant: own group, members, queue position, groups ahead,
+  activity geometry, and `permissions { canPublishLocation,
+  canSubmitObservations, blockedReason }` where `blockedReason` is
+  `session_completed`, `session_paused`, `group_completed`, `group_waiting`,
+  `participation_inactive`, or null. It never contains coordinates.
+
+A missing session and a non-teacher both return `FORBIDDEN` (403), matching the
+existing session routes.
 
 ## 23. Admin operations contracts
 
