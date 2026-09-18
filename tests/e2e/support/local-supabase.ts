@@ -92,16 +92,27 @@ export async function createConfirmedUser(
   email: string,
   password: string,
 ) {
-  const response = await request.post(`${env.API_URL}/auth/v1/admin/users`, {
-    headers: {
-      apikey: env.SERVICE_ROLE_KEY!,
-      authorization: `Bearer ${env.SERVICE_ROLE_KEY}`,
-    },
-    data: { email, password, email_confirm: true, user_metadata: {} },
-  });
-  expect(response.ok(), `${response.status()} ${await response.text()}`).toBe(
-    true,
-  );
+  // Local Auth occasionally answers 5xx while parallel workers create users;
+  // retry, and accept "already exists" when an earlier attempt committed.
+  for (let attempt = 1; ; attempt += 1) {
+    const response = await request.post(`${env.API_URL}/auth/v1/admin/users`, {
+      headers: {
+        apikey: env.SERVICE_ROLE_KEY!,
+        authorization: `Bearer ${env.SERVICE_ROLE_KEY}`,
+      },
+      data: { email, password, email_confirm: true, user_metadata: {} },
+    });
+    if (response.ok()) return;
+
+    const body = await response.text();
+    if (attempt > 1 && response.status() === 422 && /email_exists/.test(body))
+      return;
+    if (response.status() < 500 || attempt === 3) {
+      expect(response.ok(), `${response.status()} ${body}`).toBe(true);
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+  }
 }
 
 export async function signIn(page: Page, email: string, password: string) {

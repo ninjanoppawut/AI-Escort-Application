@@ -51,7 +51,9 @@ function asUserSql(userEmail: string, statement: string) {
 async function saveDraft(page: Page, expectedNotice: string) {
   await page.getByRole("button", { name: "บันทึกร่าง" }).click();
   const notice = page.getByText(expectedNotice);
-  const failure = page.getByRole("alert").first();
+  // Scoped to main: Next's route announcer is also role=alert and announces
+  // the page title in production builds.
+  const failure = page.getByRole("main").getByRole("alert").first();
   await expect(notice.or(failure)).toBeVisible({ timeout: 120_000 });
   if (!(await notice.isVisible())) {
     throw new Error(`save was refused: ${await failure.innerText()}`);
