@@ -125,15 +125,61 @@ contract was silent. Each can be changed without data loss.
     DEC-Q001.
 29. **Thai copy for the field-mode location notice** (PRIVACY §3) is missing
     from `UI_CONTRACTS.md`; P7-04 needs it before the student shell ships.
+    P7-04 ships a draft in `FIELD_LOCATION_NOTICE`
+    (`src/features/sessions/client/field-notice.ts`): only the class teacher
+    sees the named live location, sending stops on pause, group or session
+    completion, or leaving the page, nothing is kept on the device, and the
+    server keeps periodic samples with the session. Acknowledgement is kept per
+    browser tab and session. Confirm or replace the copy (and whether the
+    server-sample sentence belongs in the notice) before a pilot.
 30. **Boundary-warning and checkpoint events** (`location_events` types and the
     `location_session_warning` producer) are deferred to P7-05 or later; their
     thresholds and throttling are undecided.
 31. **Stale-location threshold** differs between the design brief (30 s) and the
-    wireframes (2 min); P7-05 needs one value.
+    wireframes (2 min); P7-05 needs one value. The P7-04 teacher screen uses
+    30 s as a working value (`LIVE_POSITION_STALE_AFTER_MS` in
+    `src/features/sessions/live-view.ts`).
 32. **Hosted Realtime "Allow public access" must be off** for GATE-03; this is
     an environment-owner setting.
 33. **Realtime capacity**: roughly 85 messages/s at the 50-session envelope
     needs a check against the Supabase plan limits and the pilot budget.
+
+### Phase 8 observation drafts
+
+Owner decisions (conservative defaults are implemented; nothing irreversible):
+
+34. **Drafts after the group or session completes** stay stored, read-only,
+    and invisible to the teacher. Whether they may still be finished or
+    submitted affects grading.
+35. **Students cannot discard a mistaken draft** even though it holds a precise
+    capture location. The documents only forbid automatic deletion; a discard
+    path affects privacy and retention.
+36. **Denied location permission blocks the start** (design S-14). Only
+    technical failures (`position_unavailable`, `timeout`, `unsupported`) may
+    save a flagged record without coordinates (D-020). Tied to DEC-Q001
+    consent.
+37. **Capture-step notice copy** ("the plant pin uses this position at the
+    start, not at submission") needs approved Thai wording, like item 29.
+38. **Late offline starts** (P14): a start whose device `capturedAt` fell in the
+    active window but reaches the server after pause or completion is refused
+    today; accepting it would trust device time.
+
+Implementation choices to confirm:
+
+39. The weak-signal warning shows above ±20 m and never blocks (design S-14,
+    D-051). Unavailable records store a reason
+    (`location_unavailable_reason`), and `capturedAt` must fall within 15
+    minutes before and 120 seconds after server time.
+40. Draft fields are the common name (120 characters), scientific name (160),
+    and evidence note (1,000); the limits are working values. Identical retries
+    return `unchanged` and never conflict.
+41. No research event is written for refused starts or draft edits, and no
+    rate limit applies to starts. A foreign or missing observation returns
+    `FORBIDDEN` rather than 404.
+42. The capture boundary check and the design's optional landmark field are
+    not built; both can be computed or added later without data loss.
+43. `research_events.observation_id` restricts deletion, so P14 retention must
+    transform events before deleting observations.
 
 ## Local environment note
 

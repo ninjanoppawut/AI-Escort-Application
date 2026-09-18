@@ -719,6 +719,40 @@ board polls every 60 seconds only as a fallback.
 
 Validate participant and active-group state. Never fabricate coordinates.
 
+P8 implements the draft foundation (OBS-001 to OBS-004, OBS-011). `capture`
+gains `locationStatus` additively: `captured` carries `lat`, `lng`,
+`accuracyM`, and `capturedAt`; `unavailable` carries `unavailableReason`
+(`position_unavailable`, `timeout`, `unsupported`) and `capturedAt` and never a
+coordinate. Poor accuracy never blocks a start (D-051).
+
+- `POST /api/observations/start` → `start_observation`. The client-generated ID
+  is the idempotency key, so no `Idempotency-Key` header is required. Returns
+  `201 { outcome: "created", observation }` or `200 { outcome: "existing",
+  observation }` for a replay of the same capture (checked before any state
+  rule, so a start committed before a pause still resolves). Reusing the ID for
+  different capture data returns `IDEMPOTENCY_KEY_REUSE` (409). Denials:
+  `SESSION_PAUSED`, `SESSION_NOT_OPEN`, `GROUP_NOT_ACTIVE` with `reason`
+  (`group_waiting`, `group_completed`), `CLASS_NOT_ACTIVE` (409),
+  `VALIDATION_FAILED` with `fields` (422; `capturedAt` within 15 minutes before
+  and 120 seconds after server time), and `FORBIDDEN` (403) for anyone who is
+  not an active participant of the session snapshot. Success writes one
+  `draft` status-history row and one `observation_started` research event.
+- `GET /api/observations/:id` (additive) → owner-only draft read model with
+  capture metadata rounded to six decimals, draft fields, session and activity
+  summary, and `permissions { canEdit, blockedCode, blockedReason }`.
+- `PUT /api/observations/:id/draft` (additive) with `{ expectedVersion,
+  commonName, scientificName, evidenceNote }` → `update_observation_draft`.
+  Returns `updated` (version + 1) or `unchanged` for an identical retry. A stale
+  version returns `OBSERVATION_VERSION_CONFLICT` (409) with `currentVersion`
+  and the refreshed `observation`. Drafts stay editable while paused (SES-007)
+  and become read-only when the group or session completes
+  (`INVALID_STATUS_TRANSITION` with `reason`).
+- `GET /api/sessions/:id/observations` (additive) → the caller's own drafts in
+  that session with `canStart`, `startBlockedCode`, and `startBlockedReason`.
+
+Drafts are visible only to their owner; teachers and classmates receive
+`FORBIDDEN`, and no draft is broadcast.
+
 ## 14. Media upload
 
 ```text

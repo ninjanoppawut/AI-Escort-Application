@@ -1164,6 +1164,159 @@ export type Database = {
           },
         ];
       };
+      observation_status_history: {
+        Row: {
+          changed_by: string | null;
+          created_at: string;
+          from_status: string | null;
+          id: string;
+          observation_id: string;
+          reason: string;
+          to_status: string;
+        };
+        Insert: {
+          changed_by?: string | null;
+          created_at?: string;
+          from_status?: string | null;
+          id?: string;
+          observation_id: string;
+          reason: string;
+          to_status: string;
+        };
+        Update: {
+          changed_by?: string | null;
+          created_at?: string;
+          from_status?: string | null;
+          id?: string;
+          observation_id?: string;
+          reason?: string;
+          to_status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observation_status_history_changed_by_fkey";
+            columns: ["changed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_status_history_observation_id_fkey";
+            columns: ["observation_id"];
+            isOneToOne: false;
+            referencedRelation: "observations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      observations: {
+        Row: {
+          activity_id: string;
+          capture_accuracy_m: number | null;
+          capture_location: unknown;
+          captured_at: string;
+          class_id: string;
+          client_generated_id: string;
+          created_at: string;
+          id: string;
+          location_status: string;
+          location_unavailable_reason: string | null;
+          observer_id: string;
+          session_group_id: string;
+          session_id: string;
+          session_participant_id: string;
+          status: string;
+          student_common_name: string | null;
+          student_evidence_note: string | null;
+          student_scientific_name: string | null;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          activity_id: string;
+          capture_accuracy_m?: number | null;
+          capture_location?: unknown;
+          captured_at: string;
+          class_id: string;
+          client_generated_id: string;
+          created_at?: string;
+          id?: string;
+          location_status: string;
+          location_unavailable_reason?: string | null;
+          observer_id: string;
+          session_group_id: string;
+          session_id: string;
+          session_participant_id: string;
+          status?: string;
+          student_common_name?: string | null;
+          student_evidence_note?: string | null;
+          student_scientific_name?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          activity_id?: string;
+          capture_accuracy_m?: number | null;
+          capture_location?: unknown;
+          captured_at?: string;
+          class_id?: string;
+          client_generated_id?: string;
+          created_at?: string;
+          id?: string;
+          location_status?: string;
+          location_unavailable_reason?: string | null;
+          observer_id?: string;
+          session_group_id?: string;
+          session_id?: string;
+          session_participant_id?: string;
+          status?: string;
+          student_common_name?: string | null;
+          student_evidence_note?: string | null;
+          student_scientific_name?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observations_observer_id_fkey";
+            columns: ["observer_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observations_participant_fk";
+            columns: [
+              "session_participant_id",
+              "session_id",
+              "session_group_id",
+              "observer_id",
+            ];
+            isOneToOne: false;
+            referencedRelation: "session_participants";
+            referencedColumns: [
+              "id",
+              "session_id",
+              "session_group_id",
+              "user_id",
+            ];
+          },
+          {
+            foreignKeyName: "observations_session_fk";
+            columns: ["session_id", "class_id", "activity_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_sessions";
+            referencedColumns: ["id", "class_id", "activity_id"];
+          },
+          {
+            foreignKeyName: "observations_session_group_fk";
+            columns: ["session_group_id", "session_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_session_groups";
+            referencedColumns: ["id", "session_id"];
+          },
+        ];
+      };
       platform_admins: {
         Row: {
           granted_at: string;
@@ -1260,6 +1413,7 @@ export type Database = {
           event_name: string;
           group_id: string | null;
           id: string;
+          observation_id: string | null;
           occurred_at: string;
           payload: Json;
           received_at: string;
@@ -1276,6 +1430,7 @@ export type Database = {
           event_name: string;
           group_id?: string | null;
           id?: string;
+          observation_id?: string | null;
           occurred_at: string;
           payload?: Json;
           received_at?: string;
@@ -1292,6 +1447,7 @@ export type Database = {
           event_name?: string;
           group_id?: string | null;
           id?: string;
+          observation_id?: string | null;
           occurred_at?: string;
           payload?: Json;
           received_at?: string;
@@ -1328,6 +1484,13 @@ export type Database = {
             columns: ["group_id"];
             isOneToOne: false;
             referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "research_events_observation_id_fkey";
+            columns: ["observation_id"];
+            isOneToOne: false;
+            referencedRelation: "observations";
             referencedColumns: ["id"];
           },
           {
@@ -1898,6 +2061,10 @@ export type Database = {
         Args: { target_invitation_id: string };
         Returns: Json;
       };
+      get_observation_draft: {
+        Args: { target_observation_id: string };
+        Returns: Json;
+      };
       get_session_live: { Args: { target_session_id: string }; Returns: Json };
       get_session_live_locations: {
         Args: { target_session_id: string };
@@ -2015,6 +2182,10 @@ export type Database = {
       list_class_sessions: { Args: { target_class_id: string }; Returns: Json };
       list_group_eligible_classmates: {
         Args: { target_group_id: string };
+        Returns: Json;
+      };
+      list_my_session_observations: {
+        Args: { target_session_id: string };
         Returns: Json;
       };
       lock_group: {
@@ -2208,6 +2379,25 @@ export type Database = {
           outcome: string;
         }[];
       };
+      start_observation: {
+        Args: {
+          capture_accuracy_m: number;
+          capture_captured_at: string;
+          capture_lat: number;
+          capture_lng: number;
+          capture_location_status: string;
+          capture_unavailable_reason: string;
+          target_client_generated_id: string;
+          target_session_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          observation_id: string;
+          observation_version: number;
+          outcome: string;
+        }[];
+      };
       transfer_group_leadership: {
         Args: { target_group_id: string; target_new_leader_id: string };
         Returns: {
@@ -2246,6 +2436,21 @@ export type Database = {
           maximum_groups: number;
           min_group_size: number;
           updated_at: string;
+        }[];
+      };
+      update_observation_draft: {
+        Args: {
+          draft_common_name: string;
+          draft_evidence_note: string;
+          draft_scientific_name: string;
+          expected_version: number;
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          observation_version: number;
+          outcome: string;
         }[];
       };
     };
