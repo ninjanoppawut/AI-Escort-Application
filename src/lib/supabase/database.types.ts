@@ -1841,18 +1841,12 @@ export type Database = {
         Args: { target_invitation_id: string };
         Returns: Json;
       };
-      get_session_live: {
-        Args: { target_session_id: string };
-        Returns: Json;
-      };
+      get_session_live: { Args: { target_session_id: string }; Returns: Json };
       get_session_participant_view: {
         Args: { target_session_id: string };
         Returns: Json;
       };
-      get_session_setup: {
-        Args: { target_session_id: string };
-        Returns: Json;
-      };
+      get_session_setup: { Args: { target_session_id: string }; Returns: Json };
       grant_platform_admin: {
         Args: { reason: string; target_user_id: string };
         Returns: {
@@ -1957,10 +1951,7 @@ export type Database = {
           user_id: string;
         }[];
       };
-      list_class_sessions: {
-        Args: { target_class_id: string };
-        Returns: Json;
-      };
+      list_class_sessions: { Args: { target_class_id: string }; Returns: Json };
       list_group_eligible_classmates: {
         Args: { target_group_id: string };
         Returns: Json;
@@ -2017,7 +2008,11 @@ export type Database = {
       };
       pause_exploration_session: {
         Args: { target_session_id: string };
-        Returns: { error_code: string; outcome: string; status: string }[];
+        Returns: {
+          error_code: string;
+          outcome: string;
+          status: string;
+        }[];
       };
       preview_teacher_invitation: {
         Args: { invitation_token: string };
@@ -2066,7 +2061,11 @@ export type Database = {
       };
       resume_exploration_session: {
         Args: { target_session_id: string };
-        Returns: { error_code: string; outcome: string; status: string }[];
+        Returns: {
+          error_code: string;
+          outcome: string;
+          status: string;
+        }[];
       };
       revoke_platform_admin: {
         Args: { reason: string; target_user_id: string };

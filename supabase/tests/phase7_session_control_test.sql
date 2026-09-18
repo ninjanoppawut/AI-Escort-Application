@@ -304,14 +304,18 @@ select is(
 select is(pg_temp.result('resume', '{status}'), 'open', 'resuming reopens the session');
 
 select is(
-  pg_temp.result('complete_leaf', '{outcome}') || ':' || coalesce(pg_temp.result('complete_leaf', '{next_ready_group_id}'), 'none'),
+  pg_temp.result('complete_leaf', '{outcome}') || ':' || coalesce(pg_temp.result('complete_leaf', '{next_ready_group_id}'), 'none')
+    || ':' || (
+      select count(*) from public.notifications
+      where session_id = pg_temp.session_id() and type = 'session_group_next'
+    )::text,
   'completed:' || (
     select session_group.id::text
     from public.exploration_session_groups as session_group
     where session_group.session_id = pg_temp.session_id()
       and session_group.group_id = pg_temp.group_named('Root')
-  ),
-  'completing a group promotes the next waiting group to ready'
+  ) || ':1',
+  'completing a group reports the ready group without notifying it twice'
 );
 
 select is(pg_temp.result('activate_root', '{status}'), 'active', 'the promoted group can be activated');

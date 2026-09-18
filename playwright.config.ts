@@ -15,7 +15,12 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: `node node_modules/next/dist/bin/next dev --port ${devPort}`,
+    // CI serves the production build it made after exporting the local
+    // Supabase configuration; next dev compiles each route on first use and
+    // made multi-route journeys time out on shared runners.
+    command: process.env.CI
+      ? `node node_modules/next/dist/bin/next start --port ${devPort}`
+      : `node node_modules/next/dist/bin/next dev --port ${devPort}`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 300_000,

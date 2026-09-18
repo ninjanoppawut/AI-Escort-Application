@@ -54,7 +54,9 @@ export function NotificationRealtimeBridge() {
     function recordRealtimeEvent(
       event: NonNullable<Window["__notificationRealtimeEvents"]>[number],
     ) {
-      if (process.env.NODE_ENV !== "development") return;
+      // Local-stack instrumentation for browser tests, which also run against
+      // a production build; hosted environments never record these events.
+      if (process.env.NEXT_PUBLIC_APP_ENV !== "local") return;
       window.__notificationRealtimeEvents ??= [];
       window.__notificationRealtimeEvents.push(event);
     }

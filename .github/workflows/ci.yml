@@ -59,7 +59,7 @@ jobs:
 
   browser-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -97,8 +97,11 @@ jobs:
             echo "NEXT_PUBLIC_SUPABASE_URL=$api_url"
             echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$publishable_key"
             echo "MAILPIT_URL=$mailpit_url"
+            echo "NEXT_PUBLIC_APP_ENV=local"
           } >> "$GITHUB_ENV"
 
           rm -f "$status_file"
+      - name: Build against local Supabase
+        run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test --project=student-mobile-chromium --project=teacher-desktop-chromium
