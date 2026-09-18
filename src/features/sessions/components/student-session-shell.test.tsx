@@ -21,6 +21,11 @@ const realtime = vi.hoisted(() => ({
   sent: [] as unknown[],
 }));
 
+// The P8 observations panel navigates to a new draft with the app router.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 vi.mock("@/lib/supabase/client", () => {
   function fakeChannel(topic: string) {
     const channel = {
@@ -213,9 +218,31 @@ function mockFetch(respond: (url: string) => Response | Promise<Response>) {
     .mockImplementation(async (input) => respond(String(input)));
 }
 
+/** The P8 observations panel's list for this view, with no drafts. */
+function observationList(view: SessionParticipantView) {
+  const active =
+    view.session.status === "open" && view.myGroup.status === "active";
+  return {
+    sessionId: view.session.id,
+    sessionStatus: view.session.status,
+    canStart: active,
+    startBlockedCode: active
+      ? null
+      : view.session.status === "paused"
+        ? "SESSION_PAUSED"
+        : "GROUP_NOT_ACTIVE",
+    startBlockedReason:
+      active || view.session.status === "paused" ? null : "group_waiting",
+    items: [],
+    hasMore: false,
+    refreshedAt: view.refreshedAt,
+  };
+}
+
 function participantFetch(view: SessionParticipantView) {
   return mockFetch((url) => {
     if (url.endsWith("/participant")) return envelope(freshCopy(view));
+    if (url.endsWith("/observations")) return envelope(observationList(view));
     if (url.endsWith("/location-samples")) {
       return envelope({ outcome: "recorded", sampleId: requestId }, 201);
     }
@@ -339,6 +366,74 @@ describe("StudentSessionShell", () => {
       expect(
         realtime.topics.some((topic) => topic.includes(":location:")),
       ).toBe(false);
+    },
+  );
+
+  it.each([
+    ["active", true],
+    ["paused", true],
+    ["waiting", true],
+    ["ready", true],
+    ["group_completed", false],
+    ["session_completed", false],
+    ["participation_inactive", false],
+  ] as const)(
+    "mounts the observations panel in the %s phase: %s",
+    async (phase, mounted) => {
+      const sessionId = nextSessionId();
+      const view = makeView(sessionId, phase);
+      const fetchMock = participantFetch(view);
+
+      renderShell(
+        <StudentSessionShell
+          initialErrorCode={null}
+          initialView={view}
+          sessionId={sessionId}
+          userId={userId}
+        />,
+      );
+
+      if (!mounted) {
+        if (phase !== "participation_inactive") {
+          // Let the group topic join and its refetch settle first.
+          await waitFor(() =>
+            expect(realtime.topics).toContain(
+              `session:${sessionId}:group:${groupId}`,
+            ),
+          );
+          await waitFor(() =>
+            expect(fetchMock).toHaveBeenCalledWith(
+              `/api/sessions/${sessionId}/participant`,
+              { cache: "no-store" },
+            ),
+          );
+        }
+        expect(
+          screen.queryByRole("button", { name: "เพิ่มการสังเกต" }),
+        ).toBeNull();
+        expect(
+          fetchMock.mock.calls.some(([input]) =>
+            String(input).endsWith("/observations"),
+          ),
+        ).toBe(false);
+        return;
+      }
+      const start = await screen.findByRole("button", {
+        name: "เพิ่มการสังเกต",
+      });
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith(
+          `/api/sessions/${sessionId}/observations`,
+          { cache: "no-store" },
+        ),
+      );
+      if (phase === "active") {
+        await waitFor(() => expect(start).toBeEnabled());
+      } else {
+        await waitFor(() => expect(start).toBeDisabled());
+      }
+      // The panel never touches geolocation until the student starts.
+      expect(geolocation.getCurrentPosition).not.toHaveBeenCalled();
     },
   );
 
@@ -535,7 +630,11 @@ describe("StudentSessionShell", () => {
     realtime.subscribeStatus = "CHANNEL_ERROR";
     const sessionId = nextSessionId();
     const view = makeView(sessionId, "waiting");
-    mockFetch(() => Promise.reject(new TypeError("network down")));
+    mockFetch((url) =>
+      url.endsWith("/observations")
+        ? envelope(observationList(view))
+        : Promise.reject(new TypeError("network down")),
+    );
 
     renderShell(
       <StudentSessionShell

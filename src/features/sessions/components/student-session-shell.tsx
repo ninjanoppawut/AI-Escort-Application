@@ -32,6 +32,7 @@ import {
 import { SchematicPreview } from "@/features/activities/components/schematic-preview";
 import type { ActivityUiErrorCode } from "@/features/activities/errors";
 import { useOnlineStatus } from "@/features/groups/client/use-online-status";
+import { SessionObservationsPanel } from "@/features/observations/components/session-observations-panel";
 import { cn } from "@/lib/utils";
 
 import {
@@ -497,6 +498,17 @@ function StudentSessionScreen({
           <FieldLocationPanel
             accuracyM={publisher?.accuracyM ?? null}
             location={location}
+          />
+        ) : null}
+
+        {phase === "active" ||
+        phase === "paused" ||
+        phase === "waiting" ||
+        phase === "ready" ? (
+          <SessionObservationsPanel
+            activityId={view.activity.id}
+            sessionId={view.session.id}
+            viewRefreshedAt={view.refreshedAt}
           />
         ) : null}
 
