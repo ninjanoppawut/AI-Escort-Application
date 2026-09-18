@@ -1164,6 +1164,104 @@ export type Database = {
           },
         ];
       };
+      observation_duplicate_candidates: {
+        Row: {
+          candidate_observation_id: string;
+          class_id: string;
+          created_at: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          id: string;
+          location_distance_m: number | null;
+          morphology_score: number | null;
+          observation_id: string;
+          pair_high: string | null;
+          pair_low: string | null;
+          relationship_type: string;
+          rule_version: string;
+          session_id: string;
+          source_submission_id: string | null;
+          student_acknowledged_at: string | null;
+          system_recommendation: string | null;
+          teacher_decision: string | null;
+          temporal_distance_seconds: number | null;
+          visual_similarity_score: number | null;
+        };
+        Insert: {
+          candidate_observation_id: string;
+          class_id: string;
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          id?: string;
+          location_distance_m?: number | null;
+          morphology_score?: number | null;
+          observation_id: string;
+          pair_high?: string | null;
+          pair_low?: string | null;
+          relationship_type: string;
+          rule_version: string;
+          session_id: string;
+          source_submission_id?: string | null;
+          student_acknowledged_at?: string | null;
+          system_recommendation?: string | null;
+          teacher_decision?: string | null;
+          temporal_distance_seconds?: number | null;
+          visual_similarity_score?: number | null;
+        };
+        Update: {
+          candidate_observation_id?: string;
+          class_id?: string;
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          id?: string;
+          location_distance_m?: number | null;
+          morphology_score?: number | null;
+          observation_id?: string;
+          pair_high?: string | null;
+          pair_low?: string | null;
+          relationship_type?: string;
+          rule_version?: string;
+          session_id?: string;
+          source_submission_id?: string | null;
+          student_acknowledged_at?: string | null;
+          system_recommendation?: string | null;
+          teacher_decision?: string | null;
+          temporal_distance_seconds?: number | null;
+          visual_similarity_score?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observation_duplicate_candidates_candidate_fk";
+            columns: ["candidate_observation_id", "session_id"];
+            isOneToOne: false;
+            referencedRelation: "observations";
+            referencedColumns: ["id", "session_id"];
+          },
+          {
+            foreignKeyName: "observation_duplicate_candidates_decided_by_fkey";
+            columns: ["decided_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_duplicate_candidates_observation_fk";
+            columns: ["observation_id", "session_id"];
+            isOneToOne: false;
+            referencedRelation: "observations";
+            referencedColumns: ["id", "session_id"];
+          },
+          {
+            foreignKeyName: "observation_duplicate_candidates_source_submission_id_fkey";
+            columns: ["source_submission_id"];
+            isOneToOne: false;
+            referencedRelation: "observation_submissions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       observation_media: {
         Row: {
           byte_size: number;
@@ -1249,6 +1347,71 @@ export type Database = {
           },
         ];
       };
+      observation_relation_events: {
+        Row: {
+          actor_id: string | null;
+          candidate_id: string;
+          class_id: string;
+          created_at: string;
+          event_type: string;
+          from_decision: string | null;
+          id: string;
+          session_id: string;
+          to_decision: string | null;
+        };
+        Insert: {
+          actor_id?: string | null;
+          candidate_id: string;
+          class_id: string;
+          created_at?: string;
+          event_type: string;
+          from_decision?: string | null;
+          id?: string;
+          session_id: string;
+          to_decision?: string | null;
+        };
+        Update: {
+          actor_id?: string | null;
+          candidate_id?: string;
+          class_id?: string;
+          created_at?: string;
+          event_type?: string;
+          from_decision?: string | null;
+          id?: string;
+          session_id?: string;
+          to_decision?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observation_relation_events_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_relation_events_candidate_id_fkey";
+            columns: ["candidate_id"];
+            isOneToOne: false;
+            referencedRelation: "observation_duplicate_candidates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_relation_events_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_relation_events_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       observation_status_history: {
         Row: {
           changed_by: string | null;
@@ -1294,6 +1457,152 @@ export type Database = {
           },
         ];
       };
+      observation_submission_media: {
+        Row: {
+          category: string;
+          media_id: string;
+          observation_id: string;
+          position: number;
+          submission_id: string;
+        };
+        Insert: {
+          category: string;
+          media_id: string;
+          observation_id: string;
+          position: number;
+          submission_id: string;
+        };
+        Update: {
+          category?: string;
+          media_id?: string;
+          observation_id?: string;
+          position?: number;
+          submission_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observation_submission_media_media_fk";
+            columns: ["media_id", "observation_id"];
+            isOneToOne: false;
+            referencedRelation: "observation_media";
+            referencedColumns: ["id", "observation_id"];
+          },
+          {
+            foreignKeyName: "observation_submission_media_submission_id_fkey";
+            columns: ["submission_id"];
+            isOneToOne: false;
+            referencedRelation: "observation_submissions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      observation_submissions: {
+        Row: {
+          based_on_version: number;
+          capture_snapshot: Json;
+          class_id: string;
+          client_submission_id: string;
+          common_name: string;
+          evidence_note: string;
+          id: string;
+          identity_source: string;
+          media_snapshot: Json;
+          observation_id: string;
+          observation_version: number;
+          observer_id: string;
+          possible_same_specimen_count: number;
+          reference_note: string | null;
+          same_species_acknowledged: boolean;
+          same_species_count: number;
+          scientific_name: string;
+          session_id: string;
+          snapshot_schema_version: string;
+          submission_kind: string;
+          submission_number: number;
+          submitted_at: string;
+          submitted_by: string;
+          taxon_key: string | null;
+          taxon_key_version: string;
+          verification_snapshot: Json;
+        };
+        Insert: {
+          based_on_version: number;
+          capture_snapshot: Json;
+          class_id: string;
+          client_submission_id: string;
+          common_name: string;
+          evidence_note: string;
+          id?: string;
+          identity_source: string;
+          media_snapshot: Json;
+          observation_id: string;
+          observation_version: number;
+          observer_id: string;
+          possible_same_specimen_count?: number;
+          reference_note?: string | null;
+          same_species_acknowledged?: boolean;
+          same_species_count?: number;
+          scientific_name: string;
+          session_id: string;
+          snapshot_schema_version?: string;
+          submission_kind: string;
+          submission_number: number;
+          submitted_at?: string;
+          submitted_by: string;
+          taxon_key?: string | null;
+          taxon_key_version?: string;
+          verification_snapshot: Json;
+        };
+        Update: {
+          based_on_version?: number;
+          capture_snapshot?: Json;
+          class_id?: string;
+          client_submission_id?: string;
+          common_name?: string;
+          evidence_note?: string;
+          id?: string;
+          identity_source?: string;
+          media_snapshot?: Json;
+          observation_id?: string;
+          observation_version?: number;
+          observer_id?: string;
+          possible_same_specimen_count?: number;
+          reference_note?: string | null;
+          same_species_acknowledged?: boolean;
+          same_species_count?: number;
+          scientific_name?: string;
+          session_id?: string;
+          snapshot_schema_version?: string;
+          submission_kind?: string;
+          submission_number?: number;
+          submitted_at?: string;
+          submitted_by?: string;
+          taxon_key?: string | null;
+          taxon_key_version?: string;
+          verification_snapshot?: Json;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observation_submissions_observation_fk";
+            columns: [
+              "observation_id",
+              "observer_id",
+              "class_id",
+              "session_id",
+            ];
+            isOneToOne: false;
+            referencedRelation: "observations";
+            referencedColumns: ["id", "observer_id", "class_id", "session_id"];
+          },
+          {
+            foreignKeyName: "observation_submissions_submitted_by_fkey";
+            columns: ["submitted_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       observations: {
         Row: {
           activity_id: string;
@@ -1303,17 +1612,25 @@ export type Database = {
           class_id: string;
           client_generated_id: string;
           created_at: string;
+          first_submitted_at: string | null;
           id: string;
+          identity_source: string | null;
+          latest_submitted_at: string | null;
           location_status: string;
           location_unavailable_reason: string | null;
+          normalized_taxon_key: string | null;
           observer_id: string;
+          same_species_count: number;
+          same_species_in_session: boolean;
           session_group_id: string;
           session_id: string;
           session_participant_id: string;
           status: string;
           student_common_name: string | null;
           student_evidence_note: string | null;
+          student_reference_note: string | null;
           student_scientific_name: string | null;
+          submission_count: number;
           updated_at: string;
           version: number;
         };
@@ -1325,17 +1642,25 @@ export type Database = {
           class_id: string;
           client_generated_id: string;
           created_at?: string;
+          first_submitted_at?: string | null;
           id?: string;
+          identity_source?: string | null;
+          latest_submitted_at?: string | null;
           location_status: string;
           location_unavailable_reason?: string | null;
+          normalized_taxon_key?: string | null;
           observer_id: string;
+          same_species_count?: number;
+          same_species_in_session?: boolean;
           session_group_id: string;
           session_id: string;
           session_participant_id: string;
           status?: string;
           student_common_name?: string | null;
           student_evidence_note?: string | null;
+          student_reference_note?: string | null;
           student_scientific_name?: string | null;
+          submission_count?: number;
           updated_at?: string;
           version?: number;
         };
@@ -1347,17 +1672,25 @@ export type Database = {
           class_id?: string;
           client_generated_id?: string;
           created_at?: string;
+          first_submitted_at?: string | null;
           id?: string;
+          identity_source?: string | null;
+          latest_submitted_at?: string | null;
           location_status?: string;
           location_unavailable_reason?: string | null;
+          normalized_taxon_key?: string | null;
           observer_id?: string;
+          same_species_count?: number;
+          same_species_in_session?: boolean;
           session_group_id?: string;
           session_id?: string;
           session_participant_id?: string;
           status?: string;
           student_common_name?: string | null;
           student_evidence_note?: string | null;
+          student_reference_note?: string | null;
           student_scientific_name?: string | null;
+          submission_count?: number;
           updated_at?: string;
           version?: number;
         };
@@ -1864,6 +2197,76 @@ export type Database = {
           },
         ];
       };
+      student_trait_verifications: {
+        Row: {
+          ai_value: Json | null;
+          analysis_run_id: string | null;
+          class_id: string;
+          corrected_value: Json | null;
+          created_at: string;
+          id: string;
+          note: string | null;
+          observation_id: string;
+          observer_id: string;
+          position: number;
+          session_id: string;
+          student_status: string | null;
+          student_value: Json | null;
+          trait_key: string;
+          trait_source: string;
+          updated_at: string;
+        };
+        Insert: {
+          ai_value?: Json | null;
+          analysis_run_id?: string | null;
+          class_id: string;
+          corrected_value?: Json | null;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          observation_id: string;
+          observer_id: string;
+          position: number;
+          session_id: string;
+          student_status?: string | null;
+          student_value?: Json | null;
+          trait_key: string;
+          trait_source: string;
+          updated_at?: string;
+        };
+        Update: {
+          ai_value?: Json | null;
+          analysis_run_id?: string | null;
+          class_id?: string;
+          corrected_value?: Json | null;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          observation_id?: string;
+          observer_id?: string;
+          position?: number;
+          session_id?: string;
+          student_status?: string | null;
+          student_value?: Json | null;
+          trait_key?: string;
+          trait_source?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "student_trait_verifications_observation_fk";
+            columns: [
+              "observation_id",
+              "observer_id",
+              "class_id",
+              "session_id",
+            ];
+            isOneToOne: false;
+            referencedRelation: "observations";
+            referencedColumns: ["id", "observer_id", "class_id", "session_id"];
+          },
+        ];
+      };
       teacher_invitations: {
         Row: {
           accepted_at: string | null;
@@ -2116,6 +2519,19 @@ export type Database = {
           remaining_group_slots: number;
         }[];
       };
+      decide_observation_relation: {
+        Args: {
+          expected_decision: string;
+          relation_decision: string;
+          target_relation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          outcome: string;
+          relation: Json;
+        }[];
+      };
       decline_group_invitation: {
         Args: { target_invitation_id: string };
         Returns: {
@@ -2172,6 +2588,14 @@ export type Database = {
         Args: { target_observation_id: string };
         Returns: Json;
       };
+      get_observation_related: {
+        Args: { target_observation_id: string };
+        Returns: Json;
+      };
+      get_observation_review_state: {
+        Args: { target_observation_id: string };
+        Returns: Json;
+      };
       get_session_live: { Args: { target_session_id: string }; Returns: Json };
       get_session_live_locations: {
         Args: { target_session_id: string };
@@ -2182,6 +2606,10 @@ export type Database = {
         Returns: Json;
       };
       get_session_setup: { Args: { target_session_id: string }; Returns: Json };
+      get_teacher_observation_review: {
+        Args: { target_observation_id: string };
+        Returns: Json;
+      };
       grant_platform_admin: {
         Args: { reason: string; target_user_id: string };
         Returns: {
@@ -2497,6 +2925,25 @@ export type Database = {
           version_number: number;
         }[];
       };
+      save_student_review: {
+        Args: {
+          expected_version: number;
+          review_common_name: string;
+          review_evidence_note: string;
+          review_identity_source: string;
+          review_reference_note: string;
+          review_scientific_name: string;
+          review_traits: Json;
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          observation_status: string;
+          observation_version: number;
+          outcome: string;
+        }[];
+      };
       send_group_invitation: {
         Args: { target_group_id: string; target_invitee_id: string };
         Returns: {
@@ -2527,6 +2974,22 @@ export type Database = {
           observation_id: string;
           observation_version: number;
           outcome: string;
+        }[];
+      };
+      submit_observation: {
+        Args: {
+          acknowledge_same_species: boolean;
+          expected_version: number;
+          target_client_submission_id: string;
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          observation_version: number;
+          outcome: string;
+          submission_id: string;
+          submission_number: number;
         }[];
       };
       transfer_group_leadership: {

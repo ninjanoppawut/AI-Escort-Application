@@ -229,6 +229,58 @@ Implementation choices to confirm:
     dimensions, and absence of EXIF before any Gemini call, because the RPCs
     can be called directly.
 
+### Phase 11 verification and submission (manual path while P10 is blocked)
+
+Owner decisions (conservative defaults are implemented):
+
+61. **Same-species matching (DEC-Q004).** `taxon-key-v1` compares a normalized
+    Latin binomial within the same session: no synonym list, Thai common names
+    ignored, and `sp.`/`cf.`/genus-only/non-Latin names never match. The key
+    version is stored so an approved taxonomy source can recompute matches.
+62. **Students see counts only** in the same-species warning while a session
+    is open (PRIVACY §6, D-055); design S-21 shows peer names and distances.
+63. **Evidence note minimum of 20 characters** (design S-20) affects grading.
+64. **"Unknown" names** (ไม่ทราบ, ไม่รู้, ไม่แน่ใจ, unknown, n/a, -, ?, and
+    punctuation-only text) block both name fields; binomial format is not
+    enforced.
+65. **Unreviewed AI traits (P10)**: the PRD requires every trait to be reviewed
+    while design S-20 only warns; P10 must choose.
+66. **Submission requires an open session and the student's active group**
+    (extends item 34).
+67. **Possible same specimen** needs the same taxon key and two captured
+    locations within max(15, min(accuracy sum, 50)) m (`specimen-candidate-v1`);
+    no morphology or image similarity yet.
+68. **Only the new submission is tagged**, and the student's own earlier
+    records count toward the match.
+
+Implementation choices to confirm:
+
+69. P11 proceeds on the manual path while P10 is blocked; AI candidate
+    selection and AI trait review land with P10.
+70. The manual path is `draft → student_review → submitted`; the first saved
+    review records the path, and `STUDENT_REVIEW_REQUIRED` means none exists.
+71. Manual trait rows are optional (a value, or unsure/not visible); `match`
+    and `not_match` stay reserved for AI-proposed traits.
+72. No new error codes: whole-plant and evidence checks use
+    `VALIDATION_FAILED`, pending uploads `IMAGE_UPLOAD_INCOMPLETE`, and every
+    blocked submit lists all unmet requirements in `details.blockers`.
+73. `same_species_warning_shown` is written by the server when submit asks for
+    acknowledgement, at most once per content version; `manual_entry_used` uses
+    `analysis_state: unavailable, reason_category: ai_unavailable`.
+74. A same-species submission sends two notifications (`observation_submitted`
+    and `same_species_warning`) to every active class teacher.
+75. Teachers read submissions, relations, and submitted images only; the
+    `observations` table stays owner-only.
+76. Specimen grouping is deferred: teachers decide only on system-proposed
+    pairs, with compare-and-set and history; no student specimen choice.
+77. Submission snapshots carry no coordinates, and submitted images can never
+    be deleted, so P12 revisions must add images rather than replace them.
+78. Offline submit is not queued until P14.
+79. The warning and manual-entry Thai copy follow design S-20/S-21 and need
+    approval, like items 29 and 37.
+80. Design-only fields (extra field notes, nearby plant count, family from AI,
+    class-exemplar flag) are not built.
+
 ## Local environment note
 
 During the 2026-09-12 run the local Docker engine stopped responding.
