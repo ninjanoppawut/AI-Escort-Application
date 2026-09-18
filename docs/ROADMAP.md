@@ -5,7 +5,7 @@
 - Product, architecture, database, API, decision, module, and design specifications exist.
 - The pinned Next.js/Supabase foundation is implemented locally.
 - The CLI is linked to the dedicated hosted project `rhntelxdmuvldrxyceqx`.
-- Phases 1–8 are verified locally and in hosted CI except
+- Phases 1–9 and P11-01/P11-03 are verified locally and in hosted CI except
   the owner-blocked P0-09, P0-EXIT, and P1-01; only
   the first identity migration is deployed to the linked hosted development
   project (later migrations await owner approval).
@@ -1303,10 +1303,31 @@ UI, and P9-05/EXIT browser evidence pending). Evidence:
   `85eabfd`.
 - Remaining risk: owner items 44–60; real-device checks of iOS Safari
   orientation and encoding.
-- [ ] **P9-03:** Implement deterministic upload/delete/retry and authorized image presentation.
-- [ ] **P9-04:** Build camera/gallery, progress, retry, and permission states.
-- [ ] **P9-05:** Pass count/category/dimension/size, idempotency, and cross-user Storage tests.
-- [ ] **P9-EXIT:** Valid media uploads reliably and unauthorized image access is denied.
+- [x] **P9-03:** Implement deterministic upload/delete/retry and authorized image presentation.
+- [x] **P9-04:** Build camera/gallery, progress, retry, and permission states.
+- [x] **P9-05:** Pass count/category/dimension/size, idempotency, and cross-user Storage tests.
+- [x] **P9-EXIT:** Valid media uploads reliably and unauthorized image access is denied.
+
+P9-03 to P9-EXIT status: complete as of 2026-09-19. Evidence:
+- P9-03: `ed2aaa7` (register, confirm, two-step delete, category, owner list
+  with 10-minute signed URLs) and `85eabfd` plus `f46e1dd` (direct XHR upload
+  with the student's session, progress, stall abort; resumable upload queue
+  with backoff, offline pause, 401 refresh, blocked and rejected states).
+- P9-04: `f46e1dd` (image section on the draft page: camera and gallery,
+  category radiogroup, per-state tiles with tap-to-retry, delete confirmation,
+  last whole-plant guard, offline banner, camera-permission help).
+- P9-05: `phase9_observation_media_test.sql`,
+  `phase9_observation_media_concurrency_test.sql`, `media.test.ts`,
+  `upload-queue.test.ts` (37), `observation-media-section.test.tsx` (15), the
+  pipeline suites (117), and Playwright `tests/e2e/observation-media.spec.ts`
+  (EXIF orientation-6 fixture stored upright and metadata-free, forced failure
+  then tap-to-retry with attempt 2, classmate and direct Storage access
+  refused, 360 px layout).
+- P9-EXIT: valid images upload reliably through retries and reloads of the
+  list, and unauthorized image access is denied at the route and Storage.
+- CI: hosted CI run `35397122293` on `f46e1dd` passed `quality`,
+  `database`, and `browser-smoke` on 2026-09-19.
+- Remaining risk: owner items 44–60; real iPhone and low-end Android checks.
 
 ## Phase 10 — Durable Gemini analysis
 
@@ -1325,9 +1346,26 @@ Requirements: `AI-001`–`AI-010`.
 
 Requirements: `REV-001`–`REV-006`.
 
-- [ ] **P11-01:** Add trait verification, immutable submission, relation/tag, and history schema/RLS.
+- [x] **P11-01:** Add trait verification, immutable submission, relation/tag, and history schema/RLS.
 - [ ] **P11-02:** Build candidate selection, manual entry, trait checks/corrections, and evidence form.
-- [ ] **P11-03:** Implement submit with required fields, optimistic concurrency, and immutable versioning.
+- [x] **P11-03:** Implement submit with required fields, optimistic concurrency, and immutable versioning.
+
+P11-01 and P11-03 status: complete as of 2026-09-19 on the manual path (P10 is
+blocked; P11-02/04/05 UI and P11-06/EXIT browser evidence pending). Evidence:
+- `a63b3ce` (`20260918204743_phase11_observation_review_foundation.sql`,
+  `20260918204748_phase11_observation_submission_operations.sql`,
+  `20260918204753_phase11_teacher_relation_review.sql`: trait verification,
+  append-only submissions and submission media, relation tables and history,
+  manual transition path, frozen submitted content, idempotent submit with
+  version compare-and-set and listed blockers, same-species advisory lock) and
+  `f46e1dd` (typed routes).
+- Tests: `phase11_observation_submission_test.sql` (35) and
+  `phase11_observation_submission_concurrency_test.sql` (7);
+  `src/features/observations/review/review.test.ts`.
+- CI: hosted CI runs `35394895421` on `a63b3ce` and `35397122293` on
+  `f46e1dd`.
+- Remaining risk: owner items 61–80 (taxon key, evidence minimum, specimen
+  thresholds, counts-only warning).
 - [ ] **P11-04:** Implement same-species warning/acknowledgement/tag/teacher notification.
 - [ ] **P11-05:** Implement teacher-only candidate relationship confirmation without auto-merge.
 - [ ] **P11-06:** Pass validation, history, same-species, dedupe-safety, and submission concurrency tests.
