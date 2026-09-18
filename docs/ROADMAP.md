@@ -1280,8 +1280,29 @@ P8-04 to P8-EXIT status: complete as of 2026-09-19. Evidence:
 
 Requirements: `OBS-005`–`OBS-008`.
 
-- [ ] **P9-01:** Add observation-media schema and private bucket/path policies.
-- [ ] **P9-02:** Implement orientation correction, resize, compression, preview, and category validation.
+- [x] **P9-01:** Add observation-media schema and private bucket/path policies.
+- [x] **P9-02:** Implement orientation correction, resize, compression, preview, and category validation.
+
+P9-01 and P9-02 status: complete as of 2026-09-19 (P9-03 client queue, P9-04
+UI, and P9-05/EXIT browser evidence pending). Evidence:
+- P9-01: `ed2aaa7` (`20260918195306_phase9_observation_media_foundation.sql`:
+  owner-only `observation_media` with generated storage path, ten-image
+  live-position index, guarded transitions; private `observation-images`
+  bucket; four `storage.objects` policies keyed on exact relational paths;
+  `20260918195310_phase9_observation_media_operations.sql`: register,
+  confirm, two-step delete, category, list). Tests:
+  `phase9_observation_media_test.sql` (29, incl. per-identity Storage
+  insert/select/update/delete) and `phase9_observation_media_concurrency_test.sql`
+  (6, last-slot race, duplicate register, upload versus delete).
+- P9-02: `85eabfd` (`src/lib/image-processing`: type sniffing, source guards,
+  orientation self-test and fallback, 2,048 px fit, metadata-stripping
+  re-encode within 5 MB, SHA-256; 117 unit tests; synthetic EXIF fixture).
+- Commands: `npx supabase test db --local` (31 files, 864 tests); db lint and
+  advisors with no new findings; `npm test`.
+- CI: hosted CI runs `35390807038` on `ed2aaa7` and `35391997399` on
+  `85eabfd`.
+- Remaining risk: owner items 44–60; real-device checks of iOS Safari
+  orientation and encoding.
 - [ ] **P9-03:** Implement deterministic upload/delete/retry and authorized image presentation.
 - [ ] **P9-04:** Build camera/gallery, progress, retry, and permission states.
 - [ ] **P9-05:** Pass count/category/dimension/size, idempotency, and cross-user Storage tests.
