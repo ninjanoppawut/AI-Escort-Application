@@ -27,10 +27,25 @@ import {
   shouldRecordDurable,
   type SentFix,
 } from "../publisher";
-import { useSessionSignals } from "./use-session-signals";
+import {
+  useSessionSignals,
+  type SessionRealtimeStatus,
+} from "./use-session-signals";
 
 export type LocationPublisherStatus =
   "off" | "starting" | "publishing" | "denied" | "unavailable";
+
+export interface LocationPublisherState {
+  status: LocationPublisherStatus;
+  /** Rounded accuracy of the latest own fix while publishing; memory only. */
+  accuracyM: number | null;
+  /**
+   * Connection state of the session group signal topic. The publisher is the
+   * page's only subscriber of that topic: supabase-js shares one channel per
+   * topic, so a second subscriber would never see its own join callback.
+   */
+  realtime: SessionRealtimeStatus;
+}
 
 function subscribeVisibility(onChange: () => void) {
   document.addEventListener("visibilitychange", onChange);
@@ -86,7 +101,7 @@ export interface LocationPublisherOptions {
  */
 export function useLocationPublisher(
   options: LocationPublisherOptions,
-): LocationPublisherStatus {
+): LocationPublisherState {
   const {
     sessionId,
     userId,
@@ -105,6 +120,7 @@ export function useLocationPublisher(
   const [runStatus, setRunStatus] = useState<{
     key: string;
     value: LocationPublisherStatus;
+    accuracyM: number | null;
   } | null>(null);
   const geolocationSupported = useSyncExternalStore(
     subscribeNothing,
@@ -128,7 +144,11 @@ export function useLocationPublisher(
     suspendRef.current = suspend;
   }, [suspend]);
 
-  useSessionSignals(sessionId, sessionGroupTopic(sessionId, groupId), suspend);
+  const realtime = useSessionSignals(
+    sessionId,
+    sessionGroupTopic(sessionId, groupId),
+    suspend,
+  );
 
   const active =
     shouldPublish({ canPublish, noticeAcknowledged, visible, online }) &&
@@ -139,8 +159,17 @@ export function useLocationPublisher(
   useEffect(() => {
     if (!runKey) return;
     const key = runKey;
-    const setStatus = (value: LocationPublisherStatus) =>
-      setRunStatus({ key, value });
+    // Report only changes so a steady fix stream does not re-render the page.
+    let reported: string | null = null;
+    const setStatus = (
+      value: LocationPublisherStatus,
+      accuracyM: number | null = null,
+    ) => {
+      const next = `${value}:${accuracyM ?? ""}`;
+      if (next === reported) return;
+      reported = next;
+      setRunStatus({ key, value, accuracyM });
+    };
 
     let cancelled = false;
     let watchId: number | null = null;
@@ -226,7 +255,7 @@ export function useLocationPublisher(
           if (cancelled) return;
           const fix = fixFromPosition(position);
           if (!fix) return;
-          setStatus("publishing");
+          setStatus("publishing", Math.max(1, Math.round(fix.accuracyM)));
           const nowMs = Date.now();
           const message: LocationSampleMessage = {
             type: "location.sample",
@@ -263,7 +292,11 @@ export function useLocationPublisher(
     return stop;
   }, [runKey, sessionId, supabase, userId]);
 
-  if (!geolocationSupported && canPublish) return "unavailable";
-  if (!runKey) return "off";
-  return runStatus?.key === runKey ? runStatus.value : "starting";
+  if (!geolocationSupported && canPublish) {
+    return { status: "unavailable", accuracyM: null, realtime };
+  }
+  if (!runKey) return { status: "off", accuracyM: null, realtime };
+  return runStatus?.key === runKey
+    ? { status: runStatus.value, accuracyM: runStatus.accuracyM, realtime }
+    : { status: "starting", accuracyM: null, realtime };
 }

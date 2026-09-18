@@ -311,7 +311,9 @@ test.describe("P6 activity authoring and session snapshot", () => {
 
     await page.goto(page.url().replace("/groups", "/sessions"));
     await page.goto(`/teacher/classes/${classId}/sessions`);
-    await page.getByRole("link", { name: "Morning round" }).click();
+    await page
+      .getByRole("link", { name: "Morning round", exact: true })
+      .click();
     await expect(
       page.getByRole("region", { name: "2. Leaf" }).getByText("Bo Member"),
     ).toBeVisible({ timeout: 120_000 });

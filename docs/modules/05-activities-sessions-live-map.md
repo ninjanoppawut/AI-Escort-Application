@@ -89,6 +89,24 @@ AUTH, NOT, GRP/MGT, Mapbox adapter, PostGIS, and event logging.
   lists and schedules sessions; the setup screen orders the queue, shows
   excluded empty groups and unassigned students, states the snapshot warning,
   confirms who is affected, and then shows the immutable roster.
+- **P7-04:** participants open `/activities/[activityId]/sessions/[sessionId]`
+  (`session_group_next` deep link; `/field/sessions/[sessionId]` redirects
+  there). The shell derives waiting, ready, field mode, paused, group or
+  session completed, and participation-inactive states from the participant
+  read model, refetches on group-topic signals, foreground, reconnect, and a
+  60 s fallback, and shows offline, stale/reconnecting, loading, and
+  permission-denied states. Field mode shows a draft location notice (owner
+  confirmation pending) that must be acknowledged before the P7-03 publisher
+  starts, then visible location state with accuracy; waiting and ready
+  students never call geolocation. Teachers control the session at
+  `/teacher/classes/[classId]/sessions/[sessionId]/live`
+  (`/teacher/sessions/[sessionId]/live` redirects there): queue with status
+  badges, start next or a specific group, pause/resume, and complete group or
+  session behind confirmations, with activation conflicts refetched and
+  explained. Named current positions appear in a list and on the schematic
+  sketch; nothing is kept outside memory. The publisher hook is the page's only
+  group-topic subscriber and the teacher location hook the only teachers-topic
+  subscriber, because supabase-js shares one channel per topic.
 - **Mapbox:** map drawing and tiles are blocked on a Mapbox token
   (`OWNER_QUESTIONS_PENDING.md`). Geometry authoring accepts GeoJSON and every
   map view keeps an equivalent list view.

@@ -9,6 +9,7 @@ import {
   CircleDashed,
   Crown,
   Loader2,
+  Navigation,
   ShieldAlert,
   TriangleAlert,
   UserRound,
@@ -488,6 +489,16 @@ export function SessionSetup({
           </>
         ) : (
           <section aria-labelledby="roster-heading" className="grid gap-3">
+            {setup.session.status === "open" ||
+            setup.session.status === "paused" ? (
+              <Link
+                className="bg-primary text-primary-foreground inline-flex min-h-11 w-fit items-center gap-2 rounded-full px-5 text-sm font-semibold"
+                href={`/teacher/classes/${classId}/sessions/${sessionId}/live`}
+              >
+                <Navigation aria-hidden="true" className="size-4" />
+                ไปหน้าควบคุมรอบสด
+              </Link>
+            ) : null}
             <div>
               <h2 className="font-semibold" id="roster-heading">
                 คิวกลุ่มและผู้เข้าร่วม ({setup.participantCount} คน)

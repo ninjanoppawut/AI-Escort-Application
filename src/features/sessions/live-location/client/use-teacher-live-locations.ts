@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RealtimeChannel, Session } from "@supabase/supabase-js";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchActivityJson } from "@/features/activities/client/request";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -40,8 +40,15 @@ function fetchLiveLocations(sessionId: string) {
  * live-locations read model; per-student Broadcast updates it in memory only.
  * A session signal clears every position and refetches, and topics of
  * students outside the active group are left immediately.
+ *
+ * This hook is the page's only subscriber of the teachers topic (supabase-js
+ * shares one channel per topic); `onSignal` lets the caller refetch its own
+ * read models, such as the group queue, on the same signals.
  */
-export function useTeacherLiveLocations(sessionId: string): {
+export function useTeacherLiveLocations(
+  sessionId: string,
+  options: { onSignal?: () => void } = {},
+): {
   snapshot: SessionLiveLocations | undefined;
   positions: Record<string, LivePosition>;
   realtime: SessionRealtimeStatus;
@@ -50,6 +57,12 @@ export function useTeacherLiveLocations(sessionId: string): {
   const queryClient = useQueryClient();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [positions, setPositions] = useState<Record<string, LivePosition>>({});
+  const { onSignal: onCallerSignal } = options;
+  const onCallerSignalRef = useRef(onCallerSignal);
+
+  useEffect(() => {
+    onCallerSignalRef.current = onCallerSignal;
+  }, [onCallerSignal]);
 
   const query = useQuery({
     queryKey: liveLocationQueryKeys.session(sessionId),
@@ -63,6 +76,7 @@ export function useTeacherLiveLocations(sessionId: string): {
   const onSignal = useCallback(() => {
     setPositions({});
     void queryClient.invalidateQueries({ queryKey: liveLocationQueryKeys.all });
+    onCallerSignalRef.current?.();
   }, [queryClient]);
 
   const realtime = useSessionSignals(

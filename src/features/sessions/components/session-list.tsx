@@ -341,6 +341,17 @@ export function TeacherSessionList({
                             {session.participantCount} คน
                           </span>
                         </p>
+                        {session.status === "open" ||
+                        session.status === "paused" ? (
+                          <Link
+                            aria-label={`ควบคุมรอบสด ${session.title}`}
+                            className="bg-primary text-primary-foreground mt-3 inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold"
+                            href={`/teacher/classes/${classId}/sessions/${session.id}/live`}
+                          >
+                            <Navigation aria-hidden="true" className="size-4" />
+                            ควบคุมรอบสด
+                          </Link>
+                        ) : null}
                       </li>
                     );
                   })}

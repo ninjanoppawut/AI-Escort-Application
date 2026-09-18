@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 import type {
   LineStringGeometry,
   PointGeometry,
@@ -10,6 +12,20 @@ const SIZE = 240;
 const PADDING = 20;
 
 /**
+ * A named position drawn on the sketch. Markers carry shape, number, and a
+ * text label so they never rely on color: live students are ringed circles,
+ * stale ones dashed rings. The equivalent list view lives next to the sketch.
+ */
+export interface SchematicMarker {
+  id: string;
+  number: number;
+  label: string;
+  lat: number;
+  lng: number;
+  stale: boolean;
+}
+
+/**
  * Coordinate sketch shown while map tiles are unavailable. It is not a map:
  * the checkpoint list next to it is the equivalent accessible view.
  */
@@ -17,23 +33,37 @@ export function SchematicPreview({
   boundary,
   route,
   checkpoints,
+  markers = [],
+  className,
 }: {
   boundary: PolygonGeometry | null;
   route: LineStringGeometry | null;
   checkpoints: { sequenceNumber: number; location: PointGeometry }[];
+  markers?: readonly SchematicMarker[];
+  className?: string;
 }) {
   const outerRing = boundary?.coordinates[0] ?? [];
   const routePositions = route?.coordinates ?? [];
+  const markerPositions: Position[] = markers.map(
+    (marker) => [marker.lng, marker.lat] as const,
+  );
   const positions: Position[] = [
     ...outerRing,
     ...routePositions,
     ...checkpoints.map((checkpoint) => checkpoint.location.coordinates),
+    // Students outside the boundary stay on the sketch instead of vanishing.
+    ...markerPositions,
   ];
   const bounds = geometryBounds(positions);
 
   if (!bounds) {
     return (
-      <div className="border-border bg-background text-muted-foreground grid aspect-square w-full max-w-60 place-items-center rounded-lg border border-dashed p-4 text-center text-[13px]">
+      <div
+        className={cn(
+          "border-border bg-background text-muted-foreground grid aspect-square w-full max-w-60 place-items-center rounded-lg border border-dashed p-4 text-center text-[13px]",
+          className,
+        )}
+      >
         ยังไม่มีพิกัดให้แสดง
       </div>
     );
@@ -48,16 +78,19 @@ export function SchematicPreview({
       })
       .join(" ");
 
+  const staleCount = markers.filter((marker) => marker.stale).length;
   const label = [
     boundary ? "ขอบเขตสำรวจ" : null,
     route ? "เส้นทาง" : null,
     checkpoints.length ? `จุดตรวจ ${checkpoints.length} จุด` : null,
+    markers.length ? `นักเรียน ${markers.length} คน` : null,
+    staleCount ? `ตำแหน่งเก่า ${staleCount} คน` : null,
   ]
     .filter(Boolean)
     .join(" · ");
 
   return (
-    <figure className="grid w-full max-w-60 gap-2">
+    <figure className={cn("grid w-full max-w-60 gap-2", className)}>
       <svg
         aria-label={`ภาพร่างพิกัด: ${label}`}
         className="border-border aspect-square w-full rounded-lg border bg-[#F3F6F2]"
@@ -108,6 +141,58 @@ export function SchematicPreview({
             </g>
           );
         })}
+        {markers.map((marker) => {
+          const { x, y } = project([marker.lng, marker.lat]);
+          const labelOnLeft = x > SIZE * 0.7;
+          return (
+            <g
+              data-marker-id={marker.id}
+              data-stale={marker.stale ? "true" : "false"}
+              key={marker.id}
+            >
+              <circle
+                cx={x}
+                cy={y}
+                fill={marker.stale ? "#FFFFFF" : "#1E7A45"}
+                r={9}
+                stroke={marker.stale ? "#5E6D64" : "#FFFFFF"}
+                strokeDasharray={marker.stale ? "3 2" : undefined}
+                strokeWidth={2}
+              />
+              <circle
+                cx={x}
+                cy={y}
+                fill="none"
+                r={11.5}
+                stroke={marker.stale ? "none" : "#1E7A45"}
+                strokeWidth={1.5}
+              />
+              <text
+                fill={marker.stale ? "#16211C" : "#FFFFFF"}
+                fontSize={9}
+                fontWeight={700}
+                textAnchor="middle"
+                x={x}
+                y={y + 3}
+              >
+                {marker.number}
+              </text>
+              <text
+                fill="#16211C"
+                fontSize={9}
+                fontWeight={600}
+                paintOrder="stroke"
+                stroke="#F3F6F2"
+                strokeWidth={3}
+                textAnchor={labelOnLeft ? "end" : "start"}
+                x={labelOnLeft ? x - 14 : x + 14}
+                y={y + 3}
+              >
+                {marker.label}
+              </text>
+            </g>
+          );
+        })}
       </svg>
       <figcaption className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-[12px]">
         <span className="inline-flex items-center gap-1">
@@ -131,6 +216,24 @@ export function SchematicPreview({
           />
           จุดตรวจ
         </span>
+        {markers.length ? (
+          <>
+            <span className="inline-flex items-center gap-1">
+              <span
+                aria-hidden="true"
+                className="inline-block size-3 rounded-full border-2 border-white bg-[#1E7A45] ring-[1.5px] ring-[#1E7A45]"
+              />
+              นักเรียน (สด)
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span
+                aria-hidden="true"
+                className="inline-block size-3 rounded-full border-2 border-dashed border-[#5E6D64] bg-white"
+              />
+              ตำแหน่งเก่า
+            </span>
+          </>
+        ) : null}
       </figcaption>
     </figure>
   );
