@@ -104,4 +104,13 @@ jobs:
       - name: Build against local Supabase
         run: npm run build
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test --project=student-mobile-chromium --project=teacher-desktop-chromium
+      # database-restart depends on both projects and runs after them.
+      - run: npx playwright test --project=database-restart
+      # Failure snapshots and traces use synthetic fixtures only.
+      - name: Upload Playwright failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 7

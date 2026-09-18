@@ -4,8 +4,12 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const configuredPort = new URL(baseURL).port || "3000";
 const devPort = /^\d{2,5}$/.test(configuredPort) ? configuredPort : "3000";
 
+// P2-EXIT restarts the local database; it runs alone after the CI projects.
+const databaseRestartSpec = /database-restart\.spec\.ts/;
+
 export default defineConfig({
   testDir: "./tests/e2e",
+  testIgnore: databaseRestartSpec,
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
@@ -59,6 +63,16 @@ export default defineConfig({
       use: {
         ...devices["Desktop Safari"],
         viewport: { width: 1024, height: 768 },
+      },
+    },
+    {
+      name: "database-restart",
+      testIgnore: [],
+      testMatch: databaseRestartSpec,
+      dependencies: ["student-mobile-chromium", "teacher-desktop-chromium"],
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
       },
     },
     {
