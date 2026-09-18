@@ -5,7 +5,7 @@
 - Product, architecture, database, API, decision, module, and design specifications exist.
 - The pinned Next.js/Supabase foundation is implemented locally.
 - The CLI is linked to the dedicated hosted project `rhntelxdmuvldrxyceqx`.
-- Phases 1–6 and P7-01 to P7-03 are verified locally and in hosted CI except
+- Phases 1–7 and P8-01 to P8-03 are verified locally and in hosted CI except
   the owner-blocked P0-09, P0-EXIT, and P1-01; only
   the first identity migration is deployed to the linked hosted development
   project (later migrations await owner approval).
@@ -1190,18 +1190,69 @@ P7-01 to P7-03 status: complete as of 2026-09-19. Evidence:
 - CI: hosted CI run `35378306046` on `fb76faf` passed `quality`, `database`, and `browser-smoke` on 2026-09-19.
 - Remaining risk: owner confirmation items 22–33 in
   `OWNER_QUESTIONS_PENDING.md`; the student and teacher screens are P7-04.
-- [ ] **P7-04:** Build student waiting/field shells and teacher queue/live-map controls.
-- [ ] **P7-05:** Add location freshness/accuracy, offline/reconnect, and activation-race states.
-- [ ] **P7-06:** Pass active-group concurrency, channel isolation, publish-stop, and map tests.
-- [ ] **P7-EXIT:** Exactly one group is active and only the teacher can see named live locations.
+- [x] **P7-04:** Build student waiting/field shells and teacher queue/live-map controls.
+- [x] **P7-05:** Add location freshness/accuracy, offline/reconnect, and activation-race states.
+- [x] **P7-06:** Pass active-group concurrency, channel isolation, publish-stop, and map tests.
+- [x] **P7-EXIT:** Exactly one group is active and only the teacher can see named live locations.
+
+P7-04 to P7-EXIT status: complete as of 2026-09-19. Evidence:
+- P7-04: `33b52b8` (student shell at
+  `/activities/[activityId]/sessions/[sessionId]` with waiting, next, field,
+  paused, completed, inactive, offline, stale, and permission states and a
+  field-mode notice that gates publishing; teacher live controls at
+  `/teacher/classes/[classId]/sessions/[sessionId]/live` with queue, activate,
+  complete, pause/resume, conflict refetch, and live positions on the activity
+  sketch without Mapbox). Tests: `student-session-shell.test.tsx`,
+  `teacher-session-live.test.tsx`, `live-view.test.ts`, and Playwright
+  `tests/e2e/session-live.spec.ts` against local Realtime (teacher sees the
+  active student's name and accuracy, a waiting student sees only the queue
+  and never touches geolocation, pause stops every watch and sample, no
+  mapbox.com request).
+- P7-05: `4368efd` (device-reported denied/unavailable status and low-accuracy
+  flags for the teacher); stale markers, offline/reconnect, and the
+  activation-conflict state ship in `33b52b8`.
+- P7-06: `phase7_session_concurrency_test.sql` (`789b918`, two concurrent
+  activations leave exactly one active group; pause waits for an in-flight
+  sample and the next sample is refused), `phase7_live_location_realtime_test.sql`
+  (channel isolation and publish-stop matrix),
+  `tests/e2e/live-location-channels.spec.ts`, and the P7-04 map/list tests.
+- P7-EXIT: exactly one active group is enforced by the partial unique index
+  and the race test; named live locations reach only the owner and the class
+  teacher (RLS on the per-student topic, the teacher-only read model, and the
+  browser journey).
+- CI: hosted CI run `35385824382` on `4368efd` passed `quality`,
+  `database`, and `browser-smoke` on 2026-09-19.
+- Remaining risk: owner items 22–33 (cadences, notice copy, stale threshold,
+  Realtime capacity, hosted public-access setting); the base map waits for the
+  Mapbox token.
 
 ## Phase 8 — Observation foundation
 
 Requirements: `OBS-001`–`OBS-004`, `OBS-011`.
 
-- [ ] **P8-01:** Add observation/status/event schema, ownership RLS, and optimistic versioning.
-- [ ] **P8-02:** Implement idempotent observation start against the participant snapshot and active group.
-- [ ] **P8-03:** Implement capture location/time/accuracy and explicit missing-location handling.
+- [x] **P8-01:** Add observation/status/event schema, ownership RLS, and optimistic versioning.
+- [x] **P8-02:** Implement idempotent observation start against the participant snapshot and active group.
+- [x] **P8-03:** Implement capture location/time/accuracy and explicit missing-location handling.
+
+P8-01 to P8-03 status: complete as of 2026-09-19 (P8-04 UI and P8-05/EXIT
+browser evidence pending). Evidence:
+- Implementation: `33b52b8` (`20260918183755_phase8_observation_foundation.sql`
+  and `20260918183800_phase8_observation_operations.sql`: owner-only
+  observations bound to the participant snapshot, immutable capture metadata
+  with explicit location status, optimistic version, append-only status
+  history, idempotent `start_observation`, `update_observation_draft` with
+  refreshed-record conflicts, owner read models; routes
+  `POST /api/observations/start`, `GET /api/observations/:id`,
+  `PUT /api/observations/:id/draft`, `GET /api/sessions/:id/observations`).
+- Tests: `phase8_observation_test.sql` (37), `phase8_observation_concurrency_test.sql`
+  (8, duplicate start, edit race, start versus pause),
+  `src/features/observations/observations.test.ts`.
+- Commands: `npx supabase test db --local` (29 files, 829 tests); db lint and
+  advisors with no new findings; `npm test`.
+- CI: hosted CI run `35384930508` on `33b52b8` and `35385824382` on
+  `4368efd`.
+- Remaining risk: owner decisions 34–38 and confirmations 39–43 in
+  `OWNER_QUESTIONS_PENDING.md`.
 - [ ] **P8-04:** Build private draft, GPS warning/retry, conflict, and permission states.
 - [ ] **P8-05:** Pass ownership, activity-state, idempotency, GPS, and version-conflict tests.
 - [ ] **P8-EXIT:** One student owns a recoverable private draft with authoritative capture metadata.
