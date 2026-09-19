@@ -72,6 +72,7 @@ export function DraftNotesForm({
   onSaved,
   onConflict,
   onStatusChanged,
+  onDirtyChange,
 }: {
   observation: ObservationDraft;
   online: boolean;
@@ -83,6 +84,7 @@ export function DraftNotesForm({
   onConflict: (latest: ObservationDraft) => void;
   /** The draft became read-only or otherwise changed state; refetch it. */
   onStatusChanged: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const formId = useId();
   const [conflict, setConflict] = useState<Conflict | null>(null);
@@ -94,6 +96,10 @@ export function DraftNotesForm({
   const { isDirty, errors } = form.formState;
   const values = useWatch({ control: form.control });
   const readOnly = !observation.permissions.canEdit;
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   // Adopt a newer saved version only while the student has nothing unsaved;
   // otherwise the next save meets the conflict dialog.

@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CAPTURE_TIME_NOTICE } from "../capture";
 import { observationDraftSchema, type ObservationDraft } from "../contracts";
+import { reviewStateSchema } from "../review/contracts";
 import {
   DRAFT_PRIVACY_LABEL,
   ObservationDraftScreen,
@@ -43,6 +44,32 @@ function makeDraft(overrides: Record<string, unknown> = {}): ObservationDraft {
     updatedAt: "2026-09-19T02:00:00+00:00",
     refreshedAt: "2026-09-19T02:10:00+00:00",
     ...overrides,
+  });
+}
+
+/** The P11 review read model for a plain draft: AI unavailable, no review. */
+function makeReviewState(version = 2) {
+  return reviewStateSchema.parse({
+    observationId,
+    status: "draft",
+    version,
+    identitySource: null,
+    referenceNote: null,
+    analysis: { state: "unavailable" },
+    traits: [],
+    readiness: {
+      blockers: ["student_review", "scientific_name", "evidence_note"],
+      evidenceNoteMinChars: 20,
+    },
+    sameSpecies: { inSession: false, count: 0 },
+    submission: null,
+    permissions: {
+      canEdit: true,
+      canSubmit: true,
+      submitBlockedCode: null,
+      submitBlockedReason: null,
+    },
+    refreshedAt: "2026-09-19T02:10:00+00:00",
   });
 }
 
@@ -89,6 +116,9 @@ function mockApi(handlers: {
         puts.push(body);
         if (!handlers.put) throw new Error("unexpected PUT");
         return handlers.put(body, puts.length);
+      }
+      if (url === `/api/observations/${observationId}/student-review`) {
+        return envelope(makeReviewState());
       }
       if (url === `/api/observations/${observationId}`) {
         if (!handlers.get) throw new Error("unexpected GET");

@@ -115,6 +115,7 @@ export const OBSERVATION_BLOCKED_REASON_LABELS: Record<string, string> = {
   session_completed: "รอบสำรวจจบแล้ว",
   session_scheduled: "รอบสำรวจยังไม่เปิด",
   not_draft: "รายการนี้ไม่ใช่ฉบับร่างแล้ว",
+  submitted: "ส่งให้ครูแล้ว · แก้ไม่ได้จนกว่าครูจะขอให้แก้ไข",
 };
 
 export function isObservationUiErrorCode(

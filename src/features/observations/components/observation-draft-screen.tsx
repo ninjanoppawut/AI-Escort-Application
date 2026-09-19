@@ -14,6 +14,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/features/groups/client/use-online-status";
@@ -39,6 +40,7 @@ import {
 } from "../contracts";
 import { draftAfterSave } from "../draft-form";
 import { ObservationMediaSection } from "../media/components/observation-media-section";
+import { PlantReviewSection } from "../review/components/plant-review-section";
 import {
   OBSERVATION_BLOCKED_REASON_LABELS,
   OBSERVATION_ERROR_PRESENTATIONS,
@@ -75,6 +77,7 @@ export function ObservationDraftScreen({
 }) {
   const queryClient = useQueryClient();
   const online = useOnlineStatus();
+  const [draftNotesDirty, setDraftNotesDirty] = useState(false);
   const initiallyDenied =
     initialErrorCode !== null &&
     OBSERVATION_ACCESS_ERRORS.includes(initialErrorCode);
@@ -260,31 +263,41 @@ export function ObservationDraftScreen({
 
         <ObservationMediaSection observationId={observationId} />
 
-        <DraftNotesForm
-          observation={draft}
-          onConflict={(latest) => {
-            queryClient.setQueryData<ObservationDraft>(
-              observationQueryKeys.detail(observationId),
-              (previous) =>
-                previous?.refreshedAt
-                  ? { ...latest, refreshedAt: previous.refreshedAt }
-                  : latest,
-            );
-            invalidate();
-          }}
-          onSaved={(result, values) => {
-            queryClient.setQueryData<ObservationDraft>(
-              observationQueryKeys.detail(observationId),
-              (previous) =>
-                previous
-                  ? draftAfterSave(previous, values, result.version)
-                  : previous,
-            );
-            invalidate();
-          }}
-          onStatusChanged={invalidate}
-          online={online}
-        />
+        {viewerRole === "student" ? (
+          <PlantReviewSection
+            draft={draft}
+            draftNotes={
+              <DraftNotesForm
+                observation={draft}
+                onConflict={(latest) => {
+                  queryClient.setQueryData<ObservationDraft>(
+                    observationQueryKeys.detail(observationId),
+                    (previous) =>
+                      previous?.refreshedAt
+                        ? { ...latest, refreshedAt: previous.refreshedAt }
+                        : latest,
+                  );
+                  invalidate();
+                }}
+                onSaved={(result, values) => {
+                  queryClient.setQueryData<ObservationDraft>(
+                    observationQueryKeys.detail(observationId),
+                    (previous) =>
+                      previous
+                        ? draftAfterSave(previous, values, result.version)
+                        : previous,
+                  );
+                  invalidate();
+                }}
+                onDirtyChange={setDraftNotesDirty}
+                onStatusChanged={invalidate}
+                online={online}
+              />
+            }
+            draftNotesDirty={draftNotesDirty}
+            online={online}
+          />
+        ) : null}
 
         <Link
           className="border-border bg-card inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-5 text-sm font-semibold"
