@@ -209,7 +209,7 @@ function AvailableMap({
     <main className="bg-background min-h-dvh">
       <div
         className={cn(
-          "mx-auto grid w-full content-start gap-4 px-4 pt-4 pb-8",
+          "mx-auto grid w-full grid-cols-[minmax(0,1fr)] content-start gap-4 px-4 pt-4 pb-8",
           teacher ? "max-w-6xl sm:px-8" : "max-w-[480px] lg:max-w-6xl",
         )}
       >
@@ -367,7 +367,7 @@ function AvailableMap({
             </p>
           </section>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[3fr_2fr] lg:items-start">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
             <div className="grid gap-3">
               {view === "map" ? (
                 <CompletedMapSketch
