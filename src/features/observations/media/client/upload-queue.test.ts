@@ -11,6 +11,11 @@ import type {
   RegisterMediaRequest,
 } from "../contracts";
 import { MediaApiRequestError } from "./api";
+import {
+  blobBytes,
+  fromDeviceUpload,
+  toDeviceUpload,
+} from "./browser-upload-queue";
 import { buildMediaTiles } from "./media-tiles";
 import { keepFreshSignedUrls, withoutSignedUrl } from "./signed-urls";
 import type { StorageUploadResult } from "./storage-upload";
@@ -20,7 +25,9 @@ import {
   backoffDelay,
   classifyUploadError,
   createUploadQueue,
+  type PersistedUpload,
   type UploadItem,
+  type UploadPersistence,
   type UploadQueueDeps,
   type UploadQueueEnvironment,
   type UploadQueueEvent,
@@ -920,5 +927,124 @@ describe("media tiles", () => {
     expect(summary.tiles[0]!.progress).toBe(0.42);
     expect(summary.used).toBe(2);
     expect(summary.uploadedWholePlantCount).toBe(0);
+  });
+});
+
+describe("upload queue: device persistence (P14-01)", () => {
+  function memoryPersistence() {
+    const records = new Map<string, PersistedUpload>();
+    const persistence: UploadPersistence = {
+      save: vi.fn((record: PersistedUpload) => {
+        records.set(record.localId, record);
+      }),
+      remove: vi.fn((localId: string) => {
+        records.delete(localId);
+      }),
+    };
+    return { records, persistence };
+  }
+
+  it("keeps an unsent image with its bytes and forgets it once uploaded", async () => {
+    const { records, persistence } = memoryPersistence();
+    const held = heldUpload();
+    const { queue, file, waitForStage } = setup({
+      persistence,
+      upload: held.upload,
+    });
+
+    const [id] = queue.add([{ file: file(), category: "whole_plant" }]);
+    await waitForStage("uploading");
+    const saved = records.get(id!);
+    expect(saved).toMatchObject({
+      localId: id,
+      category: "whole_plant",
+      mediaId: mediaIdFor(id!),
+      processed: { sha256: "a".repeat(64), byteSize: 400_000 },
+    });
+    expect(saved!.processed).not.toHaveProperty("previewUrl");
+    expect(saved!.processed.blob.size).toBeGreaterThan(0);
+
+    held.pending[0]!.settle({ ok: true });
+    await waitForStage("uploaded");
+    expect(records.has(id!)).toBe(false);
+  });
+
+  it("restores kept images after a reload and resends them with the same client media ID", async () => {
+    const { records, persistence } = memoryPersistence();
+    const first = setup({ persistence, upload: heldUpload().upload });
+    const [id] = first.queue.add([{ file: first.file(), category: "leaf" }]);
+    await first.waitForStage("uploading");
+    first.queue.dispose();
+    expect(records.has(id!)).toBe(true);
+
+    // A new tab: the queue is empty until the device records are restored.
+    const second = setup({
+      persistence,
+      process: vi.fn(async () => {
+        throw new Error("a restored image is never processed again");
+      }),
+      createPreview: () => "blob:restored",
+    });
+    expect(second.queue.getSnapshot().items).toHaveLength(0);
+    expect(second.queue.restore([...records.values()])).toEqual([id]);
+    expect(second.queue.restore([...records.values()])).toEqual([]);
+    expect(second.item().previewUrl).toBe("blob:restored");
+
+    await second.waitForStage("uploaded");
+    expect(vi.mocked(second.deps.register).mock.calls[0]![0]).toMatchObject({
+      clientMediaId: id,
+      category: "leaf",
+    });
+    expect(second.deps.process).not.toHaveBeenCalled();
+    expect(records.size).toBe(0);
+  });
+
+  it("drops the device copy when the server refuses or the student cancels", async () => {
+    const { records, persistence } = memoryPersistence();
+    const { queue, file, waitForStage, item } = setup({
+      persistence,
+      register: vi.fn(async () => {
+        throw apiError("GROUP_NOT_ACTIVE", 409);
+      }),
+    });
+    const [refused] = queue.add([{ file: file(), category: "leaf" }]);
+    await vi.waitFor(() =>
+      expect(["blocked", "rejected"]).toContain(item().stage),
+    );
+    expect(records.has(refused!)).toBe(false);
+
+    const [needsCategory] = queue.add([{ file: file("b"), category: null }]);
+    await waitForStage("needs_category", 1);
+    expect(records.has(needsCategory!)).toBe(true);
+    queue.cancel(needsCategory!);
+    await vi.waitFor(() => expect(records.has(needsCategory!)).toBe(false));
+  });
+});
+
+describe("device upload records", () => {
+  it("round-trips processed bytes through the ArrayBuffer form", async () => {
+    const record: PersistedUpload = {
+      localId: clientId(9),
+      capturedAt: "2026-09-19T03:00:00.000Z",
+      category: "flower",
+      mediaId: null,
+      uploadAttempts: 1,
+      processed: {
+        blob: new Blob([new Uint8Array([7, 8, 9])], { type: "image/webp" }),
+        mimeType: "image/webp",
+        width: 10,
+        height: 20,
+        byteSize: 3,
+        sha256: "b".repeat(64),
+        preprocessingVersion: "img-v1",
+      },
+    };
+    const stored = await toDeviceUpload(record);
+    expect(stored.processed).not.toHaveProperty("blob");
+    const restored = fromDeviceUpload(structuredClone(stored));
+    expect(restored.processed.blob.type).toBe("image/webp");
+    expect(new Uint8Array(await blobBytes(restored.processed.blob))).toEqual(
+      new Uint8Array([7, 8, 9]),
+    );
   });
 });

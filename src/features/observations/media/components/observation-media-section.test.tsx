@@ -25,6 +25,7 @@ import {
   type UploadQueueEnvironment,
   type UploadRequest,
 } from "../client/upload-queue";
+import { MEDIA_COPY } from "./media-copy";
 import { ObservationMediaSection } from "./observation-media-section";
 
 const observationId = "81000000-0000-4000-8000-000000009101";
@@ -623,7 +624,7 @@ describe("ObservationMediaSection", () => {
     expect(progress).toHaveAttribute("aria-valuemax", "100");
     expect(progress.closest("li")).toHaveTextContent("กำลังอัปโหลด 40%");
     expect(screen.getByText("กำลังส่งภาพ 1 จาก 1")).toBeVisible();
-    expect(screen.getByText("ภาพที่ยังไม่ส่งจะหายถ้าปิดหน้านี้")).toBeVisible();
+    expect(screen.getByText(MEDIA_COPY.unsentWarning)).toBeVisible();
 
     expect(container.innerHTML).not.toContain(STORAGE_PATH_PREFIX);
     expect(container.innerHTML).not.toContain("/storage/v1/");
@@ -636,9 +637,7 @@ describe("ObservationMediaSection", () => {
 
     await act(async () => held[0]!({ ok: true }));
     await waitFor(() =>
-      expect(
-        screen.queryByText("ภาพที่ยังไม่ส่งจะหายถ้าปิดหน้านี้"),
-      ).toBeNull(),
+      expect(screen.queryByText(MEDIA_COPY.unsentWarning)).toBeNull(),
     );
     expect(container.innerHTML).not.toContain(STORAGE_PATH_PREFIX);
   });

@@ -25,7 +25,10 @@ import type { StorageUploadResult } from "./storage-upload";
  * completed step with the same client media ID and the same processed bytes,
  * which the server treats as idempotent replays.
  *
- * Memory only: the processed bytes live in this tab until IndexedDB lands in
+ * With a persistence adapter (P14-01) every unsent image, with its processed
+ * bytes and client media ID, is kept on the device and restored after a
+ * reload or browser restart; the same ID keeps every resend idempotent.
+ * Without one: the processed bytes live in this tab until IndexedDB lands in
  * P14, so `hasUnsent` drives an honest "closing loses unsent images" guard.
  */
 
@@ -128,6 +131,21 @@ export interface UploadRequest {
   stallTimeoutMs: number;
 }
 
+/** What survives a reload for one unsent image (P14-01, OBS-009). */
+export interface PersistedUpload {
+  localId: string;
+  capturedAt: string;
+  category: MediaCategory | null;
+  mediaId: string | null;
+  uploadAttempts: number;
+  processed: Omit<ProcessedImage, "previewUrl">;
+}
+
+export interface UploadPersistence {
+  save(record: PersistedUpload): void | Promise<void>;
+  remove(localId: string): void | Promise<void>;
+}
+
 export interface UploadQueueDeps {
   process(file: Blob): Promise<ProcessedImage | ImageProcessingError>;
   register(
@@ -145,6 +163,10 @@ export interface UploadQueueDeps {
   sleep(ms: number, signal: AbortSignal): Promise<void>;
   createId?(): string;
   revokePreview?(url: string): void;
+  /** Keeps unsent images on the device (IndexedDB in the browser). */
+  persistence?: UploadPersistence;
+  /** Preview for a restored image; defaults to an object URL. */
+  createPreview?(blob: Blob): string;
 }
 
 export interface UploadQueueEnvironment {
@@ -170,6 +192,8 @@ export interface UploadQueue {
   onEvent(listener: (event: UploadQueueEvent) => void): () => void;
   /** Accepts images in order; returns their client media IDs. */
   add(inputs: readonly UploadQueueInput[]): string[];
+  /** Resumes images kept on the device; already-known IDs are skipped. */
+  restore(records: readonly PersistedUpload[]): string[];
   /** Sets the category of an image that has not reserved a slot yet. */
   setCategory(localId: string, category: MediaCategory): boolean;
   retry(localId: string): void;
@@ -416,8 +440,48 @@ export function createUploadQueue(
     timer?.abort();
   }
 
+  function persist(entry: Entry) {
+    const processed = entry.processed;
+    if (!deps.persistence || !processed || !processed.sha256) return;
+    const bytes: Omit<ProcessedImage, "previewUrl"> = {
+      blob: processed.blob,
+      mimeType: processed.mimeType,
+      width: processed.width,
+      height: processed.height,
+      byteSize: processed.byteSize,
+      sha256: processed.sha256,
+      preprocessingVersion: processed.preprocessingVersion,
+    };
+    try {
+      void Promise.resolve(
+        deps.persistence.save({
+          localId: entry.item.localId,
+          capturedAt: entry.item.capturedAt,
+          category: entry.item.category,
+          mediaId: entry.item.mediaId,
+          uploadAttempts: entry.item.uploadAttempts,
+          processed: bytes,
+        }),
+      ).catch(() => undefined);
+    } catch {
+      // A full or unavailable device store must not stall the upload.
+    }
+  }
+
+  function unpersist(localId: string) {
+    if (!deps.persistence) return;
+    try {
+      void Promise.resolve(deps.persistence.remove(localId)).catch(
+        () => undefined,
+      );
+    } catch {
+      // Best effort; a stale record re-registers idempotently.
+    }
+  }
+
   function removeEntry(entry: Entry) {
     const id = entry.item.localId;
+    unpersist(id);
     if (entries.get(id) !== entry) return;
     clearRetry(entry);
     leaveBatch(entry);
@@ -482,6 +546,7 @@ export function createUploadQueue(
       height: result.height,
       byteSize: result.byteSize,
     });
+    persist(entry);
     pump();
   }
 
@@ -505,6 +570,7 @@ export function createUploadQueue(
   function markUploaded(entry: Entry) {
     const mediaId = entry.item.mediaId!;
     const category = entry.item.category!;
+    unpersist(entry.item.localId);
     clearRetry(entry);
     entry.processed = null;
     entry.target = null;
@@ -525,6 +591,7 @@ export function createUploadQueue(
   }
 
   async function reject(entry: Entry, code: UploadErrorCode) {
+    unpersist(entry.item.localId);
     clearRetry(entry);
     const mediaId = entry.item.mediaId;
     leaveBatch(entry);
@@ -548,6 +615,7 @@ export function createUploadQueue(
   }
 
   function block(entry: Entry, code: UploadErrorCode) {
+    unpersist(entry.item.localId);
     clearRetry(entry);
     leaveBatch(entry);
     patch(entry, {
@@ -755,6 +823,7 @@ export function createUploadQueue(
             contentType: result.media.upload.contentType,
           };
           patch(entry, { mediaId: result.media.id });
+          persist(entry);
           // A replay of an already confirmed image skips straight to done.
           if (result.media.status === "uploaded") {
             if (entry.cancelRequested) continue;
@@ -932,6 +1001,64 @@ export function createUploadQueue(
       emit();
       return ids;
     },
+    restore(records) {
+      if (disposed || records.length === 0) return [];
+      if (!hasActiveWork()) {
+        batchTotal = 0;
+        batchDone = 0;
+      }
+      const createPreview =
+        deps.createPreview ?? ((blob: Blob) => URL.createObjectURL(blob));
+      const ids: string[] = [];
+      for (const record of records) {
+        if (entries.has(record.localId)) continue;
+        let previewUrl: string | null = null;
+        try {
+          previewUrl = createPreview(record.processed.blob);
+        } catch {
+          previewUrl = null;
+        }
+        const entry: Entry = {
+          item: {
+            localId: record.localId,
+            stage: record.category ? "queued" : "needs_category",
+            category: record.category,
+            capturedAt: record.capturedAt,
+            previewUrl,
+            width: record.processed.width,
+            height: record.processed.height,
+            byteSize: record.processed.byteSize,
+            mediaId: record.mediaId,
+            progress: 0,
+            uploadAttempts: record.uploadAttempts,
+            autoRetries: 0,
+            retryAt: null,
+            errorCode: null,
+            waitingForNetwork: false,
+          },
+          file: null,
+          processed: { ...record.processed, previewUrl: previewUrl ?? "" },
+          target: null,
+          // Registering again with the same client media ID is idempotent and
+          // returns the upload target; the confirm step checks the object.
+          resume: "register",
+          cancelRequested: false,
+          controller: null,
+          abortReason: null,
+          retryTimer: null,
+          incompleteReuploaded: false,
+          authRefreshed: false,
+          inBatch: true,
+        };
+        entries.set(record.localId, entry);
+        order = [...order, record.localId];
+        batchTotal += 1;
+        ids.push(record.localId);
+      }
+      emit();
+      pump();
+      return ids;
+    },
     setCategory(localId, category) {
       const entry = entries.get(localId);
       if (!entry || entry.cancelRequested || entry.item.mediaId) return false;
@@ -949,6 +1076,7 @@ export function createUploadQueue(
         category,
         stage: stage === "needs_category" ? "queued" : stage,
       });
+      persist(entry);
       if (stage === "needs_category") pump();
       return true;
     },

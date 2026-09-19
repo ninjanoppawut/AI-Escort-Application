@@ -25,7 +25,8 @@ export const MEDIA_COPY = {
   reloadList: "โหลดภาพอีกครั้ง",
   offlineTitle: "ออฟไลน์อยู่",
   offlineBody: "ภาพจะรอส่ง แล้วระบบจะส่งให้อัตโนมัติเมื่อกลับมาออนไลน์",
-  unsentWarning: "ภาพที่ยังไม่ส่งจะหายถ้าปิดหน้านี้",
+  unsentWarning:
+    "ภาพที่ยังไม่ส่งเก็บไว้ในเครื่องนี้แล้ว · เปิดหน้านี้อีกครั้งเพื่อส่งต่อ",
   progress: (current: number, total: number) =>
     `กำลังส่งภาพ ${current} จาก ${total}`,
   waitingProgress: (count: number) => `รอส่ง ${count} ภาพ`,

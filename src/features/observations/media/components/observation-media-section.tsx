@@ -24,6 +24,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
+import { localStoreAvailable } from "@/lib/offline/local-store";
 import { cn } from "@/lib/utils";
 
 import { OBSERVATION_BLOCKED_REASON_LABELS } from "../../errors";
@@ -192,16 +193,21 @@ export function ObservationMediaSection({
     }
   }, [serverItems, snapshot.items, queue]);
 
-  // Unsent images live only in this tab until P14's IndexedDB queue.
+  // Unsent images are kept on the device (P14-01); only an image still being
+  // processed, or a device without IndexedDB, would be lost by closing.
+  const unsentAtRisk =
+    snapshot.hasUnsent &&
+    (!localStoreAvailable() ||
+      snapshot.items.some((item) => item.stage === "processing"));
   useEffect(() => {
-    if (!snapshot.hasUnsent) return;
+    if (!unsentAtRisk) return;
     const guard = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", guard);
     return () => window.removeEventListener("beforeunload", guard);
-  }, [snapshot.hasUnsent]);
+  }, [unsentAtRisk]);
 
   const deleteMutation = useMutation({
     mutationFn: (mediaId: string) => deleteMediaRequest(observationId, mediaId),
