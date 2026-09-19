@@ -85,6 +85,8 @@ export const mediaRecordSchema = z
     height: z.number().int().positive(),
     capturedAt: z.string(),
     uploadedAt: z.string().nullable(),
+    /** Part of a submitted version: kept for good, never deleted (P12). */
+    submitted: z.boolean().default(false),
     upload: z
       .object({
         bucket: z.literal(OBSERVATION_IMAGES_BUCKET),

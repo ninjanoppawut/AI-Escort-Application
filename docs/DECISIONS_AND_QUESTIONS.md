@@ -366,6 +366,24 @@ This file records accepted product decisions for developers and AI coding agents
 - **Decision:** Apply the per-category retention and deletion schedule in `PRIVACY_RETENTION_AND_RESEARCH.md` and require separate consent for research use beyond classroom operation.
 - **Consequence:** Raw live-location samples and raw provider payloads have short retention; export artifacts expire quickly; durable learning records, audit history, and pseudonymized research data have separate lifecycles. A production/pilot owner must approve or shorten the schedule before deployment.
 
+### D-065 — Revision topic vocabulary v1
+
+- **Status:** accepted as an implementation default (P12)
+- **Decision:** A revision topic (`field_key`) is one of `images`, `common_name`, `scientific_name`, `traits`, `evidence_note`, `reference_note`. Capture location and time are never a topic because they are immutable (D-019, D-020). A requested or granted additional topic uses the same keys; a grant opens only requested keys it names.
+- **Consequence:** An `images` revision adds images; images that belong to any submitted version can never be deleted (owner item 77). Trait corrections are one `traits` topic, not per trait. A later per-trait vocabulary would be a new version.
+
+### D-066 — Issue report types and limits
+
+- **Status:** accepted as an implementation default (P12)
+- **Decision:** Report types are `identity`, `image`, `location`, `privacy`, and `other` (design S-26 adds location to the database draft). A reason needs 10–500 characters. Only an active classmate of a submitted record reports it; the owner cannot report their own record. One report per reporter and record in any rolling 24 hours returns `RATE_LIMITED` with `retryAfterSeconds`.
+- **Consequence:** Reports notify class teachers only, with the report ID. The owner has no read path to reports or reporter identity; teachers see the reporter name.
+
+### D-067 — Teacher review round rules
+
+- **Status:** accepted as an implementation default (P12)
+- **Decision:** Opening a submitted or resubmitted record's review moves it to `teacher_review` through an explicit begin action. One decision exists per submitted version, sent with that version's submission ID; a retry of the same decision is `existing` and any other decision on a decided or superseded version is `OBSERVATION_VERSION_CONFLICT`. Revision and rejection need feedback (≤ 500 characters); a revision needs at least one topic. Verified records keep the teacher's names on the observation for display beside the student's values. Revision stays possible after the session is completed but not while the class is archived; resubmission is refused while the session is paused (D-056). A resubmission cancels pending additional-topic requests. A denied request has no notification type; the owner sees it in the revision view.
+- **Consequence:** A decided record (verified, unable to verify, rejected) takes no further decision in P12.
+
 ## Working defaults
 
 - Thai is the default UI language.

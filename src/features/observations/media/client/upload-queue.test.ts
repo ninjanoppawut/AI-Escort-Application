@@ -69,6 +69,7 @@ function mediaRecord(
     height: body.height,
     capturedAt: body.capturedAt,
     uploadedAt: status === "uploaded" ? body.capturedAt : null,
+    submitted: false,
     upload: {
       bucket: "observation-images",
       path: pathFor(id),
@@ -805,6 +806,7 @@ function viewItem(
     height: 2048,
     capturedAt: "2026-09-19T03:00:00Z",
     uploadedAt: "2026-09-19T03:00:05Z",
+    submitted: false,
     signedUrl,
     expiresAt,
   };

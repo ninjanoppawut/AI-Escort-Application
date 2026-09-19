@@ -7,6 +7,31 @@ export type Json =
   | Json[];
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
       activities: {
@@ -1262,6 +1287,80 @@ export type Database = {
           },
         ];
       };
+      observation_issue_reports: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          id: string;
+          observation_id: string;
+          reason: string;
+          report_type: string;
+          reporter_id: string;
+          resolution_note: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          session_id: string;
+          status: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          id?: string;
+          observation_id: string;
+          reason: string;
+          report_type: string;
+          reporter_id: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          session_id: string;
+          status?: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          id?: string;
+          observation_id?: string;
+          reason?: string;
+          report_type?: string;
+          reporter_id?: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          session_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observation_issue_reports_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_issue_reports_observation_id_fkey";
+            columns: ["observation_id"];
+            isOneToOne: false;
+            referencedRelation: "observations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_issue_reports_reporter_id_fkey";
+            columns: ["reporter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_issue_reports_resolved_by_fkey";
+            columns: ["resolved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       observation_media: {
         Row: {
           byte_size: number;
@@ -1408,6 +1507,67 @@ export type Database = {
             columns: ["session_id"];
             isOneToOne: false;
             referencedRelation: "exploration_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      observation_revision_topics: {
+        Row: {
+          class_id: string;
+          field_key: string;
+          id: string;
+          observation_id: string;
+          observer_id: string;
+          opened_at: string;
+          opened_by: string;
+          review_id: string;
+          source: string;
+          unlock_request_id: string | null;
+        };
+        Insert: {
+          class_id: string;
+          field_key: string;
+          id?: string;
+          observation_id: string;
+          observer_id: string;
+          opened_at?: string;
+          opened_by: string;
+          review_id: string;
+          source: string;
+          unlock_request_id?: string | null;
+        };
+        Update: {
+          class_id?: string;
+          field_key?: string;
+          id?: string;
+          observation_id?: string;
+          observer_id?: string;
+          opened_at?: string;
+          opened_by?: string;
+          review_id?: string;
+          source?: string;
+          unlock_request_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observation_revision_topics_opened_by_fkey";
+            columns: ["opened_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_revision_topics_review_fk";
+            columns: ["review_id", "observation_id"];
+            isOneToOne: false;
+            referencedRelation: "teacher_reviews";
+            referencedColumns: ["id", "observation_id"];
+          },
+          {
+            foreignKeyName: "observation_revision_topics_unlock_request_id_fkey";
+            columns: ["unlock_request_id"];
+            isOneToOne: false;
+            referencedRelation: "observation_unlock_requests";
             referencedColumns: ["id"];
           },
         ];
@@ -1603,6 +1763,91 @@ export type Database = {
           },
         ];
       };
+      observation_unlock_requests: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          decision_note: string | null;
+          granted_fields: string[] | null;
+          id: string;
+          observation_id: string;
+          reason: string;
+          requested_by: string;
+          requested_fields: string[];
+          review_id: string;
+          session_id: string;
+          status: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          decision_note?: string | null;
+          granted_fields?: string[] | null;
+          id?: string;
+          observation_id: string;
+          reason: string;
+          requested_by: string;
+          requested_fields: string[];
+          review_id: string;
+          session_id: string;
+          status?: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          decision_note?: string | null;
+          granted_fields?: string[] | null;
+          id?: string;
+          observation_id?: string;
+          reason?: string;
+          requested_by?: string;
+          requested_fields?: string[];
+          review_id?: string;
+          session_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "observation_unlock_requests_decided_by_fkey";
+            columns: ["decided_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_unlock_requests_observation_fk";
+            columns: [
+              "observation_id",
+              "requested_by",
+              "class_id",
+              "session_id",
+            ];
+            isOneToOne: false;
+            referencedRelation: "observations";
+            referencedColumns: ["id", "observer_id", "class_id", "session_id"];
+          },
+          {
+            foreignKeyName: "observation_unlock_requests_requested_by_fkey";
+            columns: ["requested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "observation_unlock_requests_review_fk";
+            columns: ["review_id", "observation_id"];
+            isOneToOne: false;
+            referencedRelation: "teacher_reviews";
+            referencedColumns: ["id", "observation_id"];
+          },
+        ];
+      };
       observations: {
         Row: {
           activity_id: string;
@@ -1615,11 +1860,14 @@ export type Database = {
           first_submitted_at: string | null;
           id: string;
           identity_source: string | null;
+          latest_review_id: string | null;
+          latest_reviewed_at: string | null;
           latest_submitted_at: string | null;
           location_status: string;
           location_unavailable_reason: string | null;
           normalized_taxon_key: string | null;
           observer_id: string;
+          review_count: number;
           same_species_count: number;
           same_species_in_session: boolean;
           session_group_id: string;
@@ -1632,6 +1880,8 @@ export type Database = {
           student_scientific_name: string | null;
           submission_count: number;
           updated_at: string;
+          verified_common_name: string | null;
+          verified_scientific_name: string | null;
           version: number;
         };
         Insert: {
@@ -1645,11 +1895,14 @@ export type Database = {
           first_submitted_at?: string | null;
           id?: string;
           identity_source?: string | null;
+          latest_review_id?: string | null;
+          latest_reviewed_at?: string | null;
           latest_submitted_at?: string | null;
           location_status: string;
           location_unavailable_reason?: string | null;
           normalized_taxon_key?: string | null;
           observer_id: string;
+          review_count?: number;
           same_species_count?: number;
           same_species_in_session?: boolean;
           session_group_id: string;
@@ -1662,6 +1915,8 @@ export type Database = {
           student_scientific_name?: string | null;
           submission_count?: number;
           updated_at?: string;
+          verified_common_name?: string | null;
+          verified_scientific_name?: string | null;
           version?: number;
         };
         Update: {
@@ -1675,11 +1930,14 @@ export type Database = {
           first_submitted_at?: string | null;
           id?: string;
           identity_source?: string | null;
+          latest_review_id?: string | null;
+          latest_reviewed_at?: string | null;
           latest_submitted_at?: string | null;
           location_status?: string;
           location_unavailable_reason?: string | null;
           normalized_taxon_key?: string | null;
           observer_id?: string;
+          review_count?: number;
           same_species_count?: number;
           same_species_in_session?: boolean;
           session_group_id?: string;
@@ -1692,9 +1950,18 @@ export type Database = {
           student_scientific_name?: string | null;
           submission_count?: number;
           updated_at?: string;
+          verified_common_name?: string | null;
+          verified_scientific_name?: string | null;
           version?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "observations_latest_review_fk";
+            columns: ["latest_review_id", "id"];
+            isOneToOne: false;
+            referencedRelation: "teacher_reviews";
+            referencedColumns: ["id", "observation_id"];
+          },
           {
             foreignKeyName: "observations_observer_id_fkey";
             columns: ["observer_id"];
@@ -2341,6 +2608,91 @@ export type Database = {
           },
         ];
       };
+      teacher_reviews: {
+        Row: {
+          class_id: string;
+          corrected_traits: Json;
+          decision: string;
+          feedback: string | null;
+          id: string;
+          observation_id: string;
+          observer_id: string;
+          review_started_at: string | null;
+          reviewed_at: string;
+          reviewer_id: string;
+          session_id: string;
+          submission_id: string;
+          verified_common_name: string | null;
+          verified_scientific_name: string | null;
+        };
+        Insert: {
+          class_id: string;
+          corrected_traits?: Json;
+          decision: string;
+          feedback?: string | null;
+          id?: string;
+          observation_id: string;
+          observer_id: string;
+          review_started_at?: string | null;
+          reviewed_at?: string;
+          reviewer_id: string;
+          session_id: string;
+          submission_id: string;
+          verified_common_name?: string | null;
+          verified_scientific_name?: string | null;
+        };
+        Update: {
+          class_id?: string;
+          corrected_traits?: Json;
+          decision?: string;
+          feedback?: string | null;
+          id?: string;
+          observation_id?: string;
+          observer_id?: string;
+          review_started_at?: string | null;
+          reviewed_at?: string;
+          reviewer_id?: string;
+          session_id?: string;
+          submission_id?: string;
+          verified_common_name?: string | null;
+          verified_scientific_name?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "teacher_reviews_observation_fk";
+            columns: [
+              "observation_id",
+              "observer_id",
+              "class_id",
+              "session_id",
+            ];
+            isOneToOne: false;
+            referencedRelation: "observations";
+            referencedColumns: ["id", "observer_id", "class_id", "session_id"];
+          },
+          {
+            foreignKeyName: "teacher_reviews_observer_id_fkey";
+            columns: ["observer_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "teacher_reviews_reviewer_id_fkey";
+            columns: ["reviewer_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "teacher_reviews_submission_fk";
+            columns: ["submission_id", "observation_id"];
+            isOneToOne: false;
+            referencedRelation: "observation_submissions";
+            referencedColumns: ["id", "observation_id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -2378,6 +2730,16 @@ export type Database = {
           group_id: string;
           outcome: string;
           status: string;
+        }[];
+      };
+      begin_observation_review: {
+        Args: { target_observation_id: string };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          observation_status: string;
+          observation_version: number;
+          outcome: string;
         }[];
       };
       cancel_group_invitation: {
@@ -2532,6 +2894,20 @@ export type Database = {
           relation: Json;
         }[];
       };
+      decide_revision_unlock_request: {
+        Args: {
+          decision_note: string;
+          granted_field_keys: string[];
+          request_decision: string;
+          target_request_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          outcome: string;
+          request_status: string;
+        }[];
+      };
       decline_group_invitation: {
         Args: { target_invitation_id: string };
         Returns: {
@@ -2596,6 +2972,10 @@ export type Database = {
         Args: { target_observation_id: string };
         Returns: Json;
       };
+      get_observation_revision_state: {
+        Args: { target_observation_id: string };
+        Returns: Json;
+      };
       get_session_live: { Args: { target_session_id: string }; Returns: Json };
       get_session_live_locations: {
         Args: { target_session_id: string };
@@ -2606,8 +2986,23 @@ export type Database = {
         Returns: Json;
       };
       get_session_setup: { Args: { target_session_id: string }; Returns: Json };
+      get_teacher_issue_report: {
+        Args: { target_report_id: string };
+        Returns: Json;
+      };
       get_teacher_observation_review: {
         Args: { target_observation_id: string };
+        Returns: Json;
+      };
+      get_teacher_review_queue: {
+        Args: {
+          cursor_observation_id: string;
+          cursor_submitted_at: string;
+          page_limit: number;
+          queue_filter: string;
+          target_class_id: string;
+          target_session_id: string;
+        };
         Returns: Json;
       };
       grant_platform_admin: {
@@ -2854,6 +3249,32 @@ export type Database = {
           status: string;
         }[];
       };
+      report_observation_issue: {
+        Args: {
+          report_reason: string;
+          target_observation_id: string;
+          target_report_type: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          outcome: string;
+          report_id: string;
+        }[];
+      };
+      request_additional_revision_fields: {
+        Args: {
+          request_reason: string;
+          requested_field_keys: string[];
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          outcome: string;
+          request_id: string;
+        }[];
+      };
       reset_group_creation_claim: {
         Args: {
           reset_reason_text: string;
@@ -2867,12 +3288,57 @@ export type Database = {
           outcome: string;
         }[];
       };
+      resolve_observation_issue_report: {
+        Args: { next_status: string; note: string; target_report_id: string };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          outcome: string;
+          report_status: string;
+        }[];
+      };
+      resubmit_observation: {
+        Args: {
+          acknowledge_same_species: boolean;
+          expected_version: number;
+          target_client_submission_id: string;
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          observation_version: number;
+          outcome: string;
+          submission_id: string;
+          submission_number: number;
+        }[];
+      };
       resume_exploration_session: {
         Args: { target_session_id: string };
         Returns: {
           error_code: string;
           outcome: string;
           status: string;
+        }[];
+      };
+      review_observation: {
+        Args: {
+          expected_submission_id: string;
+          review_corrected_traits: Json;
+          review_decision: string;
+          review_feedback: string;
+          review_topic_keys: string[];
+          review_verified_common_name: string;
+          review_verified_scientific_name: string;
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          observation_status: string;
+          observation_version: number;
+          outcome: string;
+          review_id: string;
         }[];
       };
       revoke_platform_admin: {
@@ -2923,6 +3389,24 @@ export type Database = {
           error_details: Json;
           outcome: string;
           version_number: number;
+        }[];
+      };
+      save_observation_revision: {
+        Args: {
+          expected_version: number;
+          revision_common_name: string;
+          revision_evidence_note: string;
+          revision_reference_note: string;
+          revision_scientific_name: string;
+          revision_traits: Json;
+          target_observation_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          observation_status: string;
+          observation_version: number;
+          outcome: string;
         }[];
       };
       save_student_review: {
@@ -3188,6 +3672,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

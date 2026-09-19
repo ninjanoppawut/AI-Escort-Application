@@ -68,6 +68,7 @@ function serverItem(
     height: 2048,
     capturedAt: "2026-09-19T03:00:00+00:00",
     uploadedAt: "2026-09-19T03:00:05+00:00",
+    submitted: false,
     signedUrl: `https://storage.example.test/signed/${n}?token=t${n}`,
     expiresAt: "2099-01-01T00:00:00.000Z",
     ...overrides,
@@ -179,6 +180,7 @@ function mediaRecord(body: RegisterMediaRequest): MediaRecord {
     height: body.height,
     capturedAt: body.capturedAt,
     uploadedAt: null,
+    submitted: false,
     upload: {
       bucket: "observation-images",
       path: `${STORAGE_PATH_PREFIX}/${id}.webp`,
