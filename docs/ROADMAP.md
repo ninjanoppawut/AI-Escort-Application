@@ -5,7 +5,7 @@
 - Product, architecture, database, API, decision, module, and design specifications exist.
 - The pinned Next.js/Supabase foundation is implemented locally.
 - The CLI is linked to the dedicated hosted project `rhntelxdmuvldrxyceqx`.
-- Phases 1–9 and P11-01/P11-03 are verified locally and in hosted CI except
+- Phases 1–9 and Phase 11 (manual path) are verified locally and in hosted CI except
   the owner-blocked P0-09, P0-EXIT, and P1-01; only
   the first identity migration is deployed to the linked hosted development
   project (later migrations await owner approval).
@@ -1348,6 +1348,29 @@ Requirements: `REV-001`–`REV-006`.
 
 - [x] **P11-01:** Add trait verification, immutable submission, relation/tag, and history schema/RLS.
 - [ ] **P11-02:** Build candidate selection, manual entry, trait checks/corrections, and evidence form.
+
+Status: blocked — AI candidate selection and match/not-match corrections of
+AI traits need P10. Manual entry, trait checks, the evidence form, and
+review-before-submit are verified as of 2026-09-19:
+- `5ff841d`: owner review section on `/observations/[observationId]`
+  (`src/features/observations/review/components/plant-review-section.tsx`,
+  `manual-review-form.tsx`, `trait-checklist.tsx`, `review-conflict-dialog.tsx`,
+  `submit-panel.tsx`, `review-form.ts`): AI-state entry panel (`unavailable`,
+  with queued/running/failed copy ready for P10), manual form with the
+  plant-traits-v1 checks (seen with value, unsure, not visible, unchecked),
+  unknown-name warning, evidence minimum counter, reference note,
+  version-conflict merge that re-applies only the student's edits,
+  server-blocker checklist, confirm dialog, idempotent submit that reuses its
+  client submission ID on retry, and the frozen submission summary. The form
+  keeps the last draft/review pair read at one version, so a refetch never
+  drops unsaved edits. The P8 notes form stays until manual entry starts and
+  holds the switch while it has unsaved text.
+- Design note: the S-19 group-by-group trait steps are one screen with
+  collapsible groups; the S-18 candidate list waits for P10.
+- Tests: `review-form.test.ts` (11), `plant-review-section.test.tsx` (13),
+  `observation-draft-screen.test.tsx` (14, review read model mocked);
+  `tests/e2e/observation-review.spec.ts` first journey (390 px and 360 px).
+- CI: hosted CI run `35441503151` on `5ff841d`.
 - [x] **P11-03:** Implement submit with required fields, optimistic concurrency, and immutable versioning.
 
 P11-01 and P11-03 status: complete as of 2026-09-19 on the manual path (P10 is
@@ -1366,10 +1389,37 @@ blocked; P11-02/04/05 UI and P11-06/EXIT browser evidence pending). Evidence:
   `f46e1dd`.
 - Remaining risk: owner items 61–80 (taxon key, evidence minimum, specimen
   thresholds, counts-only warning).
-- [ ] **P11-04:** Implement same-species warning/acknowledgement/tag/teacher notification.
-- [ ] **P11-05:** Implement teacher-only candidate relationship confirmation without auto-merge.
-- [ ] **P11-06:** Pass validation, history, same-species, dedupe-safety, and submission concurrency tests.
-- [ ] **P11-EXIT:** Students submit evidence without treating AI or dedupe signals as authority.
+- [x] **P11-04:** Implement same-species warning/acknowledgement/tag/teacher notification.
+- [x] **P11-05:** Implement teacher-only candidate relationship confirmation without auto-merge.
+- [x] **P11-06:** Pass validation, history, same-species, dedupe-safety, and submission concurrency tests.
+- [x] **P11-EXIT:** Students submit evidence without treating AI or dedupe signals as authority.
+
+P11-04 to P11-EXIT status: complete as of 2026-09-19 on the manual path.
+Evidence:
+- `87e5353`: the submit panel reads the owner's live related counts per saved
+  version (the review read model learns of a match only at submit) and shows
+  the warning, possible same-specimen count, and acknowledgement; a refused
+  submit that reports a match raises the same warning and keeps the client
+  submission ID. Tag and teacher notification come from `submit_observation`
+  (`a63b3ce`).
+- `c47980e`: `/teacher/reviews/[observationId]`
+  (`teacher-review-screen.tsx`), the deep link of `observation_submitted` and
+  `same_species_warning`: submitted versions with signed images, capture,
+  trait checks, tag, and related records; only possible same-specimen rows take
+  a confirmed teacher decision with the loaded decision as precondition; a
+  changed decision is reported and reloaded; nothing is merged or deleted.
+- Tests: database `phase11_observation_submission_test.sql` (35) and
+  `phase11_observation_submission_concurrency_test.sql` (7) from `a63b3ce`;
+  `plant-review-section.test.tsx` (same-species acknowledgement and
+  refused-submit race), `teacher-review-screen.test.tsx` (4);
+  `tests/e2e/observation-review.spec.ts` second journey (warning,
+  acknowledgement, teacher notification and tag, classmate denial, teacher
+  confirmation, both records still submitted).
+- CI: hosted CI runs `35441806432` on `87e5353` and `35442432065` on
+  `c47980e`.
+- Remaining risk: owner items 61–80 (taxon key, evidence minimum, specimen
+  thresholds, counts-only warning); P10 adds AI candidates and must re-run the
+  P11 journeys.
 
 ## Phase 12 — Teacher review and revision
 
