@@ -5,6 +5,7 @@ import {
 } from "../client/request";
 import {
   SUBMIT_BLOCKERS,
+  ownerRelatedSchema,
   reviewStateSchema,
   type SubmitBlocker,
 } from "./contracts";
@@ -57,5 +58,18 @@ export function fetchReviewState(observationId: string) {
   return fetchObservationJson(
     `/api/observations/${observationId}/student-review`,
     reviewStateSchema,
+  );
+}
+
+/** The same-species count a refused submit reported, if any. */
+export function sameSpeciesCountOf(error: unknown): number | null {
+  const count = detailsOf(error).sameSpeciesCount;
+  return typeof count === "number" ? count : null;
+}
+
+export function fetchOwnerRelated(observationId: string) {
+  return fetchObservationJson(
+    `/api/observations/${observationId}/related`,
+    ownerRelatedSchema,
   );
 }

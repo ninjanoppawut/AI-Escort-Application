@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CircleAlert,
   CircleCheck,
@@ -17,14 +17,17 @@ import { cn } from "@/lib/utils";
 import { sendObservationJson } from "../../client/request";
 import { OBSERVATION_BLOCKED_REASON_LABELS } from "../../errors";
 import {
+  fetchOwnerRelated,
   presentReviewError,
   reviewErrorCodeOf,
+  sameSpeciesCountOf,
   submitBlockersOf,
   type ReviewClientErrorCode,
 } from "../client";
 import {
   SUBMIT_BLOCKERS,
   SUBMIT_BLOCKER_LABELS,
+  reviewQueryKeys,
   type ReviewState,
   type SubmitBlocker,
 } from "../contracts";
@@ -70,6 +73,19 @@ export function SubmitPanel({
   const [acknowledged, setAcknowledged] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const submission = useRef<{ version: number; id: string } | null>(null);
+  // A same-species match the server reported on a refused submit (REV-004).
+  const [deniedMatch, setDeniedMatch] = useState<{
+    version: number;
+    count: number;
+  } | null>(null);
+
+  // Live owner counts for the saved draft; counts only, never other records.
+  const relatedQuery = useQuery({
+    queryKey: reviewQueryKeys.related(observationId, state.version),
+    queryFn: () => fetchOwnerRelated(observationId),
+    enabled: state.identitySource !== null,
+    retry: false,
+  });
 
   function submissionIdFor(version: number) {
     if (submission.current?.version !== version) {
@@ -99,6 +115,14 @@ export function SubmitPanel({
       setConfirming(false);
       const code = reviewErrorCodeOf(error);
       if (code === "IDEMPOTENCY_KEY_REUSE") submission.current = null;
+      if (code === "SAME_SPECIES_ACKNOWLEDGEMENT_REQUIRED") {
+        setAcknowledged(false);
+        setDeniedMatch({
+          version: state.version,
+          count: sameSpeciesCountOf(error) ?? 0,
+        });
+        void relatedQuery.refetch();
+      }
       if (code !== "NETWORK") onChanged();
     },
   });
@@ -112,7 +136,18 @@ export function SubmitPanel({
   const blockers: SubmitBlocker[] = SUBMIT_BLOCKERS.filter((blocker) =>
     state.readiness.blockers.includes(blocker),
   );
-  const sameSpecies = state.sameSpecies.inSession;
+  const related = relatedQuery.data;
+  const denied = deniedMatch?.version === state.version ? deniedMatch : null;
+  const sameSpeciesCount = Math.max(
+    related?.sameSpeciesCount ?? 0,
+    denied?.count ?? 0,
+    state.sameSpecies.count,
+  );
+  const sameSpecies =
+    Boolean(related?.sameSpeciesInSession) ||
+    denied !== null ||
+    state.sameSpecies.inSession;
+  const possibleSameSpecimen = related?.possibleSameSpecimenCount ?? 0;
   const blockedCode = state.permissions.submitBlockedCode;
   const blockedReason = state.permissions.submitBlockedReason;
   const canSubmitNow =
@@ -230,10 +265,14 @@ export function SubmitPanel({
               className="mt-0.5 size-4 shrink-0"
             />
             พืชชนิดนี้ถูกบันทึกในรอบนี้แล้ว{" "}
-            {state.sameSpecies.count > 0
-              ? `${state.sameSpecies.count} รายการ`
-              : ""}
+            {sameSpeciesCount > 0 ? `${sameSpeciesCount} รายการ` : ""}
           </p>
+          {possibleSameSpecimen > 0 ? (
+            <p className="leading-6" data-possible-same-specimen="">
+              อาจเป็นต้นเดียวกัน {possibleSameSpecimen} รายการ ·
+              ครูจะเป็นคนตรวจยืนยัน
+            </p>
+          ) : null}
           <p className="leading-6">
             ยังส่งได้ ครูจะเห็นป้าย “ชนิดเดียวกัน”
             และเป็นคนตัดสินว่าเป็นต้นเดียวกันหรือไม่ ไม่มีรายการใดถูกรวมหรือลบ

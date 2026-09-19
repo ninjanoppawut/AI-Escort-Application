@@ -50,7 +50,11 @@ class FakeServer {
   referenceNote: string | null = null;
   traits: Trait[] = [];
   wholePlantImage = true;
+  /** Other submitted records of this taxon in the session. */
   sameSpeciesCount = 0;
+  /** A match /related does not show yet (a concurrent classmate submit). */
+  unseenSameSpecies = 0;
+  relatedReads = 0;
   canSubmit = true;
   submitBlockedCode: string | null = null;
   submission: ReviewState["submission"] = null;
@@ -132,9 +136,10 @@ class FakeServer {
         blockers: this.blockers(),
         evidenceNoteMinChars: EVIDENCE_NOTE_MIN_CHARS,
       },
+      // The observation columns are written at submit, as in SQL.
       sameSpecies: {
-        inSession: this.sameSpeciesCount > 0,
-        count: this.sameSpeciesCount,
+        inSession: (this.submission?.sameSpeciesCount ?? 0) > 0,
+        count: this.submission?.sameSpeciesCount ?? 0,
       },
       submission: this.submission,
       permissions: {
@@ -145,6 +150,18 @@ class FakeServer {
           : "INVALID_STATUS_TRANSITION",
         submitBlockedReason: null,
       },
+      refreshedAt: "2026-09-19T02:10:00+00:00",
+    });
+  }
+
+  related() {
+    this.relatedReads += 1;
+    return envelope({
+      basis: this.submission ? "submitted" : "draft",
+      sameSpeciesInSession: this.sameSpeciesCount > 0,
+      sameSpeciesCount: this.sameSpeciesCount,
+      possibleSameSpecimenCount: this.sameSpeciesCount > 0 ? 1 : 0,
+      visibility: "restricted",
       refreshedAt: "2026-09-19T02:10:00+00:00",
     });
   }
@@ -189,6 +206,10 @@ class FakeServer {
         submissionNumber: 1,
         version: this.submittedKeys.get(key),
       });
+    }
+    if (this.unseenSameSpecies > 0) {
+      this.sameSpeciesCount += this.unseenSameSpecies;
+      this.unseenSameSpecies = 0;
     }
     if (this.sameSpeciesCount > 0 && body.acknowledgeSameSpecies !== true) {
       return errorEnvelope("SAME_SPECIES_ACKNOWLEDGEMENT_REQUIRED", 409, {
@@ -263,6 +284,9 @@ function serve(server: FakeServer, options: { reviewFails?: boolean } = {}) {
         if (init?.method === "PUT") return server.save(body);
         if (reviewFails) throw new TypeError("offline");
         return envelope(server.review());
+      }
+      if (url === `/api/observations/${observationId}/related`) {
+        return server.related();
       }
       if (url === `/api/observations/${observationId}/submit`) {
         if (server.failNextSubmit === "network") {
@@ -586,7 +610,12 @@ describe("PlantReviewSection", () => {
 
     const panel = await screen.findByRole("region", { name: "สรุปก่อนส่ง" });
     expect(
-      within(panel).getByText(/พืชชนิดนี้ถูกบันทึกในรอบนี้แล้ว 2 รายการ/),
+      await within(panel).findByText(
+        /พืชชนิดนี้ถูกบันทึกในรอบนี้แล้ว 2 รายการ/,
+      ),
+    ).toBeVisible();
+    expect(
+      within(panel).getByText(/อาจเป็นต้นเดียวกัน 1 รายการ/),
     ).toBeVisible();
     const submit = within(panel).getByRole("button", { name: "ส่งการสังเกต" });
     expect(submit).toBeDisabled();
@@ -605,6 +634,53 @@ describe("PlantReviewSection", () => {
     expect(
       screen.getByText("ชนิดเดียวกันในรอบนี้ (รับทราบแล้ว)"),
     ).toBeVisible();
+  });
+
+  it("shows the warning a refused submit reports and submits once acknowledged", async () => {
+    const server = readyServer();
+    server.unseenSameSpecies = 1;
+    serve(server);
+    renderSection();
+
+    const panel = await screen.findByRole("region", { name: "สรุปก่อนส่ง" });
+    await waitFor(() => expect(server.relatedReads).toBe(1));
+    expect(panel.querySelector("[data-same-species]")).toBeNull();
+    await userEvent.click(
+      within(panel).getByRole("button", { name: "ส่งการสังเกต" }),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "ยืนยันส่งให้ครู" }),
+    );
+
+    expect(
+      await within(panel).findByText(
+        /พืชชนิดนี้ถูกบันทึกในรอบนี้แล้ว 1 รายการ/,
+      ),
+    ).toBeVisible();
+    expect(
+      panel.querySelector(
+        '[data-submit-error="SAME_SPECIES_ACKNOWLEDGEMENT_REQUIRED"]',
+      ),
+    ).not.toBeNull();
+    const submit = within(panel).getByRole("button", { name: "ส่งการสังเกต" });
+    expect(submit).toBeDisabled();
+    await userEvent.click(
+      within(panel).getByRole("checkbox", { name: /รับทราบ/ }),
+    );
+    await userEvent.click(submit);
+    await userEvent.click(
+      screen.getByRole("button", { name: "ยืนยันส่งให้ครู" }),
+    );
+
+    await screen.findByRole("region", { name: /ส่งให้ครูแล้ว/ });
+    expect(server.submits.map((body) => body.acknowledgeSameSpecies)).toEqual([
+      false,
+      true,
+    ]);
+    // Both attempts belong to one saved version, so they share one key.
+    expect(server.submits[1]!.clientSubmissionId).toBe(
+      server.submits[0]!.clientSubmissionId,
+    );
   });
 
   it("opens the conflict dialog and re-applies only the student's edits", async () => {

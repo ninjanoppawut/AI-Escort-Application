@@ -334,4 +334,7 @@ export const reviewQueryKeys = {
     ["observations", "review", observationId] as const,
   teacher: (observationId: string) =>
     ["observations", "teacher-review", observationId] as const,
+  /** Owner counts are recomputed for each saved version of the draft. */
+  related: (observationId: string, version: number) =>
+    ["observations", "related", observationId, version] as const,
 };
