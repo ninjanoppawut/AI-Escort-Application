@@ -2939,6 +2939,10 @@ export type Database = {
         Args: { target_observation_id: string };
         Returns: Json;
       };
+      get_observation_map_detail: {
+        Args: { target_observation_id: string };
+        Returns: Json;
+      };
       get_observation_related: {
         Args: { target_observation_id: string };
         Returns: Json;
@@ -2949,6 +2953,10 @@ export type Database = {
       };
       get_observation_revision_state: {
         Args: { target_observation_id: string };
+        Returns: Json;
+      };
+      get_session_completed_map: {
+        Args: { target_session_id: string };
         Returns: Json;
       };
       get_session_live: { Args: { target_session_id: string }; Returns: Json };

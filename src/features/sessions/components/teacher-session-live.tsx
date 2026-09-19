@@ -450,7 +450,13 @@ export function TeacherSessionLive({
                   รอบสำรวจนี้จบแล้ว · สำรวจครบ {
                     live.counts.completedGroups
                   }{" "}
-                  กลุ่ม
+                  กลุ่ม ·{" "}
+                  <Link
+                    className="font-semibold text-[#1F5C3A] underline underline-offset-2"
+                    href={`/sessions/${sessionId}/map`}
+                  >
+                    ดูแผนที่ผลลัพธ์
+                  </Link>
                 </p>
               ) : null}
 

@@ -492,6 +492,14 @@ function StudentSessionScreen({
                 {line}
               </p>
             ))}
+          {phase === "session_completed" ? (
+            <Link
+              className="mt-3 inline-flex min-h-11 items-center rounded-full bg-[#1F5C3A] px-5 text-sm font-semibold text-white"
+              href={`/sessions/${view.session.id}/map`}
+            >
+              ดูแผนที่ผลลัพธ์
+            </Link>
+          ) : null}
         </section>
 
         {fieldMode && location && location !== "notice" ? (

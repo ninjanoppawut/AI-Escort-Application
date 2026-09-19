@@ -384,6 +384,12 @@ This file records accepted product decisions for developers and AI coding agents
 - **Decision:** Opening a submitted or resubmitted record's review moves it to `teacher_review` through an explicit begin action. One decision exists per submitted version, sent with that version's submission ID; a retry of the same decision is `existing` and any other decision on a decided or superseded version is `OBSERVATION_VERSION_CONFLICT`. Revision and rejection need feedback (≤ 500 characters); a revision needs at least one topic. Verified records keep the teacher's names on the observation for display beside the student's values. Revision stays possible after the session is completed but not while the class is archived; resubmission is refused while the session is paused (D-056). A resubmission cancels pending additional-topic requests. A denied request has no notification type; the owner sees it in the revision view.
 - **Consequence:** A decided record (verified, unable to verify, rejected) takes no further decision in P12.
 
+### D-068 — Completed-map visibility
+
+- **Status:** accepted as an implementation default (P13)
+- **Decision:** Class teachers see every submitted record of a session on the map at any time. The session's participant snapshot (D-055, MAP-006) sees the map only after the teacher completes the session, with every submitted status except other students' rejected records; the owner still sees their own rejected record. Peers see the verified name, the verifying teacher, the student's values, the recorder, capture location, and submitted images, but never teacher feedback (D-057) or possible same-specimen counts. Records without a capture fix are listed, never placed. Without a configured map token the map is the coordinate sketch plus the list (D-005 adapter fallback).
+- **Consequence:** Design T-12b ("หมุดจะหายจากแผนที่ผลลัพธ์") holds for peers; the teacher legend keeps the rejected token. Peer image access is granted by Storage policy only for submitted images of records the peer may see after completion.
+
 ## Working defaults
 
 - Thai is the default UI language.
