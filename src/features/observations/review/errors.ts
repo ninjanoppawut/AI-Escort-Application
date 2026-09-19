@@ -24,6 +24,8 @@ export const REVIEW_UI_ERROR_CODES = [
   "SCIENTIFIC_NAME_REQUIRED",
   "SAME_SPECIES_ACKNOWLEDGEMENT_REQUIRED",
   "IMAGE_UPLOAD_INCOMPLETE",
+  "FIELD_NOT_UNLOCKED_FOR_REVISION",
+  "RATE_LIMITED",
 ] as const satisfies readonly ApiErrorCode[];
 
 export type ReviewUiErrorCode = (typeof REVIEW_UI_ERROR_CODES)[number];
@@ -71,6 +73,17 @@ const REVIEW_PRESENTATIONS: Record<
     description: "รอภาพที่กำลังส่งให้เสร็จก่อนส่งให้ครู",
     action: "ส่งภาพนี้อีกครั้ง",
   },
+  FIELD_NOT_UNLOCKED_FOR_REVISION: {
+    title: "ครูยังไม่เปิดหัวข้อนี้ให้แก้",
+    description:
+      "แก้ได้เฉพาะหัวข้อที่ครูเปิดไว้ ส่งคำขอแก้เพิ่มถ้าต้องการแก้หัวข้ออื่น",
+    action: "ส่งคำขอแก้เพิ่ม",
+  },
+  RATE_LIMITED: {
+    title: "ทำรายการบ่อยเกินไป",
+    description: "รายงานรายการเดียวกันได้วันละครั้ง",
+    action: "รอตามเวลาที่แสดงแล้วลองใหม่",
+  },
 };
 
 export function reviewErrorPresentation(code: ReviewUiErrorCode): Presentation {
@@ -103,7 +116,10 @@ export function httpStatusForReviewError(code: ReviewUiErrorCode) {
     case "INVALID_STATUS_TRANSITION":
     case "SAME_SPECIES_ACKNOWLEDGEMENT_REQUIRED":
     case "IMAGE_UPLOAD_INCOMPLETE":
+    case "FIELD_NOT_UNLOCKED_FOR_REVISION":
       return 409;
+    case "RATE_LIMITED":
+      return 429;
     default:
       return 403;
   }
@@ -123,7 +139,8 @@ export function reviewApiError(
     message: reviewErrorPresentation(code).title,
     retryable:
       code === "OBSERVATION_VERSION_CONFLICT" ||
-      code === "IMAGE_UPLOAD_INCOMPLETE",
+      code === "IMAGE_UPLOAD_INCOMPLETE" ||
+      code === "RATE_LIMITED",
     details,
   };
 }

@@ -40,6 +40,14 @@ const SAFE_REASONS = new Set([
   "too_short",
   "decision_changed",
   "not_specimen_candidate",
+  "not_reviewable",
+  "submission_changed",
+  "not_in_revision",
+  "no_changes",
+  "already_open",
+  "pending_exists",
+  "already_decided",
+  "own_record",
 ]);
 
 const SAFE_FIELDS = new Set([
@@ -53,10 +61,48 @@ const SAFE_FIELDS = new Set([
   "wholePlantImage",
   "clientSubmissionId",
   "decision",
+  "verifiedCommonName",
+  "verifiedScientificName",
+  "correctedTraits",
+  "feedback",
+  "topicKeys",
+  "fieldKeys",
+  "reason",
+  "type",
+  "status",
+  "note",
+  // Revision topic keys (D-065) name locked or already-open topics.
+  "images",
+  "common_name",
+  "scientific_name",
+  "traits",
+  "evidence_note",
+  "reference_note",
+]);
+
+const SAFE_STATUSES = new Set([
+  "submitted",
+  "teacher_review",
+  "revision_required",
+  "resubmitted",
+  "verified",
+  "unable_to_verify",
+  "rejected",
+  "pending",
+  "granted",
+  "denied",
+  "cancelled",
+  "open",
+  "reviewing",
+  "resolved",
+  "dismissed",
 ]);
 
 /** Passes through only documented, identifier-free denial details. */
-function denial(row: { error_code: string | null; error_details: unknown }) {
+export function reviewDenial(row: {
+  error_code: string | null;
+  error_details: unknown;
+}) {
   const code = row.error_code as ReviewUiErrorCode;
   if (!REVIEW_DENIAL_CODES.includes(code)) return reviewFailure("FORBIDDEN");
   const details =
@@ -85,6 +131,15 @@ function denial(row: { error_code: string | null; error_details: unknown }) {
   if (typeof details.possibleSameSpecimenCount === "number") {
     safe.possibleSameSpecimenCount = details.possibleSameSpecimenCount;
   }
+  if (typeof details.retryAfterSeconds === "number")
+    safe.retryAfterSeconds = details.retryAfterSeconds;
+  if (
+    typeof details.currentSubmissionId === "string" &&
+    /^[0-9a-f-]{36}$/.test(details.currentSubmissionId)
+  )
+    safe.currentSubmissionId = details.currentSubmissionId;
+  if (SAFE_STATUSES.has(details.currentStatus as string))
+    safe.currentStatus = details.currentStatus;
   if (code === "OBSERVATION_VERSION_CONFLICT") {
     if (typeof details.currentVersion === "number")
       safe.currentVersion = details.currentVersion;
@@ -110,7 +165,7 @@ export function interpretSaveReviewRow(value: unknown): ReviewOperationResult<{
   const parsed = saveRowSchema.safeParse(value);
   if (!parsed.success) return reviewFailure("FORBIDDEN");
   const row = parsed.data;
-  if (row.outcome === "denied") return denial(row);
+  if (row.outcome === "denied") return reviewDenial(row);
   return row.observation_version && row.observation_status
     ? {
         data: {
@@ -140,7 +195,7 @@ export function interpretSubmitRow(value: unknown): ReviewOperationResult<{
   const parsed = submitRowSchema.safeParse(value);
   if (!parsed.success) return reviewFailure("FORBIDDEN");
   const row = parsed.data;
-  if (row.outcome === "denied") return denial(row);
+  if (row.outcome === "denied") return reviewDenial(row);
   return row.submission_id && row.submission_number && row.observation_version
     ? {
         data: {
@@ -173,7 +228,7 @@ export function interpretDecisionRow(value: unknown): ReviewOperationResult<{
   const parsed = decisionRowSchema.safeParse(value);
   if (!parsed.success) return reviewFailure("FORBIDDEN");
   const row = parsed.data;
-  if (row.outcome === "denied") return denial(row);
+  if (row.outcome === "denied") return reviewDenial(row);
   return row.relation
     ? { data: { outcome: row.outcome, ...row.relation } }
     : reviewFailure("FORBIDDEN");

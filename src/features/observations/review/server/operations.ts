@@ -12,13 +12,15 @@ import {
 import {
   ownerRelatedSchema,
   reviewStateSchema,
-  teacherReviewRecordSchema,
   type ReviewState,
   type StudentReviewRequest,
   type SubmitObservationRequest,
-  type TeacherReviewView,
 } from "../contracts";
 import { mapPostgresReviewError } from "../errors";
+import {
+  teacherReviewDetailRecordSchema,
+  type TeacherReviewDetail,
+} from "../revision-contracts";
 import {
   interpretDecisionRow,
   interpretSaveReviewRow,
@@ -93,12 +95,12 @@ export async function getOwnerRelated(
 export async function getTeacherReview(
   supabase: Client,
   observationId: string,
-): Promise<ReviewOperationResult<TeacherReviewView>> {
+): Promise<ReviewOperationResult<TeacherReviewDetail>> {
   const { data, error } = await supabase.rpc("get_teacher_observation_review", {
     target_observation_id: observationId,
   });
   if (error) return reviewFailure(mapPostgresReviewError(error.message));
-  const parsed = teacherReviewRecordSchema.safeParse(data);
+  const parsed = teacherReviewDetailRecordSchema.safeParse(data);
   if (!parsed.success) return reviewFailure("FORBIDDEN");
   const record = parsed.data;
 
