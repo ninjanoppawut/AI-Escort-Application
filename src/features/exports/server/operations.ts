@@ -101,7 +101,8 @@ export async function processExport(
       .from(EXPORTS_BUCKET)
       .upload(claim.data.storage_path, bytes, {
         contentType: file.contentType,
-        upsert: true,
+        // A claim is generated once; upsert would need read access first.
+        upsert: false,
       });
     if (uploadError) {
       await failed("upload_failed");
