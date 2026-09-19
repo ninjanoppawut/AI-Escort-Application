@@ -16,11 +16,15 @@ import {
   WifiOff,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useOnlineStatus } from "@/features/groups/client/use-online-status";
+import {
+  useDeviceDraft,
+  type DeviceDraft,
+} from "@/lib/offline/use-device-draft";
 import { cn } from "@/lib/utils";
 
 import {
@@ -271,6 +275,33 @@ function RevisionForm({
     defaultValues: valuesOf(state),
   });
   const { isDirty, errors } = form.formState;
+  const [restoredNote, setRestoredNote] = useState(false);
+
+  // P14-01: unsaved revision text stays on this device between visits.
+  const allValues = useWatch({ control: form.control });
+  const restore = useCallback(
+    (draft: DeviceDraft<ReviewFormValues>) => {
+      const kept = { ...draft.values, expectedVersion: draft.baseVersion };
+      const latest = valuesOf(state);
+      if (
+        JSON.stringify({ ...kept, expectedVersion: 0 }) ===
+        JSON.stringify({ ...latest, expectedVersion: 0 })
+      ) {
+        return;
+      }
+      form.reset(kept, { keepDefaultValues: true });
+      setRestoredNote(true);
+    },
+    [form, state],
+  );
+  const device = useDeviceDraft<ReviewFormValues>({
+    key: `revision:${observationId}`,
+    scope: observationId,
+    values: allValues as ReviewFormValues,
+    dirty: isDirty,
+    baseVersion: allValues.expectedVersion ?? state.version,
+    onRestore: restore,
+  });
 
   // Adopt a newer saved version only while nothing is unsaved.
   useEffect(() => {
@@ -415,6 +446,17 @@ function RevisionForm({
             />
           </div>
 
+          {isDirty && (restoredNote || device.savedAt) ? (
+            <p
+              className="text-muted-foreground text-[13px]"
+              data-device-draft="kept"
+              role="status"
+            >
+              {restoredNote
+                ? "กู้คืนการแก้ไขที่ยังไม่ได้บันทึกจากเครื่องนี้ · ตรวจแล้วกดบันทึกการแก้ไข"
+                : "เก็บการแก้ไขไว้ในเครื่องนี้แล้ว · กดบันทึกการแก้ไขเมื่อออนไลน์"}
+            </p>
+          ) : null}
           {conflict ? (
             <p className="text-sm text-[#8C1D18]" role="alert">
               มีการบันทึกจากหน้าจออื่นแล้ว · โหลดฉบับล่าสุดแล้ว

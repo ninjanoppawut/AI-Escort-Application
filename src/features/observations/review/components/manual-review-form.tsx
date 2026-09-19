@@ -3,11 +3,22 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Check, CircleAlert, Loader2, Save, WifiOff } from "lucide-react";
-import { useEffect, useId, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { formatClockTime } from "@/features/sessions/components/session-freshness";
+import {
+  useDeviceDraft,
+  type DeviceDraft,
+} from "@/lib/offline/use-device-draft";
 import { cn } from "@/lib/utils";
 
 import {
@@ -50,6 +61,7 @@ interface Conflict {
 type SaveNote =
   | { kind: "updated" | "unchanged"; at: string }
   | { kind: "reapplied" | "latest"; version: number }
+  | { kind: "restored" }
   | null;
 
 const FIELD_HINTS: Record<ReviewTextField, string> = {
@@ -129,6 +141,35 @@ export function ManualReviewForm({
   useEffect(() => {
     onDirtyChange(isDirty);
   }, [isDirty, onDirtyChange]);
+
+  // P14-01: unsaved review text stays on this device between visits.
+  const allValues = useWatch({ control: form.control });
+  const restore = useCallback(
+    (draft: DeviceDraft<ReviewFormValues>) => {
+      const kept = cloneValues({
+        ...draft.values,
+        expectedVersion: draft.baseVersion,
+      });
+      const latest = reviewFormValuesOf(names, state);
+      if (
+        JSON.stringify({ ...kept, expectedVersion: 0 }) ===
+        JSON.stringify({ ...latest, expectedVersion: 0 })
+      ) {
+        return;
+      }
+      form.reset(kept, { keepDefaultValues: true });
+      setNote({ kind: "restored" });
+    },
+    [form, names, state],
+  );
+  const device = useDeviceDraft<ReviewFormValues>({
+    key: `student-review:${observationId}`,
+    scope: observationId,
+    values: allValues as ReviewFormValues,
+    dirty: isDirty && !readOnly,
+    baseVersion: allValues.expectedVersion ?? state.version,
+    onRestore: restore,
+  });
 
   // Adopt a newer saved version only while nothing is unsaved; otherwise the
   // next save meets the conflict dialog.
@@ -224,6 +265,16 @@ export function ManualReviewForm({
     saveMutation.mutate(submitted);
   });
 
+  // Edits made offline are saved once the device reconnects (OBS-010).
+  const wasOnline = useRef(online);
+  useEffect(() => {
+    const reconnected = !wasOnline.current && online;
+    wasOnline.current = online;
+    if (reconnected && isDirty && !readOnly && !saveMutation.isPending) {
+      void onSubmit();
+    }
+  }, [isDirty, onSubmit, online, readOnly, saveMutation.isPending]);
+
   function reapply() {
     if (!conflict) return;
     const merged = mergeReviewEdits(
@@ -284,7 +335,16 @@ export function ManualReviewForm({
   } else if (!online) {
     status = {
       icon: <WifiOff aria-hidden="true" className="size-4 shrink-0" />,
-      text: "ออฟไลน์อยู่ · บันทึกได้เมื่อกลับมาออนไลน์ ข้อความยังอยู่ในหน้านี้",
+      text:
+        isDirty && device.savedAt
+          ? "ออฟไลน์อยู่ · บันทึกในเครื่องนี้แล้ว จะส่งเข้าระบบเองเมื่อกลับมาออนไลน์"
+          : "ออฟไลน์อยู่ · บันทึกได้เมื่อกลับมาออนไลน์ ข้อความยังอยู่ในหน้านี้",
+      tone: "info",
+    };
+  } else if (note?.kind === "restored" && isDirty) {
+    status = {
+      icon: <CircleAlert aria-hidden="true" className="size-4 shrink-0" />,
+      text: "กู้คืนข้อมูลที่ยังไม่ได้บันทึกจากเครื่องนี้ · ตรวจแล้วกดบันทึกข้อมูลพืช",
       tone: "info",
     };
   } else if (note?.kind === "reapplied") {
@@ -296,7 +356,9 @@ export function ManualReviewForm({
   } else if (isDirty) {
     status = {
       icon: <CircleAlert aria-hidden="true" className="size-4 shrink-0" />,
-      text: "มีการแก้ไขที่ยังไม่บันทึก",
+      text: device.savedAt
+        ? "มีการแก้ไขที่ยังไม่บันทึก · เก็บไว้ในเครื่องนี้แล้ว"
+        : "มีการแก้ไขที่ยังไม่บันทึก",
       tone: "info",
     };
   } else if (note?.kind === "updated") {
@@ -466,6 +528,7 @@ export function ManualReviewForm({
               "flex items-start gap-2 text-sm leading-6",
               status.tone === "alert" && "font-medium text-[#8C1D18]",
             )}
+            data-device-draft={isDirty && device.savedAt ? "kept" : "none"}
             data-review-save-state={
               readOnly
                 ? "read_only"

@@ -3,11 +3,22 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Check, CircleAlert, Loader2, Save, WifiOff } from "lucide-react";
-import { useEffect, useId, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { formatClockTime } from "@/features/sessions/components/session-freshness";
+import {
+  useDeviceDraft,
+  type DeviceDraft,
+} from "@/lib/offline/use-device-draft";
 import { cn } from "@/lib/utils";
 
 import {
@@ -43,6 +54,7 @@ interface Conflict {
 
 type SaveNote =
   | { kind: "updated" | "unchanged"; at: string }
+  | { kind: "restored" }
   | { kind: "reapplied"; version: number }
   | { kind: "latest"; version: number }
   | null;
@@ -96,6 +108,36 @@ export function DraftNotesForm({
   const { isDirty, errors } = form.formState;
   const values = useWatch({ control: form.control });
   const readOnly = !observation.permissions.canEdit;
+
+  // P14-01: unsaved text is kept on this device and offered back after a
+  // reload or restart; the save still carries the version it started from.
+  const restore = useCallback(
+    (draft: DeviceDraft<DraftNotesValues>) => {
+      const latest = draftNotesValuesOf(observation);
+      const kept = pickValues(draft.values);
+      if (
+        DRAFT_FIELDS.every(
+          (field) => kept[field].trim() === latest[field].trim(),
+        )
+      ) {
+        return;
+      }
+      form.reset(
+        { ...kept, expectedVersion: draft.baseVersion },
+        { keepDefaultValues: true },
+      );
+      setNote({ kind: "restored" });
+    },
+    [form, observation],
+  );
+  const device = useDeviceDraft<DraftNotesValues>({
+    key: `draft-notes:${observation.id}`,
+    scope: observation.session.id,
+    values: pickValues(values),
+    dirty: isDirty && !readOnly,
+    baseVersion: values.expectedVersion ?? observation.version,
+    onRestore: restore,
+  });
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -161,6 +203,16 @@ export function DraftNotesForm({
     setNote(null);
     saveMutation.mutate(submitted);
   });
+
+  // Text typed offline is sent once the device is back online (OBS-010).
+  const wasOnline = useRef(online);
+  useEffect(() => {
+    const reconnected = !wasOnline.current && online;
+    wasOnline.current = online;
+    if (reconnected && isDirty && !readOnly && !saveMutation.isPending) {
+      void onSubmit();
+    }
+  }, [isDirty, onSubmit, online, readOnly, saveMutation.isPending]);
 
   function reapply() {
     if (!conflict) return;
@@ -228,7 +280,16 @@ export function DraftNotesForm({
   } else if (!online) {
     status = {
       icon: <WifiOff aria-hidden="true" className="size-4 shrink-0" />,
-      text: "ออฟไลน์อยู่ · บันทึกได้เมื่อกลับมาออนไลน์ ข้อความยังอยู่ในหน้านี้",
+      text:
+        isDirty && device.savedAt
+          ? "ออฟไลน์อยู่ · บันทึกในเครื่องนี้แล้ว จะส่งเข้าระบบเองเมื่อกลับมาออนไลน์"
+          : "ออฟไลน์อยู่ · บันทึกได้เมื่อกลับมาออนไลน์ ข้อความยังอยู่ในหน้านี้",
+      tone: "info",
+    };
+  } else if (note?.kind === "restored" && isDirty) {
+    status = {
+      icon: <CircleAlert aria-hidden="true" className="size-4 shrink-0" />,
+      text: "กู้คืนข้อความที่ยังไม่ได้บันทึกจากเครื่องนี้ · ตรวจแล้วกดบันทึกร่าง",
       tone: "info",
     };
   } else if (note?.kind === "reapplied") {
@@ -240,7 +301,9 @@ export function DraftNotesForm({
   } else if (isDirty) {
     status = {
       icon: <CircleAlert aria-hidden="true" className="size-4 shrink-0" />,
-      text: "มีการแก้ไขที่ยังไม่บันทึก",
+      text: device.savedAt
+        ? "มีการแก้ไขที่ยังไม่บันทึก · เก็บไว้ในเครื่องนี้แล้ว"
+        : "มีการแก้ไขที่ยังไม่บันทึก",
       tone: "info",
     };
   } else if (note?.kind === "updated") {
@@ -351,6 +414,7 @@ export function DraftNotesForm({
               "flex items-start gap-2 text-sm leading-6",
               status.tone === "alert" && "font-medium text-[#8C1D18]",
             )}
+            data-device-draft={isDirty && device.savedAt ? "kept" : "none"}
             data-save-state={
               readOnly
                 ? "read_only"
