@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
 
-import { teacherReviewViewSchema } from "../contracts";
+import { teacherReviewDetailViewSchema } from "../revision-contracts";
 import { TeacherReviewScreen } from "./teacher-review-screen";
 
 const observationId = "81000000-0000-4000-8000-000000008621";
@@ -14,11 +14,19 @@ const specimenRelationId = "84000000-0000-4000-8000-000000008621";
 const speciesRelationId = "84000000-0000-4000-8000-000000008622";
 const requestId = "90000000-0000-4000-8000-000000008621";
 
-type Review = z.infer<typeof teacherReviewViewSchema>;
+type Review = z.infer<typeof teacherReviewDetailViewSchema>;
 
 function makeReview(decision: "same_specimen" | null = null): Review {
-  return teacherReviewViewSchema.parse({
+  return teacherReviewDetailViewSchema.parse({
     observationId,
+    version: 4,
+    latestSubmissionId: "83000000-0000-4000-8000-000000008621",
+    verifiedIdentity: null,
+    reviews: [],
+    unlockRequests: [],
+    history: [],
+    reports: [],
+    permissions: { canDecide: false, canBegin: false },
     classId: "20000000-0000-4000-8000-000000008621",
     status: "submitted",
     student: {

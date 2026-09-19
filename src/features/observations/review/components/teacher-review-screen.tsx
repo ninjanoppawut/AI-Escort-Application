@@ -38,14 +38,21 @@ import {
 import { MEDIA_CATEGORY_LABELS } from "../../media/contracts";
 import { presentReviewError, reviewErrorCodeOf } from "../client";
 import { isReviewUiErrorCode } from "../errors";
+import { reviewQueryKeys, type ObservationRelation } from "../contracts";
 import {
-  reviewQueryKeys,
-  teacherReviewViewSchema,
-  type ObservationRelation,
-} from "../contracts";
+  beginReviewResponseSchema,
+  teacherReviewDetailViewSchema,
+  type TeacherReviewDetail,
+} from "../revision-contracts";
 import { TRAIT_LABELS, TRAIT_MODE_LABELS } from "../review-form";
+import { TeacherDecisionPanel } from "./teacher-decision-panel";
+import {
+  ReportsList,
+  ReviewHistory,
+  UnlockRequestsSection,
+} from "./teacher-review-extras";
 
-type TeacherReview = z.infer<typeof teacherReviewViewSchema>;
+type TeacherReview = TeacherReviewDetail;
 type Submission = TeacherReview["submissions"][number];
 type Decision = "same_specimen" | "not_same_specimen";
 
@@ -65,7 +72,7 @@ const decisionResponseSchema = z
 function fetchTeacherReview(observationId: string) {
   return fetchObservationJson(
     `/api/reviews/${observationId}`,
-    teacherReviewViewSchema,
+    teacherReviewDetailViewSchema,
   );
 }
 
@@ -121,12 +128,16 @@ export function TeacherReviewScreen({
   observationId,
   initialReview,
   initialErrorCode,
+  highlightRequestId = null,
 }: {
   observationId: string;
   initialReview: TeacherReview | null;
   initialErrorCode: string | null;
+  /** The unlock request a `revision_access_requested` deep link points at. */
+  highlightRequestId?: string | null;
 }) {
   const online = useOnlineStatus();
+  const queryClient = useQueryClient();
   const reviewQuery = useQuery({
     queryKey: reviewQueryKeys.teacher(observationId),
     queryFn: () => fetchTeacherReview(observationId),
@@ -137,6 +148,33 @@ export function TeacherReviewScreen({
     retry: false,
   });
   const review = reviewQuery.data;
+  const invalidate = () => {
+    void queryClient.invalidateQueries({
+      queryKey: reviewQueryKeys.teacher(observationId),
+    });
+    void queryClient.invalidateQueries({ queryKey: ["reviews", "queue"] });
+  };
+
+  // Opening a submitted or resubmitted record begins its review (D-067).
+  const begin = useMutation({
+    mutationFn: () =>
+      sendObservationJson(
+        "POST",
+        `/api/observations/${observationId}/review/start`,
+        {},
+        beginReviewResponseSchema,
+      ),
+    onSuccess: (result) => {
+      if (result.outcome === "started") invalidate();
+    },
+  });
+  const canBegin = Boolean(review?.permissions.canBegin) && online;
+  const beginRequested = useRef(false);
+  useEffect(() => {
+    if (!canBegin || beginRequested.current) return;
+    beginRequested.current = true;
+    begin.mutate();
+  }, [begin, canBegin]);
 
   if (!review) {
     const code = reviewQuery.error
@@ -258,6 +296,36 @@ export function TeacherReviewScreen({
 
         <CaptureSummary capture={review.capture} />
 
+        {review.verifiedIdentity ? (
+          <section
+            className="grid gap-1 rounded-xl border border-[#B7D8C2] bg-[#EEF7F1] p-4 text-sm"
+            data-verified-identity=""
+          >
+            <h2 className="font-semibold text-[#16432A]">ครูยืนยันแล้ว</h2>
+            <p>
+              {review.verifiedIdentity.commonName} ·{" "}
+              <i className="font-serif" lang="la">
+                {review.verifiedIdentity.scientificName}
+              </i>
+            </p>
+          </section>
+        ) : null}
+
+        {review.permissions.canDecide ? (
+          <TeacherDecisionPanel
+            onChanged={invalidate}
+            online={online}
+            review={review}
+          />
+        ) : null}
+
+        <UnlockRequestsSection
+          highlightRequestId={highlightRequestId}
+          onChanged={invalidate}
+          online={online}
+          review={review}
+        />
+
         {latest ? (
           <SubmissionCard latest submission={latest} />
         ) : (
@@ -272,6 +340,9 @@ export function TeacherReviewScreen({
             species={speciesRelations}
           />
         ) : null}
+
+        <ReviewHistory review={review} />
+        <ReportsList review={review} />
 
         {older.length > 0 ? (
           <section aria-labelledby="history-title" className="grid gap-3">
