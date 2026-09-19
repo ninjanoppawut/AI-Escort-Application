@@ -5,7 +5,7 @@
 - Product, architecture, database, API, decision, module, and design specifications exist.
 - The pinned Next.js/Supabase foundation is implemented locally.
 - The CLI is linked to the dedicated hosted project `rhntelxdmuvldrxyceqx`.
-- Phases 1–9 and Phase 11 (manual path) are verified locally and in hosted CI except
+- Phases 1–9, 11 (manual path), and 12 are verified locally and in hosted CI except
   the owner-blocked P0-09, P0-EXIT, and P1-01; only
   the first identity migration is deployed to the linked hosted development
   project (later migrations await owner approval).
@@ -1425,13 +1425,46 @@ Evidence:
 
 Requirements: `REV-007`–`REV-012`.
 
-- [ ] **P12-01:** Add review, revision-topic, unlock-request, issue-report, and status-history schema/RLS.
-- [ ] **P12-02:** Build teacher queue/map detail with all evidence layers and accessible status actions.
-- [ ] **P12-03:** Implement immutable review decisions with submission-version preconditions.
-- [ ] **P12-04:** Implement targeted revision, additional-topic request/approval, and same-observation resubmit.
-- [ ] **P12-05:** Implement anonymous-to-owner issue reporting and 24-hour rate limit.
-- [ ] **P12-06:** Deliver owner notifications and pass history, field-lock, anonymity, rate-limit, and concurrency tests.
-- [ ] **P12-EXIT:** Teacher decisions and student revisions never overwrite prior evidence.
+- [x] **P12-01:** Add review, revision-topic, unlock-request, issue-report, and status-history schema/RLS.
+- [x] **P12-02:** Build teacher queue/map detail with all evidence layers and accessible status actions.
+- [x] **P12-03:** Implement immutable review decisions with submission-version preconditions.
+- [x] **P12-04:** Implement targeted revision, additional-topic request/approval, and same-observation resubmit.
+- [x] **P12-05:** Implement anonymous-to-owner issue reporting and 24-hour rate limit.
+- [x] **P12-06:** Deliver owner notifications and pass history, field-lock, anonymity, rate-limit, and concurrency tests.
+- [x] **P12-EXIT:** Teacher decisions and student revisions never overwrite prior evidence.
+
+P12 status: complete as of 2026-09-19. Evidence:
+- `f7129d8`/`140ce5b`: `20260919130000_phase12_review_foundation.sql`
+  (immutable `teacher_reviews`, one per submitted version; append-only
+  `observation_revision_topics`; `observation_unlock_requests` with one
+  pending per observation; `observation_issue_reports` with no owner read
+  path; review and revision status edges; frozen content outside a revision;
+  submitted images never deleted) and
+  `20260919130500_phase12_review_operations.sql` (begin review, decision with
+  the submitted version as precondition, topic-limited revision save,
+  resubmission as a new version with changed topics, additional-topic request
+  and decision, rolling 24-hour report limit, report resolution, queue,
+  teacher, owner, and report read models). Decisions D-065 to D-067.
+- `e8a4232`: typed routes (`/api/observations/:id/review`, `/review/start`,
+  `/revision`, `/resubmit`, `/unlock-request`, `/unlock-request/:requestId/decision`,
+  `/report`, `/api/reviews`, `/api/reports/:reportId`, `/resolve`), with
+  `Retry-After` on `RATE_LIMITED`.
+- `ee24495`: teacher queue (T-11) at `/teacher/classes/[classId]/reviews`,
+  decisions (T-12/T-12b/T-13/T-14) on `/teacher/reviews/[observationId]`,
+  unlock grants and the request deep link, history (T-16), and the report page.
+- `b48b72b`: owner revision page (S-23/S-24), outcome card, and the S-26
+  report sheet.
+- `33065ff`: Playwright journey `tests/e2e/teacher-review.spec.ts`.
+- Tests: `phase12_teacher_review_test.sql` (33) and
+  `phase12_teacher_review_concurrency_test.sql` (9: two teachers on one
+  version, grant versus resubmission, duplicate reports);
+  `revision.test.ts`, `teacher-decision.test.tsx`, `revision-screen.test.tsx`.
+- CI: hosted CI runs `35444455160` on `140ce5b` and `35445811482` on
+  `33065ff`.
+- Notes: the AI evidence layer joins the teacher view with P10; the report
+  sheet's classmate entry point is the completed-map detail in P13 (a
+  classmate first sees another student's record there); the queue is the
+  teacher's entry until the P13 map detail links to the same review page.
 
 ## Phase 13 — Completed activity map
 
