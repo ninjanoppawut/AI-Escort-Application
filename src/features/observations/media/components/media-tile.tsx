@@ -426,7 +426,10 @@ export function MediaTilePanel({
             {MEDIA_COPY.panel.dismiss}
           </Button>
         ) : null}
-        {state === "uploaded" && tile.mediaId && canEdit ? (
+        {state === "uploaded" &&
+        tile.mediaId &&
+        canEdit &&
+        !tile.server?.submitted ? (
           <Button
             aria-describedby={isLastWholePlant ? guardId : undefined}
             className="text-[#8C1D18]"
@@ -458,7 +461,19 @@ export function MediaTilePanel({
           </Button>
         ) : null}
       </div>
-      {state === "uploaded" && isLastWholePlant && canEdit ? (
+      {state === "uploaded" && canEdit && tile.server?.submitted ? (
+        <p
+          className="flex items-start gap-2 text-sm leading-6"
+          data-submitted-image=""
+        >
+          <Lock aria-hidden="true" className="mt-1 size-4 shrink-0" />
+          ภาพนี้อยู่ในฉบับที่ส่งให้ครูแล้ว เก็บไว้ถาวร ลบไม่ได้
+        </p>
+      ) : null}
+      {state === "uploaded" &&
+      isLastWholePlant &&
+      canEdit &&
+      !tile.server?.submitted ? (
         <p
           className="flex items-start gap-2 text-sm leading-6"
           data-delete-guard=""

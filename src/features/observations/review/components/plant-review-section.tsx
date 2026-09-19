@@ -23,6 +23,7 @@ import {
 } from "../client";
 import { reviewQueryKeys, type ReviewState } from "../contracts";
 import { ManualReviewForm } from "./manual-review-form";
+import { ReviewOutcomeCard } from "./review-outcome-card";
 import { SubmitPanel } from "./submit-panel";
 
 /** Lifecycle states in which the owner still edits the review. */
@@ -156,10 +157,16 @@ export function PlantReviewSection({
 
   if (state.submission || !EDITABLE_STATUSES.has(state.status)) {
     return state.submission ? (
-      <SubmittedSummary
-        justSubmitted={submittedNumber === state.submission.submissionNumber}
-        submission={state.submission}
-      />
+      <>
+        <ReviewOutcomeCard
+          observationId={observationId}
+          status={state.status}
+        />
+        <SubmittedSummary
+          justSubmitted={submittedNumber === state.submission.submissionNumber}
+          submission={state.submission}
+        />
+      </>
     ) : null;
   }
 
