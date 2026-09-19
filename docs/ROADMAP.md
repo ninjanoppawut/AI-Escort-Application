@@ -5,7 +5,7 @@
 - Product, architecture, database, API, decision, module, and design specifications exist.
 - The pinned Next.js/Supabase foundation is implemented locally.
 - The CLI is linked to the dedicated hosted project `rhntelxdmuvldrxyceqx`.
-- Phases 1–9, 11 (manual path), and 12 are verified locally and in hosted CI except
+- Phases 1–9, 11 (manual path), 12, and 13 are verified locally and in hosted CI except
   the owner-blocked P0-09, P0-EXIT, and P1-01; only
   the first identity migration is deployed to the linked hosted development
   project (later migrations await owner approval).
@@ -1470,12 +1470,37 @@ P12 status: complete as of 2026-09-19. Evidence:
 
 Requirements: `MAP-001`–`MAP-006`, `MAP-009`.
 
-- [ ] **P13-01:** Implement manual completion and completed-map read model.
-- [ ] **P13-02:** Build teacher/participant maps, filtering, accessible markers, and map-context plant detail.
-- [ ] **P13-03:** Enforce participant/teacher visibility and private image access.
-- [ ] **P13-04:** Exclude drafts and raw historical live locations.
-- [ ] **P13-05:** Pass role isolation, marker location/status, detail, and non-disclosure tests.
-- [ ] **P13-EXIT:** Authorized roles can review the completed plant map without receiving private tracking history.
+- [x] **P13-01:** Implement manual completion and completed-map read model.
+- [x] **P13-02:** Build teacher/participant maps, filtering, accessible markers, and map-context plant detail.
+- [x] **P13-03:** Enforce participant/teacher visibility and private image access.
+- [x] **P13-04:** Exclude drafts and raw historical live locations.
+- [x] **P13-05:** Pass role isolation, marker location/status, detail, and non-disclosure tests.
+- [x] **P13-EXIT:** Authorized roles can review the completed plant map without receiving private tracking history.
+
+P13 status: complete as of 2026-09-19. Evidence:
+- Manual completion is the P7 `complete_exploration_session`; `b94e6c3` adds
+  `20260919150000_phase13_completed_map.sql` (`get_session_completed_map`,
+  `get_observation_map_detail`, participant-snapshot and record-visibility
+  helpers, and Storage read access for participants to submitted images of
+  records they may see after completion) and D-068.
+- UI: `/sessions/[sessionId]/map` (the `session_completed` deep link) with
+  the coordinate sketch (status-shaped, keyboard-focusable markers, legend,
+  dimmed filtered markers, own-record ring), list view, no-location list,
+  filters, the teacher's pending-review banner, and the plant detail as a
+  bottom sheet on phones and beside the map on wide screens with the teacher
+  review link and the classmate report sheet; links from completed session
+  screens. `12cabc7` fixes a 46 px phone overflow found by the journey.
+- Tests: `phase13_completed_map_test.sql` (9: teacher at any time,
+  participants after completion, drafts and peers' rejected records excluded,
+  outsiders refused, capture-location markers, marker-field allowlist with no
+  live location or track, feedback owner-only, image access per role);
+  `completed-map-screen.test.tsx` (5); `tests/e2e/completed-map.spec.ts`
+  (390/360 px, keyboard and pointer, no live-location requests).
+- CI: hosted CI runs `35447112664` on `b94e6c3` and `35448429168` on
+  `12cabc7`.
+- Remaining risk: map tiles need the Mapbox token (owner question); the
+  sketch and list are the D-005 fallback. The completion research payload
+  still reports `observation_count` 0 (P14 research events).
 
 ## Phase 14 — Offline hardening, exports, and retention
 
