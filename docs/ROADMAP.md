@@ -1551,14 +1551,43 @@ Evidence:
 
 Requirements: `ADM-001`–`ADM-012`.
 
-- [ ] **P15-01:** Build protected admin shell with active relational grant and MFA enforcement.
-- [ ] **P15-02:** Build school provisioning, teacher invitation, and teacher/student directory with cursor pagination.
-- [ ] **P15-03:** Build redacted flow-health dashboard for APIs, uploads, Realtime, queues, and Gemini.
-- [ ] **P15-04:** Build audit/error explorers with bounded filters, correlation IDs, freshness, and partial-telemetry states.
-- [ ] **P15-05:** Build incident acknowledgement and append-only notes.
-- [ ] **P15-06:** Implement time-bounded scoped break-glass workflow only if approved for the deployment.
-- [ ] **P15-07:** Pass non-admin denial, MFA, redaction, pagination/range, audit, revocation, and partial-source tests.
+- [x] **P15-01:** Build protected admin shell with active relational grant and MFA enforcement.
+- [x] **P15-02:** Build school provisioning, teacher invitation, and teacher/student directory with cursor pagination.
+- [x] **P15-03:** Build redacted flow-health dashboard for APIs, uploads, Realtime, queues, and Gemini.
+- [x] **P15-04:** Build audit/error explorers with bounded filters, correlation IDs, freshness, and partial-telemetry states.
+- [x] **P15-05:** Build incident acknowledgement and append-only notes.
+- [ ] **P15-06:** Implement time-bounded scoped break-glass workflow only if approved for the deployment. *(Not approved; not built.)*
+- [x] **P15-07:** Pass non-admin denial, MFA, redaction, pagination/range, audit, revocation, and partial-source tests.
 - [ ] **P15-EXIT:** Admin can diagnose which flow/stage is failing without routine access to prohibited sensitive content.
+
+P15 status: P15-01..P15-05 and P15-07 complete as of 2026-09-20; P15-06
+awaits deployment approval; P15-EXIT stays open (see remaining risk).
+Evidence:
+- P15-01 `9e00088`: `open_admin_console` (grant + aal2, audited views),
+  `/admin/mfa` TOTP enroll/verify, admin shell; local TOTP enabled in
+  `supabase/config.toml`.
+- P15-02 `920877e`: school create/archive, teacher invitation issue/revoke
+  with a one-time `/teacher-invite/[token]` link and acceptance page,
+  teacher/student directory (student emails masked), keyset pages of 50/100.
+- P15-03/P15-04 `192e6ea`: `operational_error_events` with redacted intake
+  (`/api/telemetry/errors`, wired to Storage upload and offline-sync
+  failures), flow health (errors per flow, export/upload queue age and
+  backlog, sessions, explicit partial telemetry), error and audit explorers
+  (24 h default, 31-day cap).
+- P15-05: incidents with idempotent acknowledgement, append-only notes with
+  client note IDs, runbook steps, and written resolution.
+- Tests: `phase15_admin_access_test.sql` (11, including a sweep that every
+  admin RPC checks grant+aal2 and none is anonymous),
+  `phase15_admin_directory_test.sql` (20), `phase15_telemetry_explorers_test.sql`
+  (17), `phase15_incidents_test.sql` (14); unit `admin-access.test.ts`,
+  `directory-contracts.test.ts`, `report-error.test.ts`; Playwright
+  `admin-access`, `admin-directory`, `admin-operations`, `admin-incidents`
+  (desktop plus 360 px overflow checks).
+- Remaining risk (keeps P15-EXIT open): only upload and offline-sync
+  failures report operational error events so far; server route failures,
+  request volume/latency (RED metrics), Realtime, and Gemini (P10) are not
+  instrumented, so an admin cannot yet diagnose every flow. Hosted Auth must
+  enable TOTP before the console is usable there.
 
 ## Pilot blockers requiring owner decisions or approval
 

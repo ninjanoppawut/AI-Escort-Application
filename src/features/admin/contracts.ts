@@ -44,6 +44,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
       "บันทึกการกระทำที่แก้ไขไม่ได้ ตามผู้กระทำ ทรัพยากร ผลลัพธ์ และเวลา",
   },
   {
+    view: "incidents",
+    href: "/admin/incidents",
+    title: "เหตุการณ์",
+    description: "เปิด รับทราบ บันทึก และปิดเหตุการณ์ โดยไม่แก้บันทึกต้นทาง",
+  },
+  {
     view: "schools",
     href: "/admin/schools",
     title: "โรงเรียน",

@@ -2121,6 +2121,118 @@ export type Database = {
           },
         ];
       };
+      operational_incident_notes: {
+        Row: {
+          author_id: string;
+          client_note_id: string;
+          created_at: string;
+          id: string;
+          incident_id: string;
+          note: string;
+        };
+        Insert: {
+          author_id: string;
+          client_note_id: string;
+          created_at?: string;
+          id?: string;
+          incident_id: string;
+          note: string;
+        };
+        Update: {
+          author_id?: string;
+          client_note_id?: string;
+          created_at?: string;
+          id?: string;
+          incident_id?: string;
+          note?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "operational_incident_notes_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "operational_incident_notes_incident_id_fkey";
+            columns: ["incident_id"];
+            isOneToOne: false;
+            referencedRelation: "operational_incidents";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      operational_incidents: {
+        Row: {
+          acknowledged_at: string | null;
+          acknowledged_by: string | null;
+          created_at: string;
+          flow: string | null;
+          id: string;
+          opened_by: string;
+          resolution: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          severity: string;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          acknowledged_at?: string | null;
+          acknowledged_by?: string | null;
+          created_at?: string;
+          flow?: string | null;
+          id?: string;
+          opened_by: string;
+          resolution?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          acknowledged_at?: string | null;
+          acknowledged_by?: string | null;
+          created_at?: string;
+          flow?: string | null;
+          id?: string;
+          opened_by?: string;
+          resolution?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "operational_incidents_acknowledged_by_fkey";
+            columns: ["acknowledged_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "operational_incidents_opened_by_fkey";
+            columns: ["opened_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "operational_incidents_resolved_by_fkey";
+            columns: ["resolved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       platform_admins: {
         Row: {
           granted_at: string;
@@ -2830,6 +2942,10 @@ export type Database = {
           outcome: string;
         }[];
       };
+      acknowledge_operational_incident: {
+        Args: { target_incident_id: string };
+        Returns: Json;
+      };
       activate_session_group: {
         Args: { target_group_id: string; target_session_id: string };
         Returns: {
@@ -2859,6 +2975,10 @@ export type Database = {
         }[];
       };
       admin_flow_health: { Args: { window_hours?: number }; Returns: Json };
+      admin_get_incident: {
+        Args: { target_incident_id: string };
+        Returns: Json;
+      };
       admin_get_school: {
         Args: { target_school_id: string };
         Returns: {
@@ -2933,6 +3053,23 @@ export type Database = {
           trace_id: string;
         }[];
       };
+      admin_list_incidents: {
+        Args: {
+          cursor_created_at?: string;
+          cursor_id?: string;
+          page_size?: number;
+          status_filter?: string;
+        };
+        Returns: {
+          created_at: string;
+          flow: string;
+          incident_id: string;
+          note_count: number;
+          severity: string;
+          status: string;
+          title: string;
+        }[];
+      };
       admin_list_schools: {
         Args: {
           cursor_created_at?: string;
@@ -2987,6 +3124,26 @@ export type Database = {
           status: string;
           user_id: string;
         }[];
+      };
+      admin_open_incident: {
+        Args: {
+          incident_flow?: string;
+          incident_severity: string;
+          incident_title: string;
+        };
+        Returns: Json;
+      };
+      admin_resolve_incident: {
+        Args: { resolution_text: string; target_incident_id: string };
+        Returns: Json;
+      };
+      append_operational_incident_note: {
+        Args: {
+          client_note_id: string;
+          note_text: string;
+          target_incident_id: string;
+        };
+        Returns: Json;
       };
       approve_group: {
         Args: { target_group_id: string };

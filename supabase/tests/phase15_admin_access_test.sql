@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(9);
+select plan(11);
 
 -- P15-01: admin console views need an active grant and aal2, and each
 -- successful view is audited. Identities: admin, revoked admin, teacher.
@@ -89,6 +89,36 @@ select is(
    where actor_id in ('00000000-0000-0000-0000-000000150002', '00000000-0000-0000-0000-000000150003')),
   0::bigint,
   'refused callers leave no admin view record'
+);
+
+-- P15-07 sweep: every admin RPC gates on the grant and aal2 in the
+-- database, and none is callable anonymously.
+select is(
+  (select coalesce(string_agg(proc.proname, ',' order by proc.proname), '')
+   from pg_proc as proc
+   join pg_namespace as namespace on namespace.oid = proc.pronamespace
+   where namespace.nspname = 'public'
+     and (
+       proc.proname like 'admin\_%'
+       or proc.proname in (
+         'open_admin_console', 'issue_teacher_invitation', 'revoke_teacher_invitation',
+         'grant_platform_admin', 'revoke_platform_admin',
+         'acknowledge_operational_incident', 'append_operational_incident_note'
+       )
+     )
+     and proc.prosrc not like '%require_current_admin_aal2%'),
+  '',
+  'every admin RPC checks the grant and aal2 in the database'
+);
+select is(
+  (select coalesce(string_agg(proc.proname, ',' order by proc.proname), '')
+   from pg_proc as proc
+   join pg_namespace as namespace on namespace.oid = proc.pronamespace
+   where namespace.nspname = 'public'
+     and (proc.proname like 'admin\_%' or proc.proname = 'open_admin_console')
+     and has_function_privilege('anon', proc.oid, 'execute')),
+  '',
+  'no admin RPC is executable anonymously'
 );
 
 select * from finish();

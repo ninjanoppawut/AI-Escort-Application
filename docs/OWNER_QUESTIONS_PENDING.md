@@ -225,6 +225,8 @@ Implementation choices to confirm:
     with the notes form.
 59. Browser-to-Storage upload failures never reach the server; the P15
     flow-health view will need a redacted client error endpoint.
+    *(Resolved in P15-03: `/api/telemetry/errors` records redacted upload
+    and offline-sync failures, D-071.)*
 60. The P10 worker (service role) should re-verify SHA-256, decodability,
     dimensions, and absence of EXIF before any Gemini call, because the RPCs
     can be called directly.
