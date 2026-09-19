@@ -24,8 +24,8 @@ test.describe("P15 admin access", () => {
     request,
   }, testInfo) => {
     test.skip(
-      testInfo.project.name !== "admin-desktop-chromium",
-      "P15 admin journey runs once, on the admin project.",
+      testInfo.project.name !== "teacher-desktop-chromium",
+      "P15 admin journey runs once, on the desktop project CI runs.",
     );
     const baseURL = String(
       testInfo.project.use.baseURL ?? "http://localhost:3000",

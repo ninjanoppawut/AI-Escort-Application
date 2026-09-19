@@ -65,6 +65,7 @@ export const API_ERROR_CODES = [
   "ACTIVITY_VERSION_CONFLICT",
   "ACTIVITY_NOT_PUBLISHED",
   "SESSION_ALREADY_RUNNING",
+  "SCHOOL_NAME_TAKEN",
 ] as const;
 
 export const apiErrorCodeSchema = z.enum(API_ERROR_CODES);

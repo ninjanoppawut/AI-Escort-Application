@@ -14,7 +14,9 @@ function isAllowedPath(pathname: string) {
   if (
     /^\/admin(\/(mfa|health|users|schools|errors|audit|incidents))?$/.test(
       pathname,
-    )
+    ) ||
+    /^\/admin\/schools\/[0-9a-f-]{36}$/i.test(pathname) ||
+    /^\/teacher-invite\/[A-Za-z0-9_-]{20,128}$/.test(pathname)
   ) {
     return true;
   }

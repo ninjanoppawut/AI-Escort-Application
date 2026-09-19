@@ -2779,6 +2779,91 @@ export type Database = {
           status: string;
         }[];
       };
+      admin_archive_school: {
+        Args: { reason: string; target_school_id: string };
+        Returns: {
+          changed: boolean;
+          school_id: string;
+          status: string;
+        }[];
+      };
+      admin_create_school: {
+        Args: { school_name: string };
+        Returns: {
+          created_at: string;
+          name: string;
+          school_id: string;
+          status: string;
+        }[];
+      };
+      admin_get_school: {
+        Args: { target_school_id: string };
+        Returns: {
+          class_count: number;
+          created_at: string;
+          name: string;
+          pending_invitation_count: number;
+          school_id: string;
+          status: string;
+          student_count: number;
+          teacher_count: number;
+        }[];
+      };
+      admin_list_schools: {
+        Args: {
+          cursor_created_at?: string;
+          cursor_id?: string;
+          page_size?: number;
+          status_filter?: string;
+        };
+        Returns: {
+          class_count: number;
+          created_at: string;
+          name: string;
+          pending_invitation_count: number;
+          school_id: string;
+          status: string;
+          student_count: number;
+          teacher_count: number;
+        }[];
+      };
+      admin_list_teacher_invitations: {
+        Args: {
+          cursor_created_at?: string;
+          cursor_id?: string;
+          page_size?: number;
+          target_school_id: string;
+        };
+        Returns: {
+          accepted_at: string;
+          created_at: string;
+          email: string;
+          expires_at: string;
+          invitation_id: string;
+          revoked_at: string;
+          status: string;
+        }[];
+      };
+      admin_list_users: {
+        Args: {
+          account_filter?: string;
+          cursor_created_at?: string;
+          cursor_id?: string;
+          page_size?: number;
+          search?: string;
+        };
+        Returns: {
+          account_type: string;
+          class_count: number;
+          created_at: string;
+          display_name: string;
+          email: string;
+          is_admin: boolean;
+          school_names: string[];
+          status: string;
+          user_id: string;
+        }[];
+      };
       approve_group: {
         Args: { target_group_id: string };
         Returns: {

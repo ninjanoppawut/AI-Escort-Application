@@ -22,7 +22,21 @@ export interface AdminSection {
   description: string;
 }
 
-export const ADMIN_SECTIONS: readonly AdminSection[] = [];
+export const ADMIN_SECTIONS: readonly AdminSection[] = [
+  {
+    view: "schools",
+    href: "/admin/schools",
+    title: "โรงเรียน",
+    description: "เพิ่มหรือเก็บโรงเรียนถาวร และเชิญครูด้วยอีเมลที่ยืนยันแล้ว",
+  },
+  {
+    view: "users",
+    href: "/admin/users",
+    title: "ครูและนักเรียน",
+    description:
+      "รายชื่อบัญชี โรงเรียน และจำนวนห้องเรียน (อีเมลนักเรียนถูกปิดบางส่วน)",
+  },
+];
 
 export const ADMIN_ERROR_CODES = [
   "ADMIN_REQUIRED",
