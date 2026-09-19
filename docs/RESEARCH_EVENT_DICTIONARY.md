@@ -138,6 +138,15 @@ allowlisted payload fields
 
 Exclude email, display name, raw operational IDs, exact coordinates, private image URLs, invite codes, raw invitation tokens, token hashes, teacher free text, student evidence free text, IP address, user agent, request ID, and trace ID unless the approved protocol explicitly requires and protects them.
 
+P14-05A implementation note: `20260919190000_phase14_event_registry.sql`
+stores this section-3 registry in `private.research_event_registry` and checks
+every `research_events` insert against it (D-070). Studies live in
+`private.research_studies` with a per-study pepper; `private.research_export_allowlist`
+names events and keys per study and may only name registered keys;
+`private.research_export_rows(study)` returns the default fields above for an
+approved study only. All three are unreachable from signed-in clients. No study
+is approved and allowlists are empty until DEC-Q005.
+
 ## 6. Change control
 
 Adding/changing an event requires a stated question, schema-version change when breaking, privacy/retention review, producer/test update, export allowlist decision, and traceability update. Never repurpose an existing field with new semantics.

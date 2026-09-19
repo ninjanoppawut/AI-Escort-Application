@@ -1506,14 +1506,46 @@ P13 status: complete as of 2026-09-19. Evidence:
 
 Requirements: `OBS-009`–`OBS-010`, `MAP-007`–`MAP-011`.
 
-- [ ] **P14-01:** Implement IndexedDB draft/media/event retry queues and deterministic reconciliation.
-- [ ] **P14-02:** Build conflict/retry/sync visibility and verify airplane-mode recovery.
-- [ ] **P14-03:** Implement authorized CSV/GeoJSON exports with stable schemas.
-- [ ] **P14-04:** Implement idempotent queued large exports, notification delivery, expiry, and download reauthorization.
-- [ ] **P14-05:** Apply accepted consent, retention, anonymization, and deletion policies by data category.
-- [ ] **P14-05A:** Implement the versioned event registry and study-scoped pseudonymous export allowlist from `RESEARCH_EVENT_DICTIONARY.md`.
-- [ ] **P14-06:** Pass offline single-sync, export authorization/schema, retention, and privacy tests.
+- [x] **P14-01:** Implement IndexedDB draft/media/event retry queues and deterministic reconciliation.
+- [x] **P14-02:** Build conflict/retry/sync visibility and verify airplane-mode recovery.
+- [x] **P14-03:** Implement authorized CSV/GeoJSON exports with stable schemas.
+- [x] **P14-04:** Implement idempotent queued large exports, notification delivery, expiry, and download reauthorization.
+- [ ] **P14-05:** Apply accepted consent, retention, anonymization, and deletion policies by data category. *(Blocked: DEC-Q001/DEC-Q002.)*
+- [x] **P14-05A:** Implement the versioned event registry and study-scoped pseudonymous export allowlist from `RESEARCH_EVENT_DICTIONARY.md`.
+- [ ] **P14-06:** Pass offline single-sync, export authorization/schema, retention, and privacy tests. *(Offline, export, and privacy parts pass; retention waits on P14-05.)*
 - [ ] **P14-EXIT:** Offline drafts synchronize once and authorized reviewed/research data exports safely.
+
+P14 status: partial as of 2026-09-19 (P14-05 and the retention part of
+P14-06 wait on DEC-Q001/DEC-Q002; research export fields wait on DEC-Q005).
+Evidence:
+- Exports (P14-03/P14-04, D-069): `ac60466` adds
+  `20260919170000_phase14_exports.sql` (`exports`, private `activity-exports`
+  bucket, `request_export`, SKIP LOCKED `claim_export`, `export_rows`
+  export-v1, `finish_export` with the `export_ready` notification, `get_export`
+  with expiry) and the `/api/exports` routes, request dialog on the teacher map,
+  and `/teacher/exports/[exportId]`; `dcbc7e3` fixes the artifact upload and
+  adds `tests/e2e/exports.spec.ts`. Tests: `phase14_exports_test.sql` (11),
+  `exports.test.tsx` (CSV BOM/formula neutralizing, GeoJSON, status screen).
+- Offline (P14-01/P14-02, D-070): `255d1f1` keeps unsent images in IndexedDB
+  and restores the upload queue; `d8ed1b1` keeps typed draft, review, and
+  revision text and saves it with its base version on reconnect; `f6105ff`
+  adds the outbox for offline start, submit, and resubmit with the
+  `QueuedActions` sync list (waiting, sending, refused with reason, dismiss,
+  send now). Tests: `local-store.test.ts`, `outbox.test.ts` (order, single
+  send, network stop, refusal kept, per-account isolation, retry
+  classification), `draft-notes-device.test.tsx`, and
+  `tests/e2e/offline-sync.spec.ts` (airplane-mode start, page closed offline,
+  exactly one observation after reconnect, offline submit sent once).
+- Registry (P14-05A, D-070): `20260919190000_phase14_event_registry.sql`
+  (registry enforced on insert, strict in local/CI via seed, per-study pepper
+  pseudonyms, allowlist limited to registered keys, approved-only export);
+  `phase14_event_registry_test.sql` (16); the full pgTAP suite (984) passes
+  with strict enforcement, so every producer matches the dictionary;
+  `src/lib/events/event.ts` now carries the full registry including the
+  class events, checked against the dictionary and the migration.
+- Remaining risk: the queued (202) export path is covered by pgTAP, not a
+  browser journey. Offline photo capture still needs the observation to
+  exist first (start is queued; images attach after it syncs).
 
 ## Phase 15 — Platform admin operations
 
