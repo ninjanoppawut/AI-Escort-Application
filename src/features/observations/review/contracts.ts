@@ -306,6 +306,23 @@ export const teacherReviewRecordSchema = z.object({
 
 type TeacherReviewRecord = z.infer<typeof teacherReviewRecordSchema>;
 
+const teacherSubmissionSchema =
+  teacherReviewRecordSchema.shape.submissions.element;
+const teacherMediaSchema = teacherSubmissionSchema.shape.media.element;
+
+/** The browser-side parse of TeacherReviewView. */
+export const teacherReviewViewSchema = teacherReviewRecordSchema.extend({
+  submissions: z.array(
+    teacherSubmissionSchema.extend({
+      media: z.array(
+        teacherMediaSchema
+          .omit({ storagePath: true })
+          .extend({ signedUrl: z.string().nullable() }),
+      ),
+    }),
+  ),
+});
+
 /** What the teacher's browser receives: signed URLs, never storage paths. */
 export type TeacherReviewView = Omit<TeacherReviewRecord, "submissions"> & {
   submissions: Array<

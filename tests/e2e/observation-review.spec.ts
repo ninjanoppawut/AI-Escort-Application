@@ -1,6 +1,7 @@
 import {
   expect,
   test,
+  type APIRequestContext,
   type Browser,
   type BrowserContext,
   type Page,
@@ -86,40 +87,39 @@ async function startObservation(page: Page, context: BrowserContext) {
   return new URL(page.url()).pathname.split("/").at(-1)!;
 }
 
-test.describe("P11-02 manual review and submission", () => {
-  // next dev compiles each new route on first use.
-  test.setTimeout(900_000);
+interface Field {
+  teacherEmail: string;
+  adaEmail: string;
+  cyEmail: string;
+  password: string;
+  classId: string;
+  activityId: string;
+  sessionId: string;
+}
 
-  test("manual entry, blocker recovery, trait checks, review-before-submit, and single submission", async ({
-    browser,
-    request,
-  }, testInfo) => {
-    test.skip(
-      testInfo.project.name !== "student-mobile-chromium",
-      "P11-02 journey runs once, at 390 px, against the local Supabase stack.",
-    );
+/** A class, two single-student groups, and an open session with Leaf active. */
+async function setupField(
+  request: APIRequestContext,
+  label: string,
+): Promise<Field> {
+  const env = getLocalSupabaseEnv();
+  const suffix = `${Date.now()}${Math.random().toString(16).slice(2)}`;
+  const teacherEmail = `p11-${label}-teacher-${suffix}@example.edu`;
+  const adaEmail = `p11-${label}-ada-${suffix}@example.edu`;
+  const cyEmail = `p11-${label}-cy-${suffix}@example.edu`;
+  const emails = [teacherEmail, adaEmail, cyEmail];
+  const emailList = emails.map(sqlLiteral).join(", ");
+  const password = "observation review passphrase 1";
+  const schoolId = randomUUID();
+  const classId = randomUUID();
+  const activityId = randomUUID();
+  const versionId = randomUUID();
 
-    const baseURL = String(
-      testInfo.project.use.baseURL ?? "http://localhost:3000",
-    );
-    const env = getLocalSupabaseEnv();
-    const suffix = `${Date.now()}${Math.random().toString(16).slice(2)}`;
-    const teacherEmail = `p11-review-teacher-${suffix}@example.edu`;
-    const adaEmail = `p11-review-ada-${suffix}@example.edu`;
-    const cyEmail = `p11-review-cy-${suffix}@example.edu`;
-    const emails = [teacherEmail, adaEmail, cyEmail];
-    const emailList = emails.map(sqlLiteral).join(", ");
-    const password = "observation review passphrase 1";
-    const schoolId = randomUUID();
-    const classId = randomUUID();
-    const activityId = randomUUID();
-    const versionId = randomUUID();
+  for (const email of emails) {
+    await createConfirmedUser(request, env, email, password);
+  }
 
-    for (const email of emails) {
-      await createConfirmedUser(request, env, email, password);
-    }
-
-    runLocalSql(`
+  runLocalSql(`
       update public.profiles set email_verified_at = now() where email in (${emailList});
       update auth.identities
       set identity_data = identity_data || jsonb_build_object('email_verified', true)
@@ -148,19 +148,19 @@ test.describe("P11-02 manual review and submission", () => {
       from public.profiles where email in (${emailList});
     `);
 
-    for (const [email, name] of [
-      [adaEmail, "Leaf"],
-      [cyEmail, "Root"],
-    ] as const) {
-      runLocalSql(
-        asUserSql(
-          email,
-          `select * from public.create_student_group('${classId}'::uuid, '${name}', null);`,
-        ),
-      );
-    }
+  for (const [email, name] of [
+    [adaEmail, "Leaf"],
+    [cyEmail, "Root"],
+  ] as const) {
+    runLocalSql(
+      asUserSql(
+        email,
+        `select * from public.create_student_group('${classId}'::uuid, '${name}', null);`,
+      ),
+    );
+  }
 
-    runLocalSql(`
+  runLocalSql(`
       insert into public.activities (id, class_id, title, status, created_by)
       select '${activityId}'::uuid, '${classId}'::uuid, 'Garden survey', 'published', id
       from public.profiles where email = ${sqlLiteral(teacherEmail)};
@@ -177,37 +177,107 @@ test.describe("P11-02 manual review and submission", () => {
       where version.id = '${versionId}'::uuid and profile.email = ${sqlLiteral(teacherEmail)};
     `);
 
-    const teacher = createClient(env.API_URL!, env.PUBLISHABLE_KEY!, {
-      auth: { persistSession: false, autoRefreshToken: false },
+  const teacher = createClient(env.API_URL!, env.PUBLISHABLE_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const teacherSignIn = await teacher.auth.signInWithPassword({
+    email: teacherEmail,
+    password,
+  });
+  expect(teacherSignIn.error?.message).toBeUndefined();
+  const created = await teacher.rpc("create_exploration_session", {
+    target_activity_id: activityId,
+    session_title: "Morning round",
+  });
+  expect(created.error?.message).toBeUndefined();
+  const sessionId = (created.data as Array<{ session_id: string }>)[0]!
+    .session_id;
+  const groups = await teacher
+    .from("groups")
+    .select("id, name")
+    .eq("class_id", classId);
+  const groupId = (name: string) =>
+    groups.data!.find((group) => group.name === name)!.id as string;
+  const opened = await teacher.rpc("open_exploration_session", {
+    target_session_id: sessionId,
+    group_order: [groupId("Leaf"), groupId("Root")],
+  });
+  expect(opened.error?.message).toBeUndefined();
+  const activated = await teacher.rpc("activate_session_group", {
+    target_session_id: sessionId,
+    target_group_id: groupId("Leaf"),
+  });
+  expect(activated.error?.message).toBeUndefined();
+
+  return {
+    teacherEmail,
+    adaEmail,
+    cyEmail,
+    password,
+    classId,
+    activityId,
+    sessionId,
+  };
+}
+
+async function openFieldShell(
+  browser: Browser,
+  baseURL: string,
+  email: string,
+  password: string,
+  shellUrl: string,
+) {
+  const context = await studentContext(browser, baseURL);
+  await signInContext(context, email, password);
+  const page = await context.newPage();
+  await page.goto(shellUrl);
+  await expect(
+    page.getByRole("heading", { name: "กลุ่มของคุณกำลังสำรวจ" }),
+  ).toBeVisible({ timeout: 120_000 });
+  await page
+    .getByRole("region", { name: "ก่อนเริ่มสำรวจ: การแชร์ตำแหน่ง" })
+    .getByRole("button", { name: "เริ่มแชร์ตำแหน่ง" })
+    .click();
+  return { context, page };
+}
+
+async function addWholePlantImage(page: Page) {
+  const media = page.getByRole("region", { name: /^ภาพหลักฐาน · / });
+  await expect(media.getByRole("button", { name: "เลือกจากคลัง" })).toBeEnabled(
+    { timeout: 120_000 },
+  );
+  await media
+    .locator('input[type="file"][data-media-input="gallery"]')
+    .setInputFiles({
+      name: "plant.jpg",
+      mimeType: "image/jpeg",
+      buffer: createExifJpegFixture(),
     });
-    const teacherSignIn = await teacher.auth.signInWithPassword({
-      email: teacherEmail,
-      password,
-    });
-    expect(teacherSignIn.error?.message).toBeUndefined();
-    const created = await teacher.rpc("create_exploration_session", {
-      target_activity_id: activityId,
-      session_title: "Morning round",
-    });
-    expect(created.error?.message).toBeUndefined();
-    const sessionId = (created.data as Array<{ session_id: string }>)[0]!
-      .session_id;
-    const groups = await teacher
-      .from("groups")
-      .select("id, name")
-      .eq("class_id", classId);
-    const groupId = (name: string) =>
-      groups.data!.find((group) => group.name === name)!.id as string;
-    const opened = await teacher.rpc("open_exploration_session", {
-      target_session_id: sessionId,
-      group_order: [groupId("Leaf"), groupId("Root")],
-    });
-    expect(opened.error?.message).toBeUndefined();
-    const activated = await teacher.rpc("activate_session_group", {
-      target_session_id: sessionId,
-      target_group_id: groupId("Leaf"),
-    });
-    expect(activated.error?.message).toBeUndefined();
+  await expect(media.locator("[data-media-tile]").nth(0)).toHaveAttribute(
+    "data-tile-state",
+    "uploaded",
+    { timeout: 120_000 },
+  );
+}
+
+test.describe("P11 manual review, submission, and related records", () => {
+  // next dev compiles each new route on first use.
+  test.setTimeout(900_000);
+
+  test("manual entry, blocker recovery, trait checks, review-before-submit, and single submission", async ({
+    browser,
+    request,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "student-mobile-chromium",
+      "P11-02 journey runs once, at 390 px, against the local Supabase stack.",
+    );
+
+    const baseURL = String(
+      testInfo.project.use.baseURL ?? "http://localhost:3000",
+    );
+    const { adaEmail, cyEmail, password, activityId, sessionId } =
+      await setupField(request, "review");
 
     const contexts: BrowserContext[] = [];
     try {
@@ -362,6 +432,179 @@ test.describe("P11-02 manual review and submission", () => {
       await expect(
         ada.getByRole("region", { name: "กรอกข้อมูลพืชเอง" }),
       ).toHaveCount(0);
+    } finally {
+      await Promise.all(contexts.map((context) => context.close()));
+    }
+  });
+
+  // P11-04/P11-05: the owner's second hibiscus at the same spot warns, is
+  // acknowledged, and submits; the teacher gets the notification and tag and
+  // alone confirms the possible same specimen, and nothing is merged.
+  test("same-species warning, teacher tag and notification, and teacher-only specimen confirmation", async ({
+    browser,
+    request,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "student-mobile-chromium",
+      "P11-04/P11-05 journey runs once against the local Supabase stack.",
+    );
+
+    const baseURL = String(
+      testInfo.project.use.baseURL ?? "http://localhost:3000",
+    );
+    const { teacherEmail, adaEmail, cyEmail, password, activityId, sessionId } =
+      await setupField(request, "species");
+    const shellUrl = `/activities/${activityId}/sessions/${sessionId}`;
+    const contexts: BrowserContext[] = [];
+
+    try {
+      const { context: adaContext, page: ada } = await openFieldShell(
+        browser,
+        baseURL,
+        adaEmail,
+        password,
+        shellUrl,
+      );
+      contexts.push(adaContext);
+
+      // 1. A first hibiscus is reviewed and submitted over the API.
+      const firstId = await startObservation(ada, adaContext);
+      await addWholePlantImage(ada);
+      const first = (await (
+        await adaContext.request.get(`/api/observations/${firstId}`)
+      ).json()) as { data: { version: number } };
+      const saved = await adaContext.request.put(
+        `/api/observations/${firstId}/student-review`,
+        {
+          data: {
+            expectedVersion: first.data.version,
+            identitySource: "manual",
+            commonName: "ชบา",
+            scientificName: "Hibiscus rosa-sinensis",
+            evidenceNote: EVIDENCE,
+            referenceNote: null,
+            traits: [],
+          },
+        },
+      );
+      expect(saved.status(), await saved.text()).toBe(200);
+      const savedBody = (await saved.json()) as { data: { version: number } };
+      const submitted = await adaContext.request.post(
+        `/api/observations/${firstId}/submit`,
+        {
+          data: {
+            clientSubmissionId: randomUUID(),
+            expectedVersion: savedBody.data.version,
+            acknowledgeSameSpecies: false,
+          },
+        },
+      );
+      expect(submitted.status(), await submitted.text()).toBe(201);
+
+      // 2. A second hibiscus at the same spot warns before submitting.
+      await ada.goto(shellUrl);
+      const secondId = await startObservation(ada, adaContext);
+      await addWholePlantImage(ada);
+      await ada
+        .getByRole("region", { name: "AI ช่วยดูยังไม่เปิดใช้" })
+        .getByRole("button", { name: "กรอกข้อมูลเอง" })
+        .click();
+      const form = ada.getByRole("region", { name: "กรอกข้อมูลพืชเอง" });
+      await form.getByLabel(/ชื่อไทยหรือชื่อทั่วไป/).fill("ชบา");
+      await form.getByLabel(/ชื่อวิทยาศาสตร์/).fill("Hibiscus rosa-sinensis");
+      await form.getByLabel(/เหตุผลประกอบ/).fill(EVIDENCE);
+      await form.getByRole("button", { name: "บันทึกข้อมูลพืช" }).click();
+
+      const panel = ada.getByRole("region", { name: "สรุปก่อนส่ง" });
+      const warning = panel.locator('[data-same-species="warning"]');
+      await expect(warning).toContainText(
+        "พืชชนิดนี้ถูกบันทึกในรอบนี้แล้ว 1 รายการ",
+        { timeout: 60_000 },
+      );
+      await expect(warning).toContainText("อาจเป็นต้นเดียวกัน 1 รายการ");
+      const submit = panel.getByRole("button", { name: "ส่งการสังเกต" });
+      await expect(submit).toBeDisabled();
+      await warning.getByRole("checkbox", { name: /รับทราบ/ }).check();
+      await expect(submit).toBeEnabled();
+      await submit.click();
+      await ada
+        .getByRole("alertdialog", { name: "ส่งการสังเกตนี้ให้ครู?" })
+        .getByRole("button", { name: "ยืนยันส่งให้ครู" })
+        .click();
+      await expect(
+        ada.getByRole("region", { name: "ส่งให้ครูแล้ว" }),
+      ).toContainText("ชนิดเดียวกันในรอบนี้ (รับทราบแล้ว)", {
+        timeout: 60_000,
+      });
+
+      expect(
+        queryLocalSql(
+          `select count(*) from public.notifications
+           where observation_id = '${secondId}'::uuid and type = 'same_species_warning'
+             and recipient_id = (select id from public.profiles where email = ${sqlLiteral(teacherEmail)});`,
+        ),
+      ).toBe("1");
+      expect(
+        queryLocalSql(
+          `select string_agg(relationship_type, ',' order by relationship_type)
+           from public.observation_duplicate_candidates
+           where observation_id = '${secondId}'::uuid;`,
+        ),
+      ).toBe("possible_same_specimen,same_species");
+
+      // 3. A classmate cannot open the teacher view.
+      const cyContext = await studentContext(browser, baseURL);
+      contexts.push(cyContext);
+      await signInContext(cyContext, cyEmail, password);
+      const denied = await cyContext.request.get(`/api/reviews/${secondId}`);
+      expect([403, 404]).toContain(denied.status());
+
+      // 4. The teacher sees the tag and confirms the specimen relation.
+      const teacherContext = await browser.newContext({
+        baseURL,
+        viewport: { width: 1280, height: 900 },
+      });
+      contexts.push(teacherContext);
+      await signInContext(teacherContext, teacherEmail, password);
+      const teacher = await teacherContext.newPage();
+      await teacher.goto(`/teacher/reviews/${secondId}`);
+      await expect(teacher.locator('[data-tag="same_species"]')).toContainText(
+        "ชนิดซ้ำในรอบนี้ · อีก 1 รายการ",
+        { timeout: 120_000 },
+      );
+      await expect(
+        teacher.getByRole("img", { name: "ภาพที่ 1 · ทั้งต้น" }),
+      ).toBeVisible();
+      const specimen = teacher.locator(
+        '[data-relation="possible_same_specimen"]',
+      );
+      await expect(specimen).toContainText("ยังไม่ได้ยืนยัน");
+      await specimen.getByRole("button", { name: "ต้นเดียวกัน" }).click();
+      await teacher
+        .getByRole("alertdialog", { name: "ยืนยันว่าเป็น “ต้นเดียวกัน”?" })
+        .getByRole("button", { name: "ยืนยัน" })
+        .click();
+      await expect(specimen).toHaveAttribute(
+        "data-relation-decision",
+        "same_specimen",
+        { timeout: 60_000 },
+      );
+
+      // Nothing was merged, deleted, or rejected.
+      expect(
+        queryLocalSql(
+          `select count(*) || '|' || string_agg(distinct status, ',')
+           from public.observations
+           where id in ('${firstId}'::uuid, '${secondId}'::uuid);`,
+        ),
+      ).toBe("2|submitted");
+      expect(
+        queryLocalSql(
+          `select teacher_decision from public.observation_duplicate_candidates
+           where observation_id = '${secondId}'::uuid
+             and relationship_type = 'possible_same_specimen';`,
+        ),
+      ).toBe("same_specimen");
     } finally {
       await Promise.all(contexts.map((context) => context.close()));
     }
