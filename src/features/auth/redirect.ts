@@ -10,6 +10,15 @@ function isAllowedPath(pathname: string) {
     return /^[A-Za-z0-9_-]{8,256}$/.test(token);
   }
 
+  // Admin console pages (P15); the MFA step keeps its own return path.
+  if (
+    /^\/admin(\/(mfa|health|users|schools|errors|audit|incidents))?$/.test(
+      pathname,
+    )
+  ) {
+    return true;
+  }
+
   const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
   if (
     new RegExp(`^/classes/${uuid}/groups(/${uuid})?$`, "i").test(pathname) ||

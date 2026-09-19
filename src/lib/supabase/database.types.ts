@@ -3251,6 +3251,14 @@ export type Database = {
           student_id: string;
         }[];
       };
+      open_admin_console: {
+        Args: { view_key: string };
+        Returns: {
+          admin_user_id: string;
+          error_code: string;
+          outcome: string;
+        }[];
+      };
       open_exploration_session: {
         Args: { group_order: string[]; target_session_id: string };
         Returns: {
