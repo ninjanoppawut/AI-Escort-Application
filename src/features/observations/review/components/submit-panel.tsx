@@ -12,9 +12,12 @@ import {
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { localStoreAvailable } from "@/lib/offline/local-store";
+import { enqueueOutbox, useOutbox } from "@/lib/offline/outbox";
 import { cn } from "@/lib/utils";
 
 import { sendObservationJson } from "../../client/request";
+import { QueuedActions } from "../../components/queued-actions";
 import { OBSERVATION_BLOCKED_REASON_LABELS } from "../../errors";
 import {
   fetchOwnerRelated,
@@ -94,6 +97,28 @@ export function SubmitPanel({
     return submission.current.id;
   }
 
+  // P14-02: offline, the submit waits on this device and is sent once, with
+  // the same client submission ID, on reconnect. The server still decides.
+  const canQueue = localStoreAvailable();
+  const outbox = useOutbox(observationId, onChanged, online);
+  const queued = outbox.actions.length > 0;
+
+  function queueSubmit(version: number, acknowledge: boolean) {
+    const id = submissionIdFor(version);
+    void enqueueOutbox({
+      id,
+      kind: "submit_observation",
+      scope: observationId,
+      url: `/api/observations/${observationId}/submit`,
+      body: {
+        clientSubmissionId: id,
+        expectedVersion: version,
+        acknowledgeSameSpecies: acknowledge,
+      },
+      label: "ส่งการสังเกตให้ครู",
+    }).then(() => setConfirming(false));
+  }
+
   const submitMutation = useMutation({
     mutationFn: (input: { version: number; acknowledge: boolean }) =>
       sendObservationJson(
@@ -153,7 +178,8 @@ export function SubmitPanel({
   const canSubmitNow =
     state.permissions.canSubmit &&
     blockers.length === 0 &&
-    online &&
+    (online || canQueue) &&
+    !queued &&
     !formDirty &&
     (!sameSpecies || acknowledged) &&
     !submitMutation.isPending;
@@ -172,7 +198,9 @@ export function SubmitPanel({
         : "ส่งให้ครูไม่ได้ในตอนนี้");
   } else if (formDirty) {
     gate = "บันทึกข้อมูลพืชก่อน แล้วค่อยส่ง · ครูจะเห็นเฉพาะที่บันทึกแล้ว";
-  } else if (!online) {
+  } else if (queued) {
+    gate = "การส่งนี้รออยู่ในเครื่อง · จะส่งเองเมื่อกลับมาออนไลน์";
+  } else if (!online && !canQueue) {
     gate = "ออฟไลน์อยู่ · ส่งได้เมื่อกลับมาออนไลน์";
   } else if (blockers.length > 0) {
     gate = `ยังส่งไม่ได้ — มี ${blockers.length} ข้อที่ต้องทำก่อน`;
@@ -293,6 +321,8 @@ export function SubmitPanel({
         <SubmitError blockers={refusedBlockers} code={errorCode} />
       ) : null}
 
+      <QueuedActions online={online} onSent={onChanged} scope={observationId} />
+
       {gate ? (
         <p
           className="text-muted-foreground flex items-start gap-2 text-sm leading-6"
@@ -314,7 +344,11 @@ export function SubmitPanel({
         ) : (
           <Send aria-hidden="true" className="size-4" />
         )}
-        {submitMutation.isPending ? "กำลังส่ง..." : "ส่งการสังเกต"}
+        {submitMutation.isPending
+          ? "กำลังส่ง..."
+          : online
+            ? "ส่งการสังเกต"
+            : "ส่งการสังเกต · เก็บไว้ในเครื่อง"}
       </Button>
 
       {confirming ? (
@@ -322,12 +356,14 @@ export function SubmitPanel({
           commonName={saved.commonName}
           evidenceNote={saved.evidenceNote}
           onCancel={() => setConfirming(false)}
-          onConfirm={() =>
-            submitMutation.mutate({
+          onConfirm={() => {
+            const input = {
               version: state.version,
               acknowledge: sameSpecies && acknowledged,
-            })
-          }
+            };
+            if (!online) queueSubmit(input.version, input.acknowledge);
+            else submitMutation.mutate(input);
+          }}
           pending={submitMutation.isPending}
           sameSpecies={sameSpecies}
           scientificName={saved.scientificName}

@@ -15,6 +15,8 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/features/groups/client/use-online-status";
+import { localStoreAvailable } from "@/lib/offline/local-store";
+import { enqueueOutbox } from "@/lib/offline/outbox";
 
 import {
   CAPTURE_TIME_NOTICE,
@@ -79,10 +81,13 @@ export function StartObservationSheet({
   onClose,
   onStarted,
   onDenied,
+  onQueued,
 }: {
   sessionId: string;
   onClose: () => void;
   onStarted: (observation: ObservationDraft) => void;
+  /** Offline: the start was kept on the device to send on reconnect. */
+  onQueued?: () => void;
   /** A server denial: the caller closes the sheet, refetches, and explains. */
   onDenied: (error: unknown) => void;
 }) {
@@ -166,6 +171,28 @@ export function StartObservationSheet({
       return;
     }
     setNotice(null);
+    if (!online) {
+      // P14-01: keep the start (with its capture) on the device; it is sent
+      // once, with the same client generated ID, when the device reconnects.
+      void enqueueOutbox({
+        id: body.clientGeneratedId,
+        kind: "start_observation",
+        scope: sessionId,
+        url: "/api/observations/start",
+        body: body as unknown as Record<string, unknown>,
+        label: "การสังเกตใหม่",
+      }).then((queued) => {
+        if (queued) {
+          onQueued?.();
+          return;
+        }
+        setNotice({
+          title: "ออฟไลน์อยู่",
+          description: "เครื่องนี้เก็บร่างไว้ไม่ได้ กดได้เมื่อกลับมาออนไลน์",
+        });
+      });
+      return;
+    }
     setPending(body);
     startMutation.mutate(body);
   }
@@ -353,6 +380,14 @@ function FixSummary({ fix }: { fix: CaptureFix }) {
 
 function OfflineReason({ online }: { online: boolean }) {
   if (online) return null;
+  if (localStoreAvailable()) {
+    return (
+      <p className="text-center text-[13px] leading-5" role="status">
+        ออฟไลน์อยู่ · เก็บไว้ในเครื่องนี้ก่อน แล้วส่งเองเมื่อกลับมาออนไลน์
+        (ภายใน 15 นาที)
+      </p>
+    );
+  }
   return (
     <p className="text-muted-foreground text-center text-[13px]">
       ออฟไลน์อยู่ · กดได้เมื่อกลับมาออนไลน์
@@ -392,8 +427,12 @@ function FixStep({
       ) : null}
       <CaptureNotice />
       <div className="grid gap-2">
-        <Button disabled={!online} onClick={onUse} size="lg">
-          ใช้ตำแหน่งนี้
+        <Button
+          disabled={!online && !localStoreAvailable()}
+          onClick={onUse}
+          size="lg"
+        >
+          {online ? "ใช้ตำแหน่งนี้" : "ใช้ตำแหน่งนี้ · เก็บไว้ในเครื่อง"}
         </Button>
         <OfflineReason online={online} />
         {poor && !waiting ? (
@@ -537,7 +576,11 @@ function FlaggedSave({
 }) {
   return (
     <div className="grid gap-1">
-      <Button disabled={!online} onClick={onFlag} size="lg">
+      <Button
+        disabled={!online && !localStoreAvailable()}
+        onClick={onFlag}
+        size="lg"
+      >
         <Flag aria-hidden="true" className="size-4" />
         บันทึกแบบมีธง
       </Button>

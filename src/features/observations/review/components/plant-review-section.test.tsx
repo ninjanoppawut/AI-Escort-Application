@@ -764,7 +764,9 @@ describe("PlantReviewSection", () => {
     ).toBeVisible();
     expect(within(form).getByLabelText(/แหล่งอ้างอิง/)).toHaveValue("ครู");
     expect(
-      within(submitPanel()).getByRole("button", { name: "ส่งการสังเกต" }),
+      within(submitPanel()).getByRole("button", {
+        name: "ส่งการสังเกต · เก็บไว้ในเครื่อง",
+      }),
     ).toBeDisabled();
   });
 

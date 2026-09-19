@@ -192,9 +192,9 @@ export function getObservationUploadQueue(observationId: string): UploadQueue {
     const created = createUploadQueue(createBrowserUploadDeps(observationId));
     queue = created;
     queues.set(observationId, created);
-    const client = createSupabaseBrowserClient();
+    // The client is created lazily so a render never throws on it.
     void loadDeviceUploads(observationId, () =>
-      currentUserId(() => client),
+      currentUserId(createSupabaseBrowserClient),
     ).then((records) => created.restore(records));
   }
   return queue;

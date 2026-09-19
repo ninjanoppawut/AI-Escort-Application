@@ -25,7 +25,11 @@ import {
   useDeviceDraft,
   type DeviceDraft,
 } from "@/lib/offline/use-device-draft";
+import { localStoreAvailable } from "@/lib/offline/local-store";
+import { enqueueOutbox, useOutbox } from "@/lib/offline/outbox";
 import { cn } from "@/lib/utils";
+
+import { QueuedActions } from "../../components/queued-actions";
 
 import {
   fetchObservationJson,
@@ -520,20 +524,46 @@ function ResubmitPanel({
     state.readiness.blockers.includes(blocker),
   );
   const warning = sameSpecies?.version === state.version ? sameSpecies : null;
+  // P14-02: an offline resubmit waits on this device, keyed by its client
+  // submission ID, and is sent once on reconnect.
+  const canQueue = localStoreAvailable();
+  const outbox = useOutbox(observationId, onChanged, online);
+  const queued = outbox.actions.length > 0;
+
+  function submissionId() {
+    if (submission.current?.version !== state.version) {
+      submission.current = {
+        version: state.version,
+        id: crypto.randomUUID(),
+      };
+    }
+    return submission.current.id;
+  }
+
+  function queueResubmit() {
+    const id = submissionId();
+    void enqueueOutbox({
+      id,
+      kind: "resubmit_observation",
+      scope: observationId,
+      url: `/api/observations/${observationId}/resubmit`,
+      body: {
+        clientSubmissionId: id,
+        expectedVersion: state.version,
+        acknowledgeSameSpecies: warning !== null && acknowledged,
+      },
+      label: "ส่งฉบับแก้ไขให้ครู",
+    }).then(() => setConfirming(false));
+  }
 
   const mutation = useMutation({
     mutationFn: () => {
-      if (submission.current?.version !== state.version) {
-        submission.current = {
-          version: state.version,
-          id: crypto.randomUUID(),
-        };
-      }
+      const id = submissionId();
       return sendObservationJson(
         "POST",
         `/api/observations/${observationId}/resubmit`,
         {
-          clientSubmissionId: submission.current.id,
+          clientSubmissionId: id,
           expectedVersion: state.version,
           acknowledgeSameSpecies: warning !== null && acknowledged,
         },
@@ -564,7 +594,8 @@ function ResubmitPanel({
   const noChanges = state.changedTopics.length === 0;
   const ready =
     state.permissions.canResubmit &&
-    online &&
+    (online || canQueue) &&
+    !queued &&
     !formDirty &&
     blockers.length === 0 &&
     !noChanges &&
@@ -576,7 +607,9 @@ function ResubmitPanel({
     gate = "กิจกรรมหยุดชั่วคราว · ส่งใหม่ได้เมื่อครูเปิดต่อ";
   } else if (formDirty) {
     gate = "บันทึกการแก้ไขก่อน แล้วค่อยส่งใหม่";
-  } else if (!online) {
+  } else if (queued) {
+    gate = "ฉบับแก้ไขรออยู่ในเครื่อง · จะส่งเองเมื่อกลับมาออนไลน์";
+  } else if (!online && !canQueue) {
     gate = "ออฟไลน์อยู่ · ส่งได้เมื่อกลับมาออนไลน์";
   } else if (noChanges) {
     gate = "ยังไม่มีอะไรเปลี่ยนจากฉบับที่ส่งไป";
@@ -643,6 +676,7 @@ function ResubmitPanel({
             : `ส่งไม่สำเร็จ · ${presentReviewError(errorCode).title}`}
         </p>
       ) : null}
+      <QueuedActions online={online} onSent={onChanged} scope={observationId} />
       {gate ? (
         <p className="text-muted-foreground text-sm" role="status">
           {gate}
@@ -674,7 +708,10 @@ function ResubmitPanel({
             <div className="mt-4 grid gap-2">
               <Button
                 disabled={mutation.isPending}
-                onClick={() => mutation.mutate()}
+                onClick={() => {
+                  if (!online) queueResubmit();
+                  else mutation.mutate();
+                }}
                 size="lg"
               >
                 ยืนยันส่งใหม่

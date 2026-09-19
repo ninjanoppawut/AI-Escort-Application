@@ -16,6 +16,8 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useOnlineStatus } from "@/features/groups/client/use-online-status";
+import { localStoreAvailable } from "@/lib/offline/local-store";
+import { QueuedActions } from "./queued-actions";
 import { sessionQueryKeys } from "@/features/sessions/contracts";
 import { accuracyLabel } from "@/features/sessions/live-view";
 
@@ -194,14 +196,22 @@ export function SessionObservationsPanel({
   }
 
   // The server re-checks every start, so a background refetch never disables it.
-  const startDisabled = !list.canStart || !online;
+  // Offline starts are kept on the device when it can (P14-01).
+  const canQueue = localStoreAvailable();
+  const startDisabled = !list.canStart || (!online && !canQueue);
   const startReason = !list.canStart
     ? blocked
     : !online
-      ? {
-          title: "ออฟไลน์",
-          description: "เริ่มบันทึกใหม่ได้เมื่อกลับมาออนไลน์",
-        }
+      ? canQueue
+        ? {
+            title: "ออฟไลน์",
+            description:
+              "เริ่มบันทึกได้ ระบบเก็บไว้ในเครื่องแล้วส่งเองเมื่อกลับมาออนไลน์",
+          }
+        : {
+            title: "ออฟไลน์",
+            description: "เริ่มบันทึกใหม่ได้เมื่อกลับมาออนไลน์",
+          }
       : null;
 
   return (
@@ -319,6 +329,12 @@ export function SessionObservationsPanel({
         </p>
       ) : null}
 
+      <QueuedActions
+        online={online}
+        onSent={refreshAfterMutation}
+        scope={sessionId}
+      />
+
       {sheetOpen ? (
         <StartObservationSheet
           onClose={() => {
@@ -335,6 +351,10 @@ export function SessionObservationsPanel({
             void queryClient.invalidateQueries({
               queryKey: sessionQueryKeys.participant(sessionId),
             });
+          }}
+          onQueued={() => {
+            sheetOpenRef.current = false;
+            setSheetOpen(false);
           }}
           onStarted={(observation) => {
             queryClient.setQueryData(
