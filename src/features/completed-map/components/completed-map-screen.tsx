@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Download,
   Flag,
   Info,
   List,
@@ -35,6 +36,8 @@ import {
   type CompletedMapItem,
   type CompletedMapView,
 } from "../contracts";
+import { ExportRequestDialog } from "@/features/exports/components/export-request-dialog";
+
 import { CompletedMapSketch } from "./completed-map-sketch";
 import { MapDetailPanel } from "./map-detail-panel";
 
@@ -191,6 +194,7 @@ function AvailableMap({
   const [view, setView] = useState<"map" | "list">("map");
   const [filter, setFilter] = useState<Filter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const filters: Filter[] = teacher
     ? ["all", "verified", "pending", "revision", "unable", "rejected"]
     : ["all", "verified", "pending", "revision", "mine"];
@@ -326,7 +330,21 @@ function AvailableMap({
               รายการ
             </button>
           </div>
+          {teacher ? (
+            <Button onClick={() => setExporting(true)} variant="outline">
+              <Download aria-hidden="true" className="size-4" />
+              ส่งออก
+            </Button>
+          ) : null}
         </div>
+        {exporting ? (
+          <ExportRequestDialog
+            classId={map.classId}
+            onClose={() => setExporting(false)}
+            pendingReviewCount={map.pendingReviewCount ?? 0}
+            sessionId={map.sessionId}
+          />
+        ) : null}
 
         <div
           aria-label="กรองสถานะ"

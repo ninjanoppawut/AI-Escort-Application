@@ -390,6 +390,12 @@ This file records accepted product decisions for developers and AI coding agents
 - **Decision:** Class teachers see every submitted record of a session on the map at any time. The session's participant snapshot (D-055, MAP-006) sees the map only after the teacher completes the session, with every submitted status except other students' rejected records; the owner still sees their own rejected record. Peers see the verified name, the verifying teacher, the student's values, the recorder, capture location, and submitted images, but never teacher feedback (D-057) or possible same-specimen counts. Records without a capture fix are listed, never placed. Without a configured map token the map is the coordinate sketch plus the list (D-005 adapter fallback).
 - **Consequence:** Design T-12b ("หมุดจะหายจากแผนที่ผลลัพธ์") holds for peers; the teacher legend keeps the rejected token. Peer image access is granted by Storage policy only for submitted images of records the peer may see after completion.
 
+### D-069 — Operational export schema export-v1
+
+- **Status:** accepted as an implementation default (P14-03)
+- **Decision:** Teacher CSV and GeoJSON exports cover one session's submitted records (all post-submission statuses or a status subset; never drafts) with the columns, in order: `schema_version, observation_id, status, submission_number, submitted_at, captured_at, location_status, latitude, longitude, accuracy_m, location_source, student_common_name, student_scientific_name, identity_source, evidence_note, verified_common_name, verified_scientific_name, review_decision, reviewed_at, same_species_in_session, recorder_name, group_name, image_count`. Coordinates are capture coordinates only (`location_source = capture`); no live-location sample, track, email, image URL, or teacher feedback is exported. CSV is RFC 4180 with a UTF-8 BOM and formula-injection neutralizing; GeoJSON uses null geometry for records without a fix. Requests need an `Idempotency-Key`; up to 1,000 rows finish in the request, larger ones queue; one file holds at most 5,000 rows. `research_csv` stays unavailable until DEC-Q005 and P14-05A.
+- **Consequence:** Changing a column is a new schema version. Downloads reauthorize the requester's current teacher scope and use one-minute signed links; artifacts expire after seven days (D-064).
+
 ## Working defaults
 
 - Thai is the default UI language.

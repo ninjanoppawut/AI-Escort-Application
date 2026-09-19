@@ -660,6 +660,88 @@ export type Database = {
           },
         ];
       };
+      exports: {
+        Row: {
+          byte_size: number | null;
+          class_id: string;
+          completed_at: string | null;
+          created_at: string;
+          expires_at: string;
+          export_type: string;
+          failure_code: string | null;
+          id: string;
+          idempotency_key: string;
+          request_payload: Json;
+          requested_by: string;
+          row_count: number | null;
+          schema_version: string;
+          session_id: string;
+          started_at: string | null;
+          status: string;
+          storage_path: string | null;
+        };
+        Insert: {
+          byte_size?: number | null;
+          class_id: string;
+          completed_at?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          export_type: string;
+          failure_code?: string | null;
+          id?: string;
+          idempotency_key: string;
+          request_payload: Json;
+          requested_by: string;
+          row_count?: number | null;
+          schema_version?: string;
+          session_id: string;
+          started_at?: string | null;
+          status?: string;
+          storage_path?: string | null;
+        };
+        Update: {
+          byte_size?: number | null;
+          class_id?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          export_type?: string;
+          failure_code?: string | null;
+          id?: string;
+          idempotency_key?: string;
+          request_payload?: Json;
+          requested_by?: string;
+          row_count?: number | null;
+          schema_version?: string;
+          session_id?: string;
+          started_at?: string | null;
+          status?: string;
+          storage_path?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exports_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exports_requested_by_fkey";
+            columns: ["requested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exports_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "exploration_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       group_invitations: {
         Row: {
           cancelled_by: string | null;
@@ -2728,6 +2810,16 @@ export type Database = {
           status: string;
         }[];
       };
+      claim_export: {
+        Args: { target_export_id: string };
+        Returns: {
+          class_id: string;
+          export_type: string;
+          outcome: string;
+          session_id: string;
+          storage_path: string;
+        }[];
+      };
       complete_exploration_session: {
         Args: { target_session_id: string };
         Returns: {
@@ -2922,6 +3014,20 @@ export type Database = {
           status: string;
         }[];
       };
+      export_rows: { Args: { target_export_id: string }; Returns: Json };
+      finish_export: {
+        Args: {
+          export_succeeded: boolean;
+          result_byte_size: number;
+          result_failure_code: string;
+          result_row_count: number;
+          target_export_id: string;
+        };
+        Returns: {
+          export_status: string;
+          outcome: string;
+        }[];
+      };
       get_activity_detail: {
         Args: { target_activity_id: string };
         Returns: Json;
@@ -2930,6 +3036,7 @@ export type Database = {
         Args: { target_class_id: string };
         Returns: Json;
       };
+      get_export: { Args: { target_export_id: string }; Returns: Json };
       get_group_detail: { Args: { target_group_id: string }; Returns: Json };
       get_group_invitation: {
         Args: { target_invitation_id: string };
@@ -3256,6 +3363,23 @@ export type Database = {
           error_details: Json;
           outcome: string;
           request_id: string;
+        }[];
+      };
+      request_export: {
+        Args: {
+          request_idempotency_key: string;
+          requested_filters: Json;
+          requested_type: string;
+          target_class_id: string;
+          target_session_id: string;
+        };
+        Returns: {
+          error_code: string;
+          error_details: Json;
+          export_id: string;
+          export_status: string;
+          outcome: string;
+          row_estimate: number;
         }[];
       };
       reset_group_creation_claim: {
