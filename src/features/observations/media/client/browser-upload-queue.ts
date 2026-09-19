@@ -7,6 +7,7 @@ import {
 } from "@/lib/offline/local-store";
 import { processImage, revokePreviewUrl } from "@/lib/image-processing";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { reportClientError } from "@/lib/telemetry/report-error";
 
 import {
   completeMediaRequest,
@@ -192,6 +193,22 @@ export function getObservationUploadQueue(observationId: string): UploadQueue {
     const created = createUploadQueue(createBrowserUploadDeps(observationId));
     queue = created;
     queues.set(observationId, created);
+    // Upload failures happen browser-to-Storage and never reach the server,
+    // so they are reported to the admin error explorer (P15-03).
+    created.onEvent((event) => {
+      if (
+        event.type === "failed" ||
+        event.type === "blocked" ||
+        event.type === "rejected"
+      ) {
+        reportClientError({
+          flow: "upload",
+          stage: `upload_${event.type}`,
+          code: event.code,
+          severity: event.type === "failed" ? "error" : "warning",
+        });
+      }
+    });
     // The client is created lazily so a render never throws on it.
     void loadDeviceUploads(observationId, () =>
       currentUserId(createSupabaseBrowserClient),

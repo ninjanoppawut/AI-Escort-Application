@@ -2059,6 +2059,68 @@ export type Database = {
           },
         ];
       };
+      operational_error_events: {
+        Row: {
+          actor_id: string | null;
+          environment: string;
+          error_code: string;
+          fingerprint: string;
+          flow: string;
+          id: string;
+          occurred_at: string;
+          received_at: string;
+          redacted_context: Json;
+          release_version: string | null;
+          request_id: string | null;
+          severity: string;
+          source: string;
+          stage: string;
+          trace_id: string | null;
+        };
+        Insert: {
+          actor_id?: string | null;
+          environment: string;
+          error_code: string;
+          fingerprint: string;
+          flow: string;
+          id?: string;
+          occurred_at: string;
+          received_at?: string;
+          redacted_context?: Json;
+          release_version?: string | null;
+          request_id?: string | null;
+          severity: string;
+          source: string;
+          stage: string;
+          trace_id?: string | null;
+        };
+        Update: {
+          actor_id?: string | null;
+          environment?: string;
+          error_code?: string;
+          fingerprint?: string;
+          flow?: string;
+          id?: string;
+          occurred_at?: string;
+          received_at?: string;
+          redacted_context?: Json;
+          release_version?: string | null;
+          request_id?: string | null;
+          severity?: string;
+          source?: string;
+          stage?: string;
+          trace_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "operational_error_events_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       platform_admins: {
         Row: {
           granted_at: string;
@@ -2796,6 +2858,7 @@ export type Database = {
           status: string;
         }[];
       };
+      admin_flow_health: { Args: { window_hours?: number }; Returns: Json };
       admin_get_school: {
         Args: { target_school_id: string };
         Returns: {
@@ -2807,6 +2870,67 @@ export type Database = {
           status: string;
           student_count: number;
           teacher_count: number;
+        }[];
+      };
+      admin_list_audit_events: {
+        Args: {
+          action_filter?: string;
+          actor_filter?: string;
+          cursor_created_at?: string;
+          cursor_id?: string;
+          outcome_filter?: string;
+          page_size?: number;
+          range_from?: string;
+          range_to?: string;
+          request_filter?: string;
+          resource_type_filter?: string;
+        };
+        Returns: {
+          action: string;
+          actor_id: string;
+          actor_kind: string;
+          class_id: string;
+          created_at: string;
+          event_id: string;
+          outcome: string;
+          payload: Json;
+          request_id: string;
+          resource_id: string;
+          resource_type: string;
+          school_id: string;
+          trace_id: string;
+        }[];
+      };
+      admin_list_error_events: {
+        Args: {
+          code_filter?: string;
+          cursor_created_at?: string;
+          cursor_id?: string;
+          environment_filter?: string;
+          flow_filter?: string;
+          page_size?: number;
+          range_from?: string;
+          range_to?: string;
+          release_filter?: string;
+          request_filter?: string;
+          stage_filter?: string;
+          trace_filter?: string;
+        };
+        Returns: {
+          environment: string;
+          error_code: string;
+          event_id: string;
+          fingerprint: string;
+          flow: string;
+          occurred_at: string;
+          received_at: string;
+          redacted_context: Json;
+          release_version: string;
+          request_id: string;
+          severity: string;
+          source: string;
+          stage: string;
+          trace_id: string;
         }[];
       };
       admin_list_schools: {
@@ -3400,6 +3524,22 @@ export type Database = {
           retry_after_s: number;
           sample_id: string;
         }[];
+      };
+      record_operational_error: {
+        Args: {
+          code: string;
+          context?: Json;
+          correlation_request_id?: string;
+          correlation_trace_id?: string;
+          error_environment: string;
+          error_flow: string;
+          error_severity: string;
+          error_source: string;
+          error_stage: string;
+          occurred?: string;
+          release?: string;
+        };
+        Returns: boolean;
       };
       register_observation_media: {
         Args: {

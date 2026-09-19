@@ -24,6 +24,26 @@ export interface AdminSection {
 
 export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
+    view: "health",
+    href: "/admin/health",
+    title: "สุขภาพระบบ",
+    description: "ข้อผิดพลาดตามขั้นตอน คิวส่งออกและอัปโหลด และความสดของข้อมูล",
+  },
+  {
+    view: "errors",
+    href: "/admin/errors",
+    title: "ข้อผิดพลาด",
+    description:
+      "ค้นหาข้อผิดพลาดตามขั้นตอน รหัส รุ่น และ Request ID (ข้อมูลถูกปิดบังแล้ว)",
+  },
+  {
+    view: "audit",
+    href: "/admin/audit",
+    title: "บันทึกการใช้งาน",
+    description:
+      "บันทึกการกระทำที่แก้ไขไม่ได้ ตามผู้กระทำ ทรัพยากร ผลลัพธ์ และเวลา",
+  },
+  {
     view: "schools",
     href: "/admin/schools",
     title: "โรงเรียน",

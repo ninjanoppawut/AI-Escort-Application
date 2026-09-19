@@ -8,6 +8,8 @@ import {
   localStoreAvailable,
   putLocal,
 } from "./local-store";
+import { reportClientError } from "@/lib/telemetry/report-error";
+
 import { deviceUserId } from "./use-device-draft";
 
 // P14-01/P14-02: actions taken offline wait on the device and are sent once,
@@ -174,6 +176,15 @@ export function runOutbox(
           notify();
           break;
         }
+        reportClientError({
+          flow: "offline_sync",
+          stage: action.kind,
+          code: /^[A-Z][A-Z0-9_]{2,63}$/.test(result.code)
+            ? result.code
+            : "FORBIDDEN",
+          severity: "warning",
+          context: { attempt: action.attempts + 1 },
+        });
         await saveAction(userId, {
           ...action,
           status: "failed",
